@@ -46,3 +46,18 @@
 - Không dùng ORM; truy vấn SQL trực tiếp qua `db.prepare(...)`.
 - Password hashing dùng `crypto.scryptSync` (built-in) — tránh thêm native dependency.
 - `JWT_SECRET` lấy từ ENV, có fallback DEV (in cảnh báo nếu thiếu).
+
+## Test tự động (`tests/`, `node:test`)
+- `tests/helpers/serverHarness.js`: khởi động server thật trong CÙNG tiến trình test,
+  KHÔNG sửa `server/index.js`/`server/db.js`. Kỹ thuật:
+  1. Monkey-patch `require.cache['better-sqlite3']` để mọi `new Database(anyPath)` bị
+     redirect sang 1 file SQLite tạm (`os.tmpdir()`), bất kể path prod mà `db.js` tự tính.
+  2. Monkey-patch `http.createServer` để bắt được `http.Server` thật mà `app.listen()`
+     tạo ra bên trong (do `server/index.js` không export `app`), phục vụ đóng server
+     đàng hoàng (`server.close()` + `closeAllConnections()`) sau khi test xong.
+  3. `require('server/db.js')` rồi `require('server/index.js')` trong cùng tiến trình
+     → dùng chung 1 kết nối DB, tránh SQLite lock đa tiến trình.
+- `tests/helpers/fixtures.js`: seed tối thiểu (1 tỉnh/1 BĐX/1 bưu cục/1 device_type + user)
+  qua chính `db` handle, dùng `hashPassword` thật từ `server/auth.js`.
+- Mỗi file test (`auth`/`equipments`/`hrm`) chạy port riêng (5901-5903) + DB tạm riêng,
+  cô lập hoàn toàn với nhau và với `data/ccdc.db` thật.
