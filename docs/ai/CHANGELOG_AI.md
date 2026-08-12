@@ -4,6 +4,50 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Tích hợp Authentication vào Frontend (feat/frontend-auth)
+
+### Changes
+- **src/components/LoginView.jsx** (mới): form đăng nhập hrm_code + password, gọi
+  `POST /api/auth/login`.
+- **src/utils/api.js** (mới): helper `apiFetch`/`apiFetchJson` bọc fetch cho request ghi
+  — tự gắn `Authorization: Bearer <token>`, tự xoá token + phát event khi 401 (quay về
+  LoginView), gắn message tiếng Việt rõ ràng cho 403. Chỉ lưu token vào localStorage,
+  không lưu password; tên/role hiển thị suy ra từ payload JWT (giải mã base64, không
+  xác thực chữ ký phía client).
+- **src/App.jsx**: thêm state `authUser`, đọc token đã lưu lúc khởi tạo (kiểm tra hết
+  hạn qua claim `exp`), hiện LoginView thay Sidebar/Header/main content nếu chưa đăng
+  nhập; lắng nghe event auto-logout.
+- **src/components/Header.jsx**: thêm nút "Đăng Xuất" cạnh công tắc đổi theme; hiện tên/
+  role thật thay vì text tĩnh.
+- **src/components/AddCategoryModal.jsx, HrmMappingView.jsx, AddEquipmentModal.jsx,
+  EquipmentDetailModal.jsx**: chuyển 4 chỗ gọi fetch ghi sang dùng `apiFetchJson`; thêm
+  hiển thị lỗi trong UI (trước đây một số chỗ dùng `alert()`/không hiện lỗi).
+- **EquipmentDetailModal.jsx**: thêm nút "Xoá Thiết Bị" (gọi `DELETE /api/equipments/:id`,
+  route đã có sẵn ở backend nhưng UI chưa từng gọi tới).
+- **.claude/launch.json** (mới, tooling): cấu hình chạy Vite dev server qua Browser tool
+  để test UI thật (không phải app code).
+
+### Reason
+Backend đã yêu cầu JWT cho mọi route ghi từ bước `feat/auth-rbac`, nhưng frontend chưa
+từng gọi `localStorage`/gắn header `Authorization` — mọi thao tác ghi trên UI (Thêm/Sửa/
+Xoá thiết bị, Thêm danh mục, Import HRM) đang bị 401. Bước này đóng vòng lặp auth đầu-cuối.
+
+### Tested (UI thật, không chỉ curl)
+Chạy `npm run dev` (Vite :3000 proxy → Express :5000), thao tác qua Chrome thật:
+đăng nhập sai mật khẩu → hiện lỗi "Mã HRM hoặc mật khẩu không đúng" (không phải JSON
+thô); đăng nhập đúng (role quản lý) → vào Dashboard; thêm 1 thiết bị mới → 201 thành
+công; sửa status thiết bị → 200 + badge "Đã lưu!"; xoá thiết bị → 200, biến mất khỏi
+danh sách; đăng xuất → quay về LoginView, token xoá khỏi localStorage (verify bằng
+`localStorage.getItem`); reload trang không token → bị chặn ngay, không thấy nội dung
+chính; đăng nhập role STAFF → vào được app nhưng thao tác ghi (Thêm Danh Mục) → 403,
+hiện banner lỗi tiếng Việt rõ ràng, không bị đá về LoginView (đúng vì 403 ≠ 401).
+
+### Drift phát hiện (không tự sửa, xem `04_DECISIONS.md` mục 5)
+Dashboard stats (`GET /api/dashboard/stats`) đếm cả thiết bị đã soft-delete vào
+`totalAssets` — phát hiện khi test UI thật, ngoài phạm vi (không sửa `server/*.js`).
+
+---
+
 ## [2026-08-12] - Test tự động cho 3 nhóm route quan trọng (test/core-routes)
 
 ### Changes

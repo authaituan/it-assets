@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Monitor, Printer, QrCode, Wifi, Zap, Camera, Scale, Check } from 'lucide-react';
+import { X, Plus, Monitor, Printer, QrCode, Wifi, Zap, Camera, Scale, Check, AlertCircle } from 'lucide-react';
+import { apiFetchJson } from '../utils/api';
 
 export default function AddEquipmentModal({ onClose, onSuccess }) {
   const [deviceTypes, setDeviceTypes] = useState([]);
@@ -31,6 +32,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
 
 
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     fetch('/api/device-types')
@@ -56,7 +58,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
     }
   }, [selectedCommuneId]);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedDeviceTypeId || !selectedPostOfficeId) {
       alert("Vui lòng chọn Loại thiết bị và Bưu cục!");
@@ -64,6 +66,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
     }
 
     setLoading(true);
+    setError('');
 
     const activeType = deviceTypes.find(dt => dt.id === selectedDeviceTypeId);
     let specs = {};
@@ -74,7 +77,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
       specs = { printType, connection };
     }
 
-    fetch('/api/equipments', {
+    const result = await apiFetchJson('/api/equipments', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -90,17 +93,15 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
         notes,
         specs
       })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setLoading(false);
-        onSuccess();
-        onClose();
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    });
+
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onSuccess();
+    onClose();
   };
 
   const selectedTypeCode = deviceTypes.find(dt => dt.id === selectedDeviceTypeId)?.code;
@@ -119,6 +120,13 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
+
           {/* Device Type Selector */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">

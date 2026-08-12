@@ -1,21 +1,23 @@
 import React, { useState } from 'react';
-import { 
-  UserCheck, 
-  Upload, 
-  CheckCircle2, 
-  AlertCircle, 
-  Sparkles, 
-  ArrowRight, 
-  Users, 
+import {
+  UserCheck,
+  Upload,
+  CheckCircle2,
+  AlertCircle,
+  Sparkles,
+  ArrowRight,
+  Users,
   FileSpreadsheet,
   RefreshCw,
   Cpu
 } from 'lucide-react';
+import { apiFetchJson } from '../utils/api';
 
 export default function HrmMappingView() {
   const [hrmText, setHrmText] = useState('');
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   // Load sample HRM data extracted from Excel for demonstration
   const handleLoadSampleHrm = () => {
@@ -33,7 +35,7 @@ export default function HrmMappingView() {
     setHrmText(JSON.stringify(sampleHrm, null, 2));
   };
 
-  const handleRunAutoMapping = () => {
+  const handleRunAutoMapping = async () => {
     let parsedEmployees = [];
     try {
       if (hrmText) {
@@ -57,20 +59,21 @@ export default function HrmMappingView() {
     }
 
     setLoading(true);
-    fetch('/api/hrm/upload-and-map', {
+    setError('');
+    setResult(null);
+
+    const result = await apiFetchJson('/api/hrm/upload-and-map', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ hrmEmployees: parsedEmployees })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setResult(data);
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        setLoading(false);
-      });
+    });
+
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    setResult(result.data);
   };
 
   return (
@@ -115,6 +118,13 @@ export default function HrmMappingView() {
             placeholder="Dán nội dung JSON HRM hoặc bấm nút [Tải Dữ Liệu Mẫu HRM] phía trên..."
             className="w-full font-mono text-xs glass-input p-4 rounded-xl resize-none"
           />
+
+          {error && (
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{error}</span>
+            </div>
+          )}
 
           <button
             onClick={handleRunAutoMapping}
