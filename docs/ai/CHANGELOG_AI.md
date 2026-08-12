@@ -4,6 +4,26 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Fix Dashboard đếm cả thiết bị đã soft-delete (trên branch feat/frontend-auth)
+
+### Changes
+- **server/index.js**: Thêm `deleted_at IS NULL` vào cả 8 câu query trong route
+  `GET /api/dashboard/stats` (`totalAssets`, `activeAssets`, `allEquipments` dùng cho
+  `lowSpecCount`/`win7Count`, `assetsByCommune`, `assetsByType`, `assetsByBrand`,
+  `missingMac`, `missingIp`).
+
+### Reason
+Verify lại báo cáo `feat/frontend-auth` phát hiện drift #5 (`04_DECISIONS.md`) có phạm
+vi rộng hơn báo cáo ban đầu — không chỉ `totalAssets` mà toàn bộ 8 query trong route.
+Fix gọn, cùng 1 pattern, làm trực tiếp thay vì giao lại Dev AI khác.
+
+### Tested
+Chạy lại 32 test tự động hiện có (vẫn pass, không phá gì). Test thủ công: seed 1 thiết
+bị rồi soft-delete → `GET /api/dashboard/stats` trả `totalAssets: 0` (đúng); xác nhận
+trước khi sửa sẽ ra `totalAssets: 1` (sai, theo đúng mô tả drift).
+
+---
+
 ## [2026-08-12] - Tích hợp Authentication vào Frontend (feat/frontend-auth)
 
 ### Changes
