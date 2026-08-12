@@ -1,26 +1,31 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  X, 
-  Monitor, 
-  MapPin, 
-  User, 
-  Cpu, 
-  History, 
-  Edit3, 
-  Save, 
-  Eye, 
-  CheckCircle2, 
+import {
+  X,
+  Monitor,
+  MapPin,
+  User,
+  Cpu,
+  History,
+  Edit3,
+  Save,
+  Eye,
+  CheckCircle2,
   AlertTriangle,
+  AlertCircle,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Trash2
 } from 'lucide-react';
+import { apiFetchJson } from '../utils/api';
 
-export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) {
+export default function EquipmentDetailModal({ equipment, onClose, onUpdated, onDeleted }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const [actionError, setActionError] = useState('');
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   // Form edit states
   const [hostname, setHostname] = useState('');
@@ -77,10 +82,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) 
 
   if (!equipment) return null;
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
     setSaveLoading(true);
     setSaveSuccess(false);
+    setActionError('');
 
     const updatedSpecs = {
       ...(detail?.specs || {}),
@@ -90,7 +96,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) 
       os
     };
 
-    fetch(`/api/equipments/${eqId}`, {
+    const result = await apiFetchJson(`/api/equipments/${eqId}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -103,33 +109,54 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) 
         notes,
         specs: updatedSpecs
       })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setSaveLoading(false);
-        setSaveSuccess(true);
-        setIsEditing(false);
+    });
 
-        // Update local detail view
-        setDetail(prev => ({
-          ...prev,
-          hostname,
-          ip_address: ipAddress,
-          mac_address: macAddress,
-          serial_number: serialNumber,
-          raw_user_name: rawUserName,
-          status,
-          notes,
-          specs: updatedSpecs
-        }));
+    setSaveLoading(false);
 
-        if (onUpdated) onUpdated();
-        setTimeout(() => setSaveSuccess(false), 3000);
-      })
-      .catch(err => {
-        console.error(err);
-        setSaveLoading(false);
-      });
+    if (!result.ok) {
+      setActionError(result.error);
+      return;
+    }
+
+    setSaveSuccess(true);
+    setIsEditing(false);
+
+    // Update local detail view
+    setDetail(prev => ({
+      ...prev,
+      hostname,
+      ip_address: ipAddress,
+      mac_address: macAddress,
+      serial_number: serialNumber,
+      raw_user_name: rawUserName,
+      status,
+      notes,
+      specs: updatedSpecs
+    }));
+
+    if (onUpdated) onUpdated();
+    setTimeout(() => setSaveSuccess(false), 3000);
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm(`Xác nhận xoá thiết bị "${detail?.hostname || equipment.hostname || equipment.asset_tag}"? Thao tác này có thể khôi phục lại từ lịch sử nếu cần.`)) {
+      return;
+    }
+
+    setDeleteLoading(true);
+    setActionError('');
+
+    const result = await apiFetchJson(`/api/equipments/${eqId}`, { method: 'DELETE' });
+
+    setDeleteLoading(false);
+
+    if (!result.ok) {
+      setActionError(result.error);
+      return;
+    }
+
+    if (onDeleted) onDeleted();
+    onClose();
   };
 
   return (
@@ -169,6 +196,16 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) 
             </button>
 
             <button
+              type="button"
+              onClick={handleDelete}
+              disabled={deleteLoading}
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 disabled:opacity-50"
+            >
+              {deleteLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+              <span>{deleteLoading ? 'Đang Xoá...' : 'Xoá Thiết Bị'}</span>
+            </button>
+
+            <button
               onClick={onClose}
               className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all"
             >
@@ -176,6 +213,14 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated }) 
             </button>
           </div>
         </div>
+
+        {/* Action error banner (401/403/lỗi khác từ save hoặc xoá) */}
+        {actionError && (
+          <div className="mx-5 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+            <span>{actionError}</span>
+          </div>
+        )}
 
         {/* Modal Body */}
         {loading ? (

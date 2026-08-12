@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import Header from './components/Header';
+import LoginView from './components/LoginView';
 import DashboardView from './components/DashboardView';
 import InventoryView from './components/InventoryView';
 import UnitTreeView from './components/UnitTreeView';
@@ -8,6 +9,19 @@ import HrmMappingView from './components/HrmMappingView';
 import EquipmentDetailModal from './components/EquipmentDetailModal';
 import AddEquipmentModal from './components/AddEquipmentModal';
 import AddCategoryModal from './components/AddCategoryModal';
+import { getToken, setToken, clearToken, decodeJwtPayload, isTokenExpired, AUTH_EXPIRED_EVENT } from './utils/api';
+
+// Đọc token đã lưu (nếu có) ngay lúc khởi tạo state, để tránh nháy màn hình
+// nội dung chính rồi mới bị đá về LoginView. Token hết hạn (claim "exp")
+// bị coi như chưa đăng nhập ngay từ đầu, không cần đợi request đầu tiên 401.
+function getInitialAuthUser() {
+  const token = getToken();
+  if (!token || isTokenExpired(token)) {
+    if (token) clearToken();
+    return null;
+  }
+  return decodeJwtPayload(token);
+}
 
 export default function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -17,6 +31,27 @@ export default function App() {
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
   const [theme, setTheme] = useState('cyberpunk');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [authUser, setAuthUser] = useState(getInitialAuthUser);
+
+  // Bất kỳ request ghi nào (qua src/utils/api.js) nhận 401 từ backend sẽ tự
+  // xoá token + phát event này -> quay về LoginView, không để lộ lỗi JSON thô.
+  useEffect(() => {
+    function handleAuthExpired() {
+      setAuthUser(null);
+    }
+    window.addEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handleAuthExpired);
+  }, []);
+
+  const handleLoginSuccess = (token) => {
+    setToken(token);
+    setAuthUser(decodeJwtPayload(token));
+  };
+
+  const handleLogout = () => {
+    clearToken();
+    setAuthUser(null);
+  };
 
   const handleSelectUnitFromTree = (communeId, unitId) => {
     setActiveTab('inventory');
@@ -28,78 +63,87 @@ export default function App() {
 
   return (
     <div className={`theme-${theme} min-h-screen flex font-sans`}>
-      {/* Sidebar */}
-      <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+      {!authUser ? (
+        <LoginView onLoginSuccess={handleLoginSuccess} />
+      ) : (
+        <>
+          {/* Sidebar */}
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
-        <Header 
-          search={search} 
-          setSearch={(val) => {
-            setSearch(val);
-            if (val && activeTab !== 'inventory') {
-              setActiveTab('inventory');
-            }
-          }}
-          onOpenAddModal={() => setIsAddModalOpen(true)}
-          onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
-          onOpenHrmModal={() => setActiveTab('hrm')}
-          theme={theme}
-          setTheme={setTheme}
-        />
-
-        <main className="flex-1">
-          {activeTab === 'dashboard' && (
-            <DashboardView 
-              key={`dash-${refreshKey}`} 
-              onSelectCommune={() => setActiveTab('inventory')} 
-            />
-          )}
-
-          {activeTab === 'inventory' && (
-            <InventoryView
-              key={`inv-${refreshKey}`}
+          {/* Main Content Area */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+            <Header
               search={search}
-              setSearch={setSearch}
-              onSelectEquipment={(eq) => setSelectedEquipment(eq)}
+              setSearch={(val) => {
+                setSearch(val);
+                if (val && activeTab !== 'inventory') {
+                  setActiveTab('inventory');
+                }
+              }}
               onOpenAddModal={() => setIsAddModalOpen(true)}
+              onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
+              onOpenHrmModal={() => setActiveTab('hrm')}
+              theme={theme}
+              setTheme={setTheme}
+              authUser={authUser}
+              onLogout={handleLogout}
+            />
+
+            <main className="flex-1">
+              {activeTab === 'dashboard' && (
+                <DashboardView
+                  key={`dash-${refreshKey}`}
+                  onSelectCommune={() => setActiveTab('inventory')}
+                />
+              )}
+
+              {activeTab === 'inventory' && (
+                <InventoryView
+                  key={`inv-${refreshKey}`}
+                  search={search}
+                  setSearch={setSearch}
+                  onSelectEquipment={(eq) => setSelectedEquipment(eq)}
+                  onOpenAddModal={() => setIsAddModalOpen(true)}
+                />
+              )}
+
+              {activeTab === 'unittree' && (
+                <UnitTreeView
+                  key={`tree-${refreshKey}`}
+                  onSelectUnitFilter={handleSelectUnitFromTree}
+                />
+              )}
+
+              {activeTab === 'hrm' && (
+                <HrmMappingView />
+              )}
+            </main>
+          </div>
+
+          {/* Modals */}
+          {selectedEquipment && (
+            <EquipmentDetailModal
+              equipment={selectedEquipment}
+              onClose={() => setSelectedEquipment(null)}
+              onUpdated={triggerRefresh}
+              onDeleted={triggerRefresh}
             />
           )}
 
-          {activeTab === 'unittree' && (
-            <UnitTreeView 
-              key={`tree-${refreshKey}`} 
-              onSelectUnitFilter={handleSelectUnitFromTree} 
+          {isAddModalOpen && (
+            <AddEquipmentModal
+              onClose={() => setIsAddModalOpen(false)}
+              onSuccess={triggerRefresh}
             />
           )}
 
-          {activeTab === 'hrm' && (
-            <HrmMappingView />
+          {isCategoryModalOpen && (
+            <AddCategoryModal
+              onClose={() => setIsCategoryModalOpen(false)}
+              onSuccess={triggerRefresh}
+            />
           )}
-        </main>
-      </div>
-
-      {/* Modals */}
-      {selectedEquipment && (
-        <EquipmentDetailModal
-          equipment={selectedEquipment}
-          onClose={() => setSelectedEquipment(null)}
-          onUpdated={triggerRefresh}
-        />
-      )}
-
-      {isAddModalOpen && (
-        <AddEquipmentModal
-          onClose={() => setIsAddModalOpen(false)}
-          onSuccess={triggerRefresh}
-        />
-      )}
-
-      {isCategoryModalOpen && (
-        <AddCategoryModal
-          onClose={() => setIsCategoryModalOpen(false)}
-          onSuccess={triggerRefresh}
-        />
+        </>
       )}
     </div>
   );

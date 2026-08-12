@@ -60,6 +60,29 @@
 - Chạy trên DB SQLite tạm riêng (`os.tmpdir()`), tự seed + tự dọn sau khi chạy, không
   đụng `data/ccdc.db` thật (đã verify bằng hash MD5 trước/sau).
 
+## Frontend Auth (mới, `feat/frontend-auth`)
+- `src/components/LoginView.jsx`: form đăng nhập (hrm_code + password), gọi
+  `POST /api/auth/login`, không qua `src/utils/api.js` (route công khai).
+- `src/App.jsx`: đọc token đã lưu lúc khởi tạo (`getInitialAuthUser`), hiện LoginView
+  thay vì Sidebar/Header/main content nếu chưa có token hợp lệ hoặc token đã hết hạn
+  (kiểm tra claim `exp` phía client trước, không cần đợi request 401). Lắng nghe event
+  `AUTH_EXPIRED_EVENT` để tự quay về LoginView khi có request ghi bị 401.
+- `src/components/Header.jsx`: nút "Đăng Xuất" cạnh công tắc đổi theme; hiện tên/role
+  thật từ token thay vì text tĩnh "Quản Trị IT".
+- `src/utils/api.js` (helper mới): `apiFetch`/`apiFetchJson` tự gắn header
+  `Authorization: Bearer <token>` cho request ghi; tự xoá token + phát event khi 401;
+  gắn message tiếng Việt rõ ràng cho 403 (STAFF không đủ quyền) thay vì lỗi JSON thô.
+  CHỈ lưu token vào `localStorage`, không lưu password; thông tin tên/role hiển thị suy
+  ra trực tiếp từ payload JWT (giải mã base64 phía client để hiển thị, không xác thực).
+- 4 chỗ gọi fetch ghi đã chuyển qua `apiFetchJson`: `AddCategoryModal.jsx`,
+  `HrmMappingView.jsx`, `AddEquipmentModal.jsx`, `EquipmentDetailModal.jsx` (PUT + nút
+  Xoá thiết bị mới, gọi `DELETE /api/equipments/:id`).
+- Đã test qua UI thật (Vite dev server + Chrome), không chỉ curl: đăng nhập sai mật
+  khẩu → lỗi rõ ràng; đăng nhập đúng → vào được app; thêm/sửa/xoá thiết bị → thành công
+  (không còn 401); đăng xuất → quay về LoginView, token bị xoá khỏi localStorage; reload
+  không token → bị chặn ngay, không thấy nội dung; STAFF thao tác ghi → 403 với message
+  "Không đủ quyền..." hiển thị rõ ràng, không văng lỗi JSON thô.
+
 ## Chưa có / rủi ro
 - ✅ ~~Phân quyền chi tiết chưa chốt~~ — PO đã chốt giữ mô hình nhị phân (STAFF đọc / khác
   STAFF ghi), xem `04_DECISIONS.md`.
@@ -69,7 +92,8 @@
 - ⚠️ **Chưa có cơ chế cấp/đổi mật khẩu qua UI**: `password_hash` phải set thủ công (script) — chưa có route quản trị user.
 - ⚠️ **JWT_SECRET mặc định cho DEV**: cần set biến môi trường `JWT_SECRET` ở production.
 - ⚠️ Chưa có refresh token / logout / rate-limit đăng nhập.
-- ⚠️ Frontend chưa tích hợp luồng đăng nhập & gắn token vào request ghi.
+- ✅ ~~Frontend chưa tích hợp luồng đăng nhập & gắn token vào request ghi~~ — đã có, xem
+  mục "Frontend Auth" ở trên.
 - ✅ ~~Chưa có test tự động~~ — đã có 32 test case (`node:test`), xem mục trên.
 - ⚠️ Import HRM cả đợt chạy trong 1 transaction: lỗi 1 dòng cuối → rollback toàn bộ, phải
   chạy lại từ đầu (đánh đổi có chủ đích, PO đã được thông báo).

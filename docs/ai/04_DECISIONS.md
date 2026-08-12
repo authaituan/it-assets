@@ -49,6 +49,21 @@ xung đột logic. PO cần push bản gộp này thay vì merge riêng từng n
 
 ---
 
+### 5. Dashboard stats đếm cả thiết bị đã soft-delete
+**Vấn đề**: `GET /api/dashboard/stats` (server/index.js, mục 1. DASHBOARD & STATS API)
+tính `totalAssets` bằng `SELECT COUNT(*) FROM equipments` — KHÔNG có điều kiện
+`deleted_at IS NULL`, trong khi `GET /api/equipments` và `GET /api/equipments/:id` đều
+đã lọc đúng. Phát hiện khi test UI thật (`feat/frontend-auth`): thêm 1 thiết bị rồi xoá
+(soft-delete) ngay sau đó — tổng "TỔNG THIẾT BỊ CCDC" trên Dashboard vẫn tăng thêm 1 và
+không giảm lại, trong khi danh sách Quản Lý CCDC đã đúng (không còn thấy thiết bị đó).
+
+**Trạng thái**: ⏳ Chưa xử lý — ngoài phạm vi công việc `feat/frontend-auth` (chỉ sửa
+`src/`, không sửa `server/*.js`). Ghi nhận theo đúng quy tắc README_AI.md mục 6, chờ PO
+duyệt hướng xử lý (thêm `WHERE deleted_at IS NULL` vào câu SQL `totalAssets`, và có thể
+cả `activeAssets`/các subquery khác trong cùng route dùng bảng `equipments`).
+
+---
+
 ## Quyết định nghiệp vụ đã chốt
 - **2026-08-12 | QUYẾT ĐỊNH | PO (Tân), ghi nhận bởi Claude** — Giữ mô hình phân quyền
   nhị phân: `STAFF` = chỉ đọc, mọi role khác (`ADMIN`/`MANAGER`...) = quyền ghi đầy đủ,

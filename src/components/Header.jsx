@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { Search, UserCheck, FolderPlus, Palette, Check } from 'lucide-react';
+import { Search, UserCheck, FolderPlus, Palette, Check, LogOut } from 'lucide-react';
 
-export default function Header({ 
-  search, 
-  setSearch, 
+export default function Header({
+  search,
+  setSearch,
   onOpenCategoryModal,
   onOpenHrmModal,
   theme,
-  setTheme
+  setTheme,
+  authUser,
+  onLogout
 }) {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
 
@@ -80,6 +82,16 @@ export default function Header({
           )}
         </div>
 
+        {/* Nút Đăng Xuất — đặt cạnh công tắc đổi theme */}
+        <button
+          onClick={onLogout}
+          title="Đăng xuất"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-700 hover:border-rose-500/50 hover:text-rose-300 transition-all shadow-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          <span>Đăng Xuất</span>
+        </button>
+
         <button
           onClick={onOpenHrmModal}
           className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium text-purple-300 bg-purple-500/10 border border-purple-500/30 hover:bg-purple-500/20 transition-all shadow-sm"
@@ -105,8 +117,8 @@ export default function Header({
             IT
           </div>
           <div className="hidden md:block text-left">
-            <div className="text-xs font-semibold text-slate-200 leading-tight">Quản Trị IT</div>
-            <div className="text-[10px] text-cyan-400 font-medium">BĐTP Huế (Mã 53)</div>
+            <div className="text-xs font-semibold text-slate-200 leading-tight">{authUser?.full_name || authUser?.hrm_code || 'Người dùng'}</div>
+            <div className="text-[10px] text-cyan-400 font-medium">{authUser?.role === 'STAFF' ? 'Nhân viên (chỉ xem)' : 'Quản lý'} · BĐTP Huế (Mã 53)</div>
           </div>
         </div>
       </div>

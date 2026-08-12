@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Layers, Plus, Monitor, Printer, QrCode, Wifi, Zap, Camera, Scale, FolderPlus } from 'lucide-react';
+import { apiFetchJson } from '../utils/api';
 
 export default function AddCategoryModal({ onClose, onSuccess }) {
   const [name, setName] = useState('');
@@ -19,7 +20,7 @@ export default function AddCategoryModal({ onClose, onSuccess }) {
     { id: 'layers', label: 'Khác', icon: Layers },
   ];
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
       setError('Vui lòng nhập tên danh mục lớn');
@@ -29,25 +30,19 @@ export default function AddCategoryModal({ onClose, onSuccess }) {
     setLoading(true);
     setError('');
 
-    fetch('/api/device-types', {
+    const result = await apiFetchJson('/api/device-types', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name: name.trim(), icon, description })
-    })
-      .then(res => res.json())
-      .then(data => {
-        setLoading(false);
-        if (data.error) {
-          setError(data.error);
-        } else {
-          onSuccess();
-          onClose();
-        }
-      })
-      .catch(err => {
-        setLoading(false);
-        setError(err.message);
-      });
+    });
+
+    setLoading(false);
+    if (!result.ok) {
+      setError(result.error);
+      return;
+    }
+    onSuccess();
+    onClose();
   };
 
   return (
