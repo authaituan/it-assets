@@ -4,32 +4,35 @@
 > (có phụ thuộc), không chỉ theo ưu tiên — vì nhiều mục cùng chạm `server/index.js`,
 > làm sai thứ tự sẽ phải sửa lại 2 lần. Mỗi bước = 1 branch riêng, merge xong mới sang bước sau.
 
-## Chuỗi xử lý Risk & Drift (chốt ngày 2026-08-12)
+## ✅ VÒNG 1 — HOÀN TẤT (2026-08-12, main = `fe8aa3e`)
 
-| # | Việc | Branch | Dev AI phụ trách | Phụ thuộc | Trạng thái |
-|---|---|---|---|---|---|
-| 1 | Sửa 2 drift (README Prisma, `package.json` seed script) | `fix/docs-drift` | Claude Code — Haiku 4.5 | — | [x] Đã merge vào main |
-| 2 | Auth cơ bản + RBAC theo cột `role` có sẵn | `feat/auth-rbac` | Claude Code — Opus 4.8 | #1 | [x] Đã merge vào main (commit `9e5a94f`) |
-| 3+4 | Soft-delete + transaction, gộp với validate input (2 bước bị chạy chồng lấn ngoài dự kiến, xem `04_DECISIONS.md` mục 4) | `combined-fix` (thay cho 2 nhánh cũ) | Claude (Sonnet 5, làm trực tiếp) | #2 | [x] Code + test xong (10 kịch bản), **chờ PO push nhánh này lên GitHub rồi merge** |
-| 5 | Test cho route lõi (equipments, auth, hrm) | `test/core-routes` | Claude Code — Sonnet 5 | #2, #3+4 (chờ merge) | [ ] Chưa giao |
+| # | Việc | PR | Dev AI phụ trách | Trạng thái |
+|---|---|---|---|---|
+| 1 | Sửa 2 drift (README Prisma, `package.json` seed script) | — | Claude Code — Haiku 4.5 | [x] Merged |
+| 2 | Auth cơ bản + RBAC (STAFF đọc / khác STAFF ghi) | — | Claude Code — Opus 4.8 | [x] Merged |
+| 3+4 | Soft-delete + transaction + validate input (gộp, xem `04_DECISIONS.md` mục 4) | #1 | Claude (Sonnet 5) | [x] Merged |
+| 5 | 32 test tự động (`node:test`) | #2 | Claude Code — Sonnet 5 | [x] Merged |
+| 6 | Frontend tích hợp đăng nhập + gắn token | #3 | Claude Code — Sonnet 5 | [x] Merged |
+| 7 | Fix Dashboard đếm nhầm thiết bị đã xoá (phát sinh khi verify #6) | #4 | Claude (Sonnet 5) | [x] Merged |
 
-Prompt đầy đủ cho từng bước: xem báo cáo CTO AI ngày 2026-08-12 trong lịch sử trao đổi,
-hoặc điền lại theo khung ở `prompts/`.
+Toàn bộ đã verify bằng `git fetch` + đọc code thật trên `main`, không dựa vào báo cáo.
 
-## ✅ Đã chốt
-- Mô hình phân quyền: giữ đơn giản STAFF (đọc) vs quản lý (ghi) — xem `04_DECISIONS.md`.
-- Bước 3 & 4 gộp lại thành `combined-fix` do bị làm chồng lấn thứ tự — không dùng lại
-  2 nhánh `feat/soft-delete-transactions` / `feat/input-validation` cũ nữa.
+## 🔵 VÒNG 2 — Đề xuất (chưa giao, PO chọn thứ tự ưu tiên)
 
-## 🟢 Ưu tiên thấp / tương lai khi dự án lớn hơn
-- [ ] Thêm CI (lint + test) qua GitHub Actions.
-- [ ] Tách `server/index.js` (598 dòng) thành route files riêng khi số route tăng thêm.
-- [ ] Cân nhắc thêm router phía frontend nếu số lượng tab/trang tăng lên.
+| Việc | Mức độ | Ghi chú |
+|---|---|---|
+| Route quản trị user (tạo/đổi mật khẩu qua UI) | Nên làm sớm | Hiện phải chạy script tay, không có UI |
+| Set `JWT_SECRET` thật qua biến môi trường ở production | Nên làm trước khi lên production | Đang dùng secret mặc định DEV |
+| Refresh token / logout / rate-limit đăng nhập | Có thể để sau | Không ảnh hưởng vận hành hàng ngày |
+| CI (tự động chạy `npm test` qua GitHub Actions) | Có thể để sau | Hiện phải tự gõ `npm test` |
+| Tách `server/index.js` thành route files riêng | Khi file quá dài | Hiện ~730 dòng, còn quản lý được |
 
 ## ✅ Đã hoàn thành (tick khi CTO AI xác nhận có evidence)
-- [x] CRUD Create/Read/Update cho Equipment.
-- [x] Dashboard thống kê + cảnh báo.
+- [x] CRUD Create/Read/Update/Delete (soft) cho Equipment.
+- [x] Dashboard thống kê + cảnh báo (đã fix đếm đúng thiết bị chưa xoá).
 - [x] Cây tổ chức 3 cấp + bộ lọc cascading.
 - [x] Auto-mapping HRM theo tên chuẩn hoá.
 - [x] 4 theme giao diện.
 - [x] Bộ tài liệu AI (`docs/ai/`) — khởi tạo 2026-08-12.
+- [x] Auth + RBAC (backend + frontend đầy đủ).
+- [x] 32 test tự động.

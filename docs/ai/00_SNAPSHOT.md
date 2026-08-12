@@ -1,8 +1,8 @@
 # 00 — SNAPSHOT Dự Án (it-assets / Quản lý CCDC Bưu điện Huế)
 
-> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** (gộp bước
-> `feat/soft-delete-transactions` + `feat/input-validation`, đã test end-to-end, đang
-> chờ PO push lên nhánh mới và merge vào `main`).
+> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** — **Vòng 1
+> hoàn tất**, đã merge vào `main` (commit `fe8aa3e`), verify bằng `git fetch` trực tiếp
+> (không dựa vào báo cáo suông) cho từng bước.
 > Nội dung được dựng từ code thực tế (`server/`, `package.json`, `scripts/`), không suy đoán.
 
 ## Tổng quan
@@ -83,17 +83,22 @@
   không token → bị chặn ngay, không thấy nội dung; STAFF thao tác ghi → 403 với message
   "Không đủ quyền..." hiển thị rõ ràng, không văng lỗi JSON thô.
 
-## Chưa có / rủi ro
-- ✅ ~~Phân quyền chi tiết chưa chốt~~ — PO đã chốt giữ mô hình nhị phân (STAFF đọc / khác
-  STAFF ghi), xem `04_DECISIONS.md`.
-- ✅ ~~Chưa có DELETE/soft-delete~~ — đã có, xem mục trên.
-- ✅ ~~Chưa bọc transaction~~ — đã có, xem mục trên.
-- ✅ ~~Chưa validate input backend~~ — đã có, xem mục trên.
+## Dashboard (`GET /api/dashboard/stats`)
+- Đã fix drift: toàn bộ 9 chỗ đếm/lọc thiết bị trong route này giờ có `deleted_at IS
+  NULL` (trước đó chỉ 4/9 route khác đã lọc đúng, riêng route Dashboard sót hoàn toàn).
+  Verify bằng test thủ công (seed 1 thiết bị + soft-delete → `totalAssets` giảm đúng)
+  và xác nhận trên dữ liệu thật qua UI (352 thay vì 353 sau khi xoá 1 thiết bị test).
+
+## Chưa có / rủi ro (còn lại sau Vòng 1 — không khẩn cấp, nên xử lý trước production)
 - ⚠️ **Chưa có cơ chế cấp/đổi mật khẩu qua UI**: `password_hash` phải set thủ công (script) — chưa có route quản trị user.
 - ⚠️ **JWT_SECRET mặc định cho DEV**: cần set biến môi trường `JWT_SECRET` ở production.
 - ⚠️ Chưa có refresh token / logout / rate-limit đăng nhập.
-- ✅ ~~Frontend chưa tích hợp luồng đăng nhập & gắn token vào request ghi~~ — đã có, xem
-  mục "Frontend Auth" ở trên.
-- ✅ ~~Chưa có test tự động~~ — đã có 32 test case (`node:test`), xem mục trên.
 - ⚠️ Import HRM cả đợt chạy trong 1 transaction: lỗi 1 dòng cuối → rollback toàn bộ, phải
   chạy lại từ đầu (đánh đổi có chủ đích, PO đã được thông báo).
+- ⚠️ Chưa có CI (test tự động chưa chạy tự động trên GitHub, phải tự gõ `npm test`).
+
+## ✅ Vòng 1 — đã xử lý xong toàn bộ (5/5 hạng mục risk/drift ban đầu)
+Chi tiết từng hạng mục xem các mục phía trên. Tổng kết: 2 drift tài liệu, Auth + RBAC,
+Soft-delete + Transaction, Input Validation, 32 test tự động, Frontend tích hợp đăng
+nhập, và 1 fix phát sinh (Dashboard đếm nhầm thiết bị đã xoá) — tất cả đã merge vào
+`main`, verify bằng `git fetch` + đọc code thật cho từng bước, không dựa vào báo cáo.
