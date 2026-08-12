@@ -6,6 +6,7 @@ import DashboardView from './components/DashboardView';
 import InventoryView from './components/InventoryView';
 import UnitTreeView from './components/UnitTreeView';
 import HrmMappingView from './components/HrmMappingView';
+import UserAdminView from './components/UserAdminView';
 import EquipmentDetailModal from './components/EquipmentDetailModal';
 import AddEquipmentModal from './components/AddEquipmentModal';
 import AddCategoryModal from './components/AddCategoryModal';
@@ -51,6 +52,10 @@ export default function App() {
   const handleLogout = () => {
     clearToken();
     setAuthUser(null);
+    // Reset về dashboard: tránh trường hợp đăng nhập lại bằng user khác
+    // (vd STAFF) trong khi đang ở tab "Quản Lý Người Dùng" -> màn hình
+    // trắng vì tab đó bị ẩn theo role nhưng activeTab vẫn giữ giá trị cũ.
+    setActiveTab('dashboard');
   };
 
   const handleSelectUnitFromTree = (communeId, unitId) => {
@@ -68,7 +73,7 @@ export default function App() {
       ) : (
         <>
           {/* Sidebar */}
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
+          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} authUser={authUser} />
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -116,6 +121,10 @@ export default function App() {
 
               {activeTab === 'hrm' && (
                 <HrmMappingView />
+              )}
+
+              {activeTab === 'useradmin' && authUser?.role !== 'STAFF' && (
+                <UserAdminView authUser={authUser} />
               )}
             </main>
           </div>

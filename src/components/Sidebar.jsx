@@ -1,22 +1,28 @@
 import React from 'react';
-import { 
-  LayoutDashboard, 
-  Monitor, 
-  Network, 
-  Users, 
-  FileSpreadsheet, 
-  ShieldCheck, 
+import {
+  LayoutDashboard,
+  Monitor,
+  Network,
+  Users,
+  FileSpreadsheet,
+  ShieldCheck,
   Cpu,
-  Layers
+  Layers,
+  UserCog
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab }) {
+export default function Sidebar({ activeTab, setActiveTab, authUser }) {
   const navItems = [
     { id: 'dashboard', label: 'Tổng Quan KPI', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản Lý CCDC', icon: Monitor },
     { id: 'unittree', label: 'Sơ Đồ BĐX & Bưu Cục', icon: Network },
     { id: 'hrm', label: 'Tích Hợp HRM Nhân Sự', icon: Users },
   ];
+
+  // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Người Dùng.
+  if (authUser?.role !== 'STAFF') {
+    navItems.push({ id: 'useradmin', label: 'Quản Lý Người Dùng', icon: UserCog });
+  }
 
   return (
     <aside className="w-64 bg-slate-900/80 border-r border-slate-800 flex flex-col justify-between h-screen sticky top-0 backdrop-blur-xl z-20">

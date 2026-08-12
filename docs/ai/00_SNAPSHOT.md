@@ -89,8 +89,34 @@
   Verify bằng test thủ công (seed 1 thiết bị + soft-delete → `totalAssets` giảm đúng)
   và xác nhận trên dữ liệu thật qua UI (352 thay vì 353 sau khi xoá 1 thiết bị test).
 
+## User Administration (mới, `feat/user-admin`)
+- `GET /api/users` — **ghi-cấp, cần token + role quản lý** (khác các route đọc khác vốn
+  để mở): danh sách user, SELECT tường minh từng cột nên KHÔNG bao giờ trả `password_hash`.
+- `POST /api/users` — cần token + role quản lý: tạo user (`hrm_code` bắt buộc + unique,
+  `full_name` bắt buộc, `role` mặc định `STAFF`, `password` >= 6 ký tự, hash bằng
+  `hashPassword()` có sẵn trong `server/auth.js` trước khi lưu).
+- `PUT /api/users/:id` — cần token + role quản lý: sửa `full_name`/`role`. Chặn tự đổi
+  `role` của chính mình (so `req.user.id` với `:id`) → 400, tránh tự khoá quyền quản lý.
+- `PUT /api/users/:id/reset-password` — cần token + role quản lý: reset mật khẩu cho
+  user khác, không cần biết mật khẩu cũ.
+- `PUT /api/users/me/password` — **chỉ cần token** (KHÔNG cần role quản lý, mọi user kể
+  cả STAFF tự đổi được mật khẩu của mình): yêu cầu `currentPassword` đúng (verify bằng
+  `verifyPassword()`) mới cho đổi `newPassword`.
+- Frontend: `src/components/UserAdminView.jsx` (mới, view "Quản Lý Người Dùng" — chỉ
+  hiện trong Sidebar khi `authUser.role !== 'STAFF'`), `AddUserModal.jsx`,
+  `ResetUserPasswordModal.jsx` (dùng bởi quản lý), `ChangePasswordModal.jsx` (tự đổi mật
+  khẩu, mở từ nút cạnh "Đăng Xuất" trong Header — cho MỌI user đã đăng nhập).
+- Bug CSS phát hiện + đã sửa khi test UI thật: `ChangePasswordModal` ban đầu bị "kẹt" ở
+  góc trên màn hình vì render lồng trong `<header>` có `backdrop-blur-xl` (CSS
+  `backdrop-filter` tạo containing block mới cho `position: fixed`) — sửa bằng
+  `ReactDOM.createPortal` render thẳng vào `document.body`.
+- Đã test qua UI thật: quản lý tạo user STAFF mới → đăng nhập user đó → không thấy mục
+  Quản Lý Người Dùng → tự đổi mật khẩu (sai mật khẩu hiện tại → lỗi rõ ràng; đúng → đổi
+  thành công) → đăng xuất → đăng nhập lại bằng mật khẩu MỚI xác nhận có tác dụng → quản
+  lý reset mật khẩu + sửa role cho user đó → xoá user test khỏi DB thật sau khi xong.
+
 ## Chưa có / rủi ro (còn lại sau Vòng 1 — không khẩn cấp, nên xử lý trước production)
-- ⚠️ **Chưa có cơ chế cấp/đổi mật khẩu qua UI**: `password_hash` phải set thủ công (script) — chưa có route quản trị user.
+- ✅ ~~Chưa có cơ chế cấp/đổi mật khẩu qua UI~~ — đã có, xem mục "User Administration" ở trên.
 - ⚠️ **JWT_SECRET mặc định cho DEV**: cần set biến môi trường `JWT_SECRET` ở production.
 - ⚠️ Chưa có refresh token / logout / rate-limit đăng nhập.
 - ⚠️ Import HRM cả đợt chạy trong 1 transaction: lỗi 1 dòng cuối → rollback toàn bộ, phải
