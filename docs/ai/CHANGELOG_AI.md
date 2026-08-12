@@ -4,6 +4,36 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Vòng 2: dọn tooling, thêm test user-admin, rate-limit đăng nhập, hướng dẫn deploy
+
+### Changes
+- **`.claude/launch.json`**: xoá (lọt nhầm vào repo từ PR `feat/frontend-auth`, xem
+  `04_DECISIONS.md` mục 6), thêm `.claude/` vào `.gitignore`.
+- **`tests/users.test.js`** (mới): 15 test cho 5 route User Administration — bao phủ
+  RBAC (STAFF bị 403), validate (thiếu field, password ngắn, trùng hrm_code), self-lock
+  prevention (400 khi tự đổi role mình), và verify mật khẩu thật sự đổi được (login lại
+  bằng mật khẩu cũ → 401, mật khẩu mới → 200).
+- **`server/index.js`**: thêm rate-limit cho `POST /api/auth/login` — tối đa 5 lần sai
+  trong 15 phút theo cặp (IP + hrm_code), lần thứ 6 trả `429` + header `Retry-After`
+  (xem `04_DECISIONS.md` mục 7 để biết lý do thiết kế).
+- **`tests/auth.test.js`**: thêm 2 test cho rate-limit (bị chặn ở lần 6; không ảnh hưởng
+  tài khoản khác).
+- **`docs/ai/06_DEPLOYMENT.md`** (mới): hướng dẫn set `JWT_SECRET` thật khi deploy
+  production + checklist trước khi deploy.
+- **`package.json`**: cập nhật script `test` để chạy thêm `tests/users.test.js`.
+
+### Reason
+Xử lý 2 việc còn lại trong backlog Vòng 2 (rate-limit, hướng dẫn JWT_SECRET) + 2 việc
+phát sinh khi audit lại toàn bộ repo (file tooling lọt vào git, route user-admin thiếu
+test tự động dù là route nhạy cảm nhất về bảo mật).
+
+### Tested
+Chạy lại toàn bộ test: **49/49 pass** (32 cũ + 15 user-admin + 2 rate-limit). Test rate-
+limit thêm bằng `curl` trực tiếp vào server thật: 5 lần sai → 401, lần 6 (kể cả gửi
+đúng mật khẩu) → `429` kèm `Retry-After: 900`.
+
+---
+
 ## [2026-08-12] - Quản trị người dùng: tạo/sửa role/reset mật khẩu + tự đổi mật khẩu (feat/user-admin)
 
 ### Changes

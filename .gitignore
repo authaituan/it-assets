@@ -22,3 +22,6 @@ npm-debug.log*
 .idea/
 .DS_Store
 Thumbs.db
+
+# Editor/IDE tooling configs (không thuộc mã nguồn ứng dụng)
+.claude/

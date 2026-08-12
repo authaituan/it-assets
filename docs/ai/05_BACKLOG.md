@@ -17,15 +17,27 @@
 
 Toàn bộ đã verify bằng `git fetch` + đọc code thật trên `main`, không dựa vào báo cáo.
 
-## 🔵 VÒNG 2 — Đề xuất (chưa giao, PO chọn thứ tự ưu tiên)
+## ✅ VÒNG 2 — Gần hoàn tất (2026-08-12)
+
+| Việc | Trạng thái | Ghi chú |
+|---|---|---|
+| Route quản trị user (tạo/đổi mật khẩu qua UI) | [x] Merged (PR #5) | 5 route + UI đầy đủ, 15 test tự động |
+| Rate-limit đăng nhập (chống brute-force) | [x] Code xong, **chờ PO push + merge** | 5 lần sai/15 phút theo (IP+hrm_code), verify bằng test + curl thật |
+| Set `JWT_SECRET` thật khi deploy production | [x] Hướng dẫn xong (`06_DEPLOYMENT.md`) | Thao tác vận hành, PO tự làm khi deploy thật, không phải code |
+| Dọn `.claude/launch.json` lọt vào repo | [x] Code xong, **chờ PO push + merge** | Phát hiện khi audit lại toàn bộ repo |
+| Test tự động cho route user-admin | [x] Code xong, **chờ PO push + merge** | `tests/users.test.js`, 15 test — tổng còn 49 test |
+| Refresh token / logout phía server | [ ] Chưa giao | Còn lại duy nhất của Vòng 2, xem mục dưới |
+
+**4 việc trên (rate-limit, dọn file, test mới, 06_DEPLOYMENT.md) đã code + test xong
+trong sandbox Claude, đóng gói sẵn để PO áp vào máy — xem hướng dẫn ở tin nhắn kèm theo.**
+
+## 🔵 VÒNG 3 — Đề xuất (chưa giao)
 
 | Việc | Mức độ | Ghi chú |
 |---|---|---|
-| Route quản trị user (tạo/đổi mật khẩu qua UI) | Nên làm sớm | Hiện phải chạy script tay, không có UI |
-| Set `JWT_SECRET` thật qua biến môi trường ở production | Nên làm trước khi lên production | Đang dùng secret mặc định DEV |
-| Refresh token / logout / rate-limit đăng nhập | Có thể để sau | Không ảnh hưởng vận hành hàng ngày |
+| Refresh token / logout phía server | Có thể để sau | Hiện token hết hạn phải đăng nhập lại thủ công, chưa có cơ chế tự làm mới |
 | CI (tự động chạy `npm test` qua GitHub Actions) | Có thể để sau | Hiện phải tự gõ `npm test` |
-| Tách `server/index.js` thành route files riêng | Khi file quá dài | Hiện ~730 dòng, còn quản lý được |
+| Tách `server/index.js` thành route files riêng | Khi file quá dài | Hiện ~950 dòng (tăng dần), cân nhắc khi thêm module mới |
 
 ## ✅ Đã hoàn thành (tick khi CTO AI xác nhận có evidence)
 - [x] CRUD Create/Read/Update/Delete (soft) cho Equipment.
@@ -35,4 +47,5 @@ Toàn bộ đã verify bằng `git fetch` + đọc code thật trên `main`, kh�
 - [x] 4 theme giao diện.
 - [x] Bộ tài liệu AI (`docs/ai/`) — khởi tạo 2026-08-12.
 - [x] Auth + RBAC (backend + frontend đầy đủ).
-- [x] 32 test tự động.
+- [x] User Administration (tạo/sửa/xoá quyền, đổi mật khẩu) + rate-limit đăng nhập.
+- [x] 49 test tự động.

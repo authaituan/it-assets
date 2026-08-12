@@ -164,3 +164,25 @@ test('có token role quản lý -> PUT equipments status hợp lệ 200 (thành 
   });
   assert.equal(putRes.status, 200);
 });
+
+test('rate-limit đăng nhập: 5 lần sai liên tiếp -> lần thứ 6 bị 429, dù mật khẩu đúng', async () => {
+  const rlHrm = 'RATE_LIMIT_TEST';
+  // Không cần seed user thật — 401 (sai) vẫn tính vào bộ đếm rate-limit
+  // như đã cài trong server/index.js (recordFailedLogin chạy trước khi
+  // biết tài khoản có tồn tại hay không).
+  for (let i = 0; i < 5; i++) {
+    const { status } = await login(rlHrm, 'sai-mat-khau');
+    assert.equal(status, 401, `lần thử thứ ${i + 1} phải là 401 (chưa bị khoá)`);
+  }
+  // Lần thứ 6: kể cả gửi đúng thông tin (giả định) cũng phải bị chặn bởi rate-limit trước khi verify.
+  const { status, body } = await login(rlHrm, 'sai-mat-khau');
+  assert.equal(status, 429, 'lần thứ 6 trong 15 phút phải bị chặn rate-limit (429)');
+  assert.ok(body.error);
+});
+
+test('rate-limit đăng nhập: không ảnh hưởng tài khoản KHÁC (chỉ khoá theo hrm_code cụ thể)', async () => {
+  // Tài khoản quản lý (MGR_HRM) vẫn đăng nhập bình thường dù RATE_LIMIT_TEST
+  // (hrm_code khác) vừa bị khoá ở test phía trên.
+  const { status } = await login(MGR_HRM, MGR_PASS);
+  assert.equal(status, 200);
+});

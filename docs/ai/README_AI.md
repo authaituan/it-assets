@@ -15,6 +15,7 @@
 | [CHANGELOG_AI.md](CHANGELOG_AI.md) | Nhật ký 1 dòng/phiên, append-only | Dev AI (chỉ thêm dòng) |
 | [prompts/antigravity_prompt_template.md](prompts/antigravity_prompt_template.md) | Khung prompt tái dùng cho Antigravity | **Chỉ PO** |
 | [prompts/claude_code_prompt_template.md](prompts/claude_code_prompt_template.md) | Khung prompt tái dùng cho Claude Code | **Chỉ PO** |
+| [06_DEPLOYMENT.md](06_DEPLOYMENT.md) | Hướng dẫn deploy production (JWT_SECRET, checklist) | **Chỉ PO** (thao tác vận hành, không phải code) |
 
 ## ⚠️ Quy tắc bắt buộc — đọc trước khi sửa bất kỳ file nào trong `docs/ai/`
 1. **KHÔNG viết đè toàn bộ file** dưới danh nghĩa "cập nhật". Chỉ thêm/sửa đúng phần

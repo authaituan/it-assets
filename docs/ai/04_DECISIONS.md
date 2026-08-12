@@ -66,6 +66,34 @@ soft-delete → `totalAssets` = 0 (đúng), trước khi sửa sẽ ra 1 (sai).
 
 ---
 
+---
+
+### 6. File tooling `.claude/launch.json` lọt nhầm vào repo
+**Vấn đề**: Commit `d574dde` (PR `feat/frontend-auth`) vô tình commit file cấu hình IDE
+`.claude/launch.json` (dùng để chạy Vite dev server qua Antigravity lúc test UI). Báo
+cáo lúc đó ghi "đã dọn file tạm" nhưng thực tế file vẫn còn trên `main` — không ai phát
+hiện ra cho tới lần audit lại toàn bộ repo ở Vòng 2.
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-12 (Claude sửa trực tiếp) — xoá file, thêm `.claude/`
+vào `.gitignore` để không lặp lại. Không ảnh hưởng gì tới ứng dụng (chỉ là config IDE).
+
+---
+
+### 7. Rate-limit đăng nhập
+**Quyết định**: Thêm rate-limit chống brute-force cho `POST /api/auth/login`: tối đa 5
+lần sai trong 15 phút, tính theo cặp (IP + mã HRM) — không tính theo IP đơn thuần để
+tránh khoá oan nhiều người dùng chung mạng NAT/wifi công ty khi họ đăng nhập các tài
+khoản khác nhau. Lưu trạng thái trong bộ nhớ tiến trình (`Map`), không dùng DB/Redis —
+đơn giản, đủ cho quy mô 1 instance server hiện tại; sẽ mất khi restart (chấp nhận được).
+
+**Trạng thái**: ✅ Đã triển khai 2026-08-12 (Claude sửa trực tiếp trên `server/index.js`).
+Verify: 2 test tự động mới (`tests/auth.test.js`) + gọi API thật qua `curl` xác nhận lần
+thứ 6 trả `429` kèm header `Retry-After: 900`, kể cả khi gửi đúng mật khẩu.
+
+**Lưu ý cho tương lai**: nếu sau này scale ra nhiều instance server (load balancer), Map
+trong bộ nhớ sẽ không đồng bộ giữa các instance — cần chuyển sang Redis hoặc tương tự
+lúc đó. Chưa cần xử lý ở quy mô hiện tại.
+
 ## Quyết định nghiệp vụ đã chốt
 - **2026-08-12 | QUYẾT ĐỊNH | PO (Tân), ghi nhận bởi Claude** — Giữ mô hình phân quyền
   nhị phân: `STAFF` = chỉ đọc, mọi role khác (`ADMIN`/`MANAGER`...) = quyền ghi đầy đủ,
