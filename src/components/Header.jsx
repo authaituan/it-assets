@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Search, UserCheck, FolderPlus, Palette, Check, LogOut } from 'lucide-react';
+import { Search, UserCheck, FolderPlus, Palette, Check, LogOut, Lock } from 'lucide-react';
+import ChangePasswordModal from './ChangePasswordModal';
 
 export default function Header({
   search,
@@ -12,6 +13,7 @@ export default function Header({
   onLogout
 }) {
   const [isThemeOpen, setIsThemeOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   const themes = [
     { id: 'cyberpunk', name: 'Cyberpunk Neon', desc: 'Thủy tinh Kính Dark Cyan', badgeBg: 'bg-cyan-500' },
@@ -82,6 +84,16 @@ export default function Header({
           )}
         </div>
 
+        {/* Nút Đổi Mật Khẩu — cho MỌI user đã đăng nhập, kể cả STAFF */}
+        <button
+          onClick={() => setIsChangePasswordOpen(true)}
+          title="Đổi mật khẩu"
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-slate-300 bg-slate-900 border border-slate-700 hover:border-cyan-500/50 hover:text-cyan-300 transition-all shadow-sm"
+        >
+          <Lock className="w-4 h-4" />
+          <span>Đổi Mật Khẩu</span>
+        </button>
+
         {/* Nút Đăng Xuất — đặt cạnh công tắc đổi theme */}
         <button
           onClick={onLogout}
@@ -91,6 +103,10 @@ export default function Header({
           <LogOut className="w-4 h-4" />
           <span>Đăng Xuất</span>
         </button>
+
+        {isChangePasswordOpen && (
+          <ChangePasswordModal onClose={() => setIsChangePasswordOpen(false)} />
+        )}
 
         <button
           onClick={onOpenHrmModal}

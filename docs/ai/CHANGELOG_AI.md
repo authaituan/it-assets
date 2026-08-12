@@ -4,6 +4,56 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Quản trị người dùng: tạo/sửa role/reset mật khẩu + tự đổi mật khẩu (feat/user-admin)
+
+### Changes
+- **server/index.js**: thêm 5 route mới trong mục "5. USER ADMINISTRATION API" (không
+  sửa route cũ nào): `GET /api/users` (danh sách, không lộ `password_hash`),
+  `POST /api/users` (tạo user, `hrm_code` unique, `password` >=6 ký tự, hash bằng
+  `hashPassword`), `PUT /api/users/:id` (sửa full_name/role, chặn tự đổi role của chính
+  mình), `PUT /api/users/:id/reset-password` (quản lý reset cho user khác, không cần mật
+  khẩu cũ), `PUT /api/users/me/password` (tự đổi mật khẩu — chỉ cần `authRequired`, verify
+  `currentPassword` bằng `verifyPassword`). Import thêm `hashPassword` từ `server/auth.js`
+  (dùng lại, không viết lại logic hash).
+- **src/components/UserAdminView.jsx** (mới): view "Quản Lý Người Dùng" — bảng user, nút
+  Thêm User, sửa role inline (dropdown + Lưu/Hủy), nút Reset Mật Khẩu.
+- **src/components/AddUserModal.jsx, ResetUserPasswordModal.jsx** (mới): modal tạo user
+  và reset mật khẩu (không cần mật khẩu cũ, nhập mật khẩu mới 2 lần xác nhận khớp).
+- **src/components/ChangePasswordModal.jsx** (mới): tự đổi mật khẩu, mở từ nút "Đổi Mật
+  Khẩu" cạnh "Đăng Xuất" trong Header — cho MỌI user đã đăng nhập kể cả STAFF.
+- **src/components/Sidebar.jsx**: thêm mục "Quản Lý Người Dùng", chỉ hiện khi
+  `authUser.role !== 'STAFF'`.
+- **src/App.jsx**: render `UserAdminView` khi tab `useradmin` (double-guard role !==
+  STAFF); reset `activeTab` về `dashboard` khi đăng xuất (tránh màn hình trắng nếu đăng
+  nhập lại bằng user khác trong lúc đang ở tab bị ẩn theo role).
+- **src/components/Header.jsx**: thêm nút "Đổi Mật Khẩu" cạnh "Đăng Xuất".
+
+### Reason
+Bảng `users` đã có đủ cột nhưng chưa có route API nào để tạo/sửa user hay đổi mật khẩu —
+phải chạy script Node thủ công, và chưa ai (kể cả người đang đăng nhập) tự đổi được mật
+khẩu của chính mình. Đóng nốt vòng lặp quản trị user còn thiếu.
+
+### Bug phát hiện + đã sửa khi test UI thật
+`ChangePasswordModal` (`position: fixed inset-0`) bị "kẹt" ở góc trên màn hình thay vì
+che toàn viewport — nguyên nhân: nút mở modal nằm trong `<header>` có class
+`backdrop-blur-xl` (CSS `backdrop-filter` tạo containing block mới cho `position:
+fixed`, một quirk CSS ít người biết). Sửa bằng `ReactDOM.createPortal` render thẳng vào
+`document.body`, thoát khỏi mọi ancestor có thể gây containing-block tương tự.
+
+### Tested
+`npm test` (32 test cũ): vẫn 32/32 pass sau khi thêm route mới. UI thật (Vite :3000 →
+Express :5000, Chrome thật): đăng nhập quản lý (`UA_MGR`) → vào Quản Lý Người Dùng → GET
+/api/users trả đúng, verify bằng fetch thủ công không có `password_hash` trong response
+→ tạo user STAFF mới (`UA_STAFF_TEST`) → đăng xuất → đăng nhập bằng user vừa tạo → vào
+được, Sidebar KHÔNG có mục Quản Lý Người Dùng → tự đổi mật khẩu: sai mật khẩu hiện tại →
+400 "Mật khẩu hiện tại không đúng" hiện rõ ràng; đúng → 200 thành công → đăng xuất →
+đăng nhập lại bằng mật khẩu MỚI → vào được (xác nhận đổi thật có tác dụng) → đăng nhập
+lại bằng `UA_MGR` → reset mật khẩu cho user test (200) → sửa role user test từ STAFF
+sang MANAGER (200, badge cập nhật đúng) → xoá cả 3 user test (kể cả 1 user `TEST_LOGIN`
+phát hiện sót từ phiên trước) khỏi DB thật sau khi xong, verify `users` table về 0 dòng.
+
+---
+
 ## [2026-08-12] - Fix Dashboard đếm cả thiết bị đã soft-delete (trên branch feat/frontend-auth)
 
 ### Changes
