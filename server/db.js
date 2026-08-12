@@ -97,6 +97,7 @@ db.exec(`
     raw_user_name TEXT,
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deleted_at DATETIME DEFAULT NULL, -- soft-delete: NULL = còn hoạt động, có giá trị = đã "xoá"
     FOREIGN KEY(device_type_id) REFERENCES device_types(id),
     FOREIGN KEY(brand_id) REFERENCES brands(id),
     FOREIGN KEY(post_office_id) REFERENCES post_offices(id),
@@ -131,6 +132,21 @@ try {
   }
 } catch (err) {
   console.error('[db] Lỗi migration password_hash:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại:
+// Thêm cột deleted_at vào bảng equipments nếu chưa có (idempotent, phục vụ soft-delete).
+// ==========================================
+try {
+  const equipmentCols = db.prepare("PRAGMA table_info(equipments)").all();
+  const hasDeletedAt = equipmentCols.some((col) => col.name === 'deleted_at');
+  if (!hasDeletedAt) {
+    db.exec("ALTER TABLE equipments ADD COLUMN deleted_at DATETIME DEFAULT NULL");
+    console.log('[db] Migration: đã thêm cột equipments.deleted_at (soft-delete)');
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration deleted_at:', err.message);
 }
 
 module.exports = db;

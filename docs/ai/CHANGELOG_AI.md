@@ -4,6 +4,33 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Gộp bước Soft-delete+Transaction với Input Validation (combined-fix)
+
+### Changes
+- **server/db.js**: Thêm cột `equipments.deleted_at` (migration idempotent).
+- **server/index.js**: Gộp thủ công 2 nhánh từng bị chạy chồng lấn ngoài dự kiến —
+  soft-delete + transaction (route `DELETE /api/equipments/:id`, bọc `db.transaction()`
+  cho create/update/delete equipment + cả đợt import HRM) VÀ input validation (giữ
+  nguyên logic từ `feat/input-validation`, khớp với báo cáo gốc).
+- **docs/ai/**: Khôi phục `01_ROLES.md`, `02_WORKFLOW.md`, `05_BACKLOG.md`, `prompts/`
+  (bị mất khi `feat/auth-rbac` viết đè cả thư mục); viết lại `README_AI.md` để trỏ đủ
+  9 file; thêm 2 mục drift + khôi phục quyết định phân quyền vào `04_DECISIONS.md`.
+
+### Reason
+`feat/input-validation` được tạo trước khi `feat/soft-delete-transactions` được merge,
+nên 2 bước bị lệch thứ tự so với kế hoạch phụ thuộc trong `05_BACKLOG.md`. Gộp thủ công
+để đưa cả 2 vào cùng 1 bản, tránh phải merge riêng rồi xử lý conflict trên GitHub.
+
+### Tested
+Test thủ công bằng curl (server local :5000), 10 kịch bản: create hợp lệ (201); create
+device_type_id giả (400); create hostname >255 ký tự (400); update status sai enum
+(400); update status hợp lệ (200, transaction vẫn chạy); tạo device-type tên có ký tự
+đặc biệt (400); tạo device-type tên có dấu tiếng Việt hợp lệ (201); soft-delete (200);
+list sau khi xoá không còn thấy; HRM import fullName sai kiểu bị chặn fail-fast trước
+khi ghi DB (400). Tất cả đúng kỳ vọng.
+
+---
+
 ## [2026-08-12] - Authentication + RBAC cơ bản (feat/auth-rbac)
 
 ### Changes

@@ -162,7 +162,8 @@ app.get('/api/equipments', (req, res) => {
       limit = 20
     } = req.query;
 
-    let whereClause = ["1=1"];
+    // Mặc định luôn loại trừ thiết bị đã "xoá mềm" (soft-delete) khỏi danh sách.
+    let whereClause = ["1=1", "e.deleted_at IS NULL"];
     let params = [];
 
     if (search) {
@@ -277,7 +278,7 @@ app.get('/api/equipments/:id', (req, res) => {
       JOIN device_types dt ON e.device_type_id = dt.id
       LEFT JOIN brands b ON e.brand_id = b.id
       LEFT JOIN users u ON e.assigned_user_id = u.id
-      WHERE e.id = ?
+      WHERE e.id = ? AND e.deleted_at IS NULL
     `;
     const item = db.prepare(sql).get(req.params.id);
     if (!item) return res.status(404).json({ error: 'Không tìm thấy thiết bị CCDC' });
@@ -319,13 +320,29 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       model,
       post_office_id,
       raw_user_name,
-      notes,
-      specs
+      notes
     } = req.body;
+
+    let { specs } = req.body;
 
     if (!device_type_id || !post_office_id) {
       return res.status(400).json({ error: 'Vui lòng chọn Loại thiết bị và Bưu cục' });
     }
+
+    if (hostname && hostname.length > 255) return res.status(400).json({ error: 'Tên máy (hostname) không được vượt quá 255 ký tự' });
+    if (model && model.length > 255) return res.status(400).json({ error: 'Model không được vượt quá 255 ký tự' });
+    if (serial_number && serial_number.length > 255) return res.status(400).json({ error: 'Serial number không được vượt quá 255 ký tự' });
+
+    if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
+      console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
+      specs = {};
+    }
+
+    const deviceTypeExists = db.prepare("SELECT 1 FROM device_types WHERE id = ?").get(device_type_id);
+    if (!deviceTypeExists) return res.status(400).json({ error: 'Loại thiết bị không tồn tại trong hệ thống' });
+
+    const postOfficeExists = db.prepare("SELECT 1 FROM post_offices WHERE id = ?").get(post_office_id);
+    if (!postOfficeExists) return res.status(400).json({ error: 'Bưu cục không tồn tại trong hệ thống' });
 
     // Resolve Brand ID
     let finalBrandId = brand_id;
@@ -343,31 +360,35 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
     const poCode = db.prepare("SELECT code FROM post_offices WHERE id = ?").get(post_office_id)?.code || '00';
     const assetTag = `CCDC-${poCode}-${Date.now().toString().slice(-4)}`;
 
-    db.prepare(`
-      INSERT INTO equipments 
-      (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, notes)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?)
-    `).run(
-      eqId,
-      assetTag,
-      hostname || null,
-      ip_address || null,
-      mac_address || null,
-      serial_number || null,
-      device_type_id,
-      finalBrandId || null,
-      model || null,
-      JSON.stringify(specs || {}),
-      post_office_id,
-      raw_user_name || null,
-      notes || null
-    );
+    // Bọc transaction: insert equipment + insert log phải cùng thành công hoặc cùng
+    // rollback, tránh trường hợp tạo được thiết bị nhưng thiếu log (hoặc ngược lại).
+    const createEquipmentTxn = db.transaction(() => {
+      db.prepare(`
+        INSERT INTO equipments 
+        (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, notes)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?)
+      `).run(
+        eqId,
+        assetTag,
+        hostname || null,
+        ip_address || null,
+        mac_address || null,
+        serial_number || null,
+        device_type_id,
+        finalBrandId || null,
+        model || null,
+        JSON.stringify(specs || {}),
+        post_office_id,
+        raw_user_name || null,
+        notes || null
+      );
 
-    // Record creation audit log
-    db.prepare(`
-      INSERT INTO asset_transfer_logs (id, equipment_id, action, to_post_office_id, reason)
-      VALUES (?, ?, 'CREATE', ?, 'Thêm mới thiết bị CCDC từ hệ thống web')
-    `).run(uuidv4(), eqId, post_office_id);
+      db.prepare(`
+        INSERT INTO asset_transfer_logs (id, equipment_id, action, to_post_office_id, reason)
+        VALUES (?, ?, 'CREATE', ?, 'Thêm mới thiết bị CCDC từ hệ thống web')
+      `).run(uuidv4(), eqId, post_office_id);
+    });
+    createEquipmentTxn();
 
     res.status(201).json({ message: 'Tạo CCDC thành công', id: eqId, asset_tag: assetTag });
   } catch (error) {
@@ -387,36 +408,81 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       model,
       status,
       raw_user_name,
-      notes,
-      specs
+      notes
     } = req.body;
 
-    const existing = db.prepare("SELECT * FROM equipments WHERE id = ?").get(req.params.id);
+    let { specs } = req.body;
+
+    if (status !== undefined) {
+      const validStatuses = ['IN_USE', 'IN_STOCK', 'MAINTENANCE', 'BROKEN', 'LIQUIDATED'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Trạng thái (status) không hợp lệ' });
+      }
+    }
+
+    if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
+      console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
+      specs = undefined; // sẽ fallback về specs cũ của thiết bị (existing.specs) như code phía dưới
+    }
+
+    const existing = db.prepare("SELECT * FROM equipments WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy thiết bị' });
 
-    db.prepare(`
-      UPDATE equipments
-      SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, notes = ?, specs = ?
-      WHERE id = ?
-    `).run(
-      hostname || null,
-      ip_address || null,
-      mac_address || null,
-      serial_number || null,
-      model || null,
-      status || existing.status,
-      raw_user_name || null,
-      notes || null,
-      JSON.stringify(specs || parseSpecs(existing.specs)),
-      req.params.id
-    );
+    // Bọc transaction: update thiết bị + insert log audit phải cùng thành công/rollback.
+    const updateEquipmentTxn = db.transaction(() => {
+      db.prepare(`
+        UPDATE equipments
+        SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, notes = ?, specs = ?
+        WHERE id = ?
+      `).run(
+        hostname || null,
+        ip_address || null,
+        mac_address || null,
+        serial_number || null,
+        model || null,
+        status || existing.status,
+        raw_user_name || null,
+        notes || null,
+        JSON.stringify(specs || parseSpecs(existing.specs)),
+        req.params.id
+      );
 
-    db.prepare(`
-      INSERT INTO asset_transfer_logs (id, equipment_id, action, reason)
-      VALUES (?, ?, 'UPDATE', 'Cập nhật thông tin cấu hình / thiết bị')
-    `).run(uuidv4(), req.params.id);
+      db.prepare(`
+        INSERT INTO asset_transfer_logs (id, equipment_id, action, reason)
+        VALUES (?, ?, 'UPDATE', 'Cập nhật thông tin cấu hình / thiết bị')
+      `).run(uuidv4(), req.params.id);
+    });
+    updateEquipmentTxn();
 
     res.json({ message: 'Cập nhật CCDC thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Xoá thiết bị CCDC (SOFT-DELETE — không xoá cứng khỏi DB, chỉ đánh dấu deleted_at).
+// Ghi: yêu cầu token hợp lệ + role quản lý, giống các route ghi khác.
+app.delete('/api/equipments/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const existing = db.prepare("SELECT * FROM equipments WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy thiết bị hoặc đã bị xoá trước đó' });
+
+    // Bọc transaction: đánh dấu deleted_at + insert log audit phải cùng thành công/rollback.
+    const deleteEquipmentTxn = db.transaction(() => {
+      db.prepare(`
+        UPDATE equipments
+        SET deleted_at = CURRENT_TIMESTAMP
+        WHERE id = ?
+      `).run(req.params.id);
+
+      db.prepare(`
+        INSERT INTO asset_transfer_logs (id, equipment_id, action, reason)
+        VALUES (?, ?, 'DELETE', 'Xoá (soft-delete) thiết bị CCDC khỏi hệ thống')
+      `).run(uuidv4(), req.params.id);
+    });
+    deleteEquipmentTxn();
+
+    res.json({ message: 'Đã xoá thiết bị CCDC (có thể khôi phục từ lịch sử nếu cần)' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -507,8 +573,14 @@ app.get('/api/device-types', (req, res) => {
 app.post('/api/device-types', authRequired, requireManager, (req, res) => {
   try {
     const { name, code, icon, description } = req.body;
-    if (!name) return res.status(400).json({ error: 'Tên danh mục không được để trống' });
-    
+    if (!name || typeof name !== 'string') return res.status(400).json({ error: 'Tên danh mục không được để trống' });
+    if (name.length < 1 || name.length > 100) return res.status(400).json({ error: 'Tên danh mục phải từ 1 đến 100 ký tự' });
+
+    const nameRegex = /^[\p{L}\p{N}\s-]+$/u;
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ error: 'Tên danh mục không được chứa ký tự đặc biệt' });
+    }
+
     const finalCode = (code || name).toUpperCase().replace(/[^A-Z0-9]/g, '_');
     const existing = db.prepare("SELECT id FROM device_types WHERE code = ? OR name = ?").get(finalCode, name);
     if (existing) {
@@ -540,6 +612,18 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
       return res.status(400).json({ error: 'Danh sách nhân sự HRM không hợp lệ hoặc rỗng' });
     }
 
+    // Validate fail-fast TRƯỚC khi mở transaction / ghi bất kỳ dữ liệu nào.
+    for (const emp of hrmEmployees) {
+      if (emp.fullName !== undefined && emp.fullName !== null) {
+        if (typeof emp.fullName !== 'string' || emp.fullName.length > 200) {
+          return res.status(400).json({ error: 'fullName phải là chuỗi và tối đa 200 ký tự' });
+        }
+      }
+      if (emp.hrmCode !== undefined && emp.hrmCode !== null && typeof emp.hrmCode !== 'string') {
+        return res.status(400).json({ error: 'hrmCode phải là chuỗi' });
+      }
+    }
+
     let usersCreated = 0;
     let usersUpdated = 0;
     let assetsAutoMapped = 0;
@@ -548,7 +632,11 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
     // Helper string normalizer
     const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
 
-    hrmEmployees.forEach(emp => {
+    // Bọc TOÀN BỘ đợt import HRM trong 1 transaction: mỗi nhân sự kéo theo nhiều
+    // thao tác ghi (users + equipments + asset_transfer_logs). Nếu 1 dòng dữ liệu
+    // lỗi giữa chừng, rollback toàn bộ đợt thay vì để lại trạng thái mapping dở dang.
+    const importHrmTxn = db.transaction((employees) => {
+    employees.forEach(emp => {
       const { hrmCode, fullName, postOfficeCode, communeCode } = emp;
       if (!fullName) return;
 
@@ -606,6 +694,8 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
         }
       });
     });
+    }); // hết importHrmTxn
+    importHrmTxn(hrmEmployees);
 
     res.json({
       message: 'Xử lý Auto-Mapping HRM hoàn tất!',
