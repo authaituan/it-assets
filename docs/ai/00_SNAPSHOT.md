@@ -52,6 +52,14 @@
 - Middleware: `authRequired` (bắt buộc token) + `requireManager` (chặn STAFF ghi) — `server/auth.js`.
 - Nguyên tắc **tạm thời**: STAFF chỉ đọc; role khác STAFF (vd ADMIN/MANAGER) được ghi.
 
+## Test tự động (mới, `test/core-routes`)
+- Framework: `node:test` (built-in Node, 0 dependency mới). Script `npm test`.
+- 32 test case trong `tests/auth.test.js`, `tests/equipments.test.js`, `tests/hrm.test.js`
+  — bao phủ auth/RBAC, equipments CRUD + soft-delete + rollback-không-log-rác, HRM
+  auto-mapping. Chi tiết kỹ thuật harness: `03_ARCHITECTURE_MAP.md`.
+- Chạy trên DB SQLite tạm riêng (`os.tmpdir()`), tự seed + tự dọn sau khi chạy, không
+  đụng `data/ccdc.db` thật (đã verify bằng hash MD5 trước/sau).
+
 ## Chưa có / rủi ro
 - ✅ ~~Phân quyền chi tiết chưa chốt~~ — PO đã chốt giữ mô hình nhị phân (STAFF đọc / khác
   STAFF ghi), xem `04_DECISIONS.md`.
@@ -62,6 +70,6 @@
 - ⚠️ **JWT_SECRET mặc định cho DEV**: cần set biến môi trường `JWT_SECRET` ở production.
 - ⚠️ Chưa có refresh token / logout / rate-limit đăng nhập.
 - ⚠️ Frontend chưa tích hợp luồng đăng nhập & gắn token vào request ghi.
-- ⚠️ Chưa có test tự động (chỉ test thủ công bằng curl) — xem bước 5 trong `05_BACKLOG.md`.
+- ✅ ~~Chưa có test tự động~~ — đã có 32 test case (`node:test`), xem mục trên.
 - ⚠️ Import HRM cả đợt chạy trong 1 transaction: lỗi 1 dòng cuối → rollback toàn bộ, phải
   chạy lại từ đầu (đánh đổi có chủ đích, PO đã được thông báo).

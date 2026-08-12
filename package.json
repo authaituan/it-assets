@@ -9,7 +9,8 @@
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "build": "vite build",
     "preview": "vite preview",
-    "seed": "python scripts/seed.py"
+    "seed": "python scripts/seed.py",
+    "test": "node --test tests/auth.test.js tests/equipments.test.js tests/hrm.test.js"
   },
   "keywords": [
     "ccdc",
