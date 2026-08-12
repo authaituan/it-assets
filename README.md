@@ -31,7 +31,7 @@ Hệ thống **Quản Lý Công Cụ Dụng Cụ CNTT Bưu Điện** được th
 
 ## 🛠️ Công Nghệ Sử Dụng
 
-- **Backend**: Node.js, Express.js, SQLite / Prisma 3NF, OpenPyXL / ExcelJS parser.
+- **Backend**: Node.js, Express.js, SQLite (better-sqlite3), OpenPyXL / ExcelJS parser.
 - **Frontend**: React 18, Vite, TailwindCSS v4, Lucide Icons, Recharts data visualization.
 - **Data Ingestion**: Python data parser & automated SQLite seeder script from `dulieu.xlsx`.
 
