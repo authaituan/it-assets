@@ -4,6 +4,17 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Thêm Validate Input Backend (feat/input-validation)
+
+### Changes
+- **server/index.js**: Thêm validate đầu vào cho các route `POST /api/equipments`, `PUT /api/equipments/:id`, `POST /api/device-types`, `POST /api/hrm/upload-and-map`. Kiểm tra độ dài, DB references, enum status và chuẩn hóa `specs`.
+- **docs/ai/00_SNAPSHOT.md**: Xóa rủi ro chưa có validate input backend (nếu có) và cập nhật chi tiết.
+
+### Reason
+Ngăn chặn dữ liệu rác, bảo vệ database và tránh lỗi hệ thống, bám sát các yêu cầu thiết kế gốc.
+
+---
+
 ## [2026-08-12] - Authentication + RBAC cơ bản (feat/auth-rbac)
 
 ### Changes

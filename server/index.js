@@ -319,13 +319,29 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       model,
       post_office_id,
       raw_user_name,
-      notes,
-      specs
+      notes
     } = req.body;
+    
+    let { specs } = req.body;
 
     if (!device_type_id || !post_office_id) {
       return res.status(400).json({ error: 'Vui lòng chọn Loại thiết bị và Bưu cục' });
     }
+
+    if (hostname && hostname.length > 255) return res.status(400).json({ error: 'Tên máy (hostname) không được vượt quá 255 ký tự' });
+    if (model && model.length > 255) return res.status(400).json({ error: 'Model không được vượt quá 255 ký tự' });
+    if (serial_number && serial_number.length > 255) return res.status(400).json({ error: 'Serial number không được vượt quá 255 ký tự' });
+
+    if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
+      console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
+      specs = {};
+    }
+
+    const deviceTypeExists = db.prepare("SELECT 1 FROM device_types WHERE id = ?").get(device_type_id);
+    if (!deviceTypeExists) return res.status(400).json({ error: 'Loại thiết bị không tồn tại trong hệ thống' });
+
+    const postOfficeExists = db.prepare("SELECT 1 FROM post_offices WHERE id = ?").get(post_office_id);
+    if (!postOfficeExists) return res.status(400).json({ error: 'Bưu cục không tồn tại trong hệ thống' });
 
     // Resolve Brand ID
     let finalBrandId = brand_id;
@@ -387,9 +403,21 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       model,
       status,
       raw_user_name,
-      notes,
-      specs
+      notes
     } = req.body;
+    let { specs } = req.body;
+
+    if (status !== undefined) {
+      const validStatuses = ['IN_USE', 'IN_STOCK', 'MAINTENANCE', 'BROKEN', 'LIQUIDATED'];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: 'Trạng thái (status) không hợp lệ' });
+      }
+    }
+
+    if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
+      console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
+      specs = undefined; // Will fallback to existing specs below
+    }
 
     const existing = db.prepare("SELECT * FROM equipments WHERE id = ?").get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy thiết bị' });
@@ -507,7 +535,13 @@ app.get('/api/device-types', (req, res) => {
 app.post('/api/device-types', authRequired, requireManager, (req, res) => {
   try {
     const { name, code, icon, description } = req.body;
-    if (!name) return res.status(400).json({ error: 'Tên danh mục không được để trống' });
+    if (!name || typeof name !== 'string') return res.status(400).json({ error: 'Tên danh mục không được để trống' });
+    if (name.length < 1 || name.length > 100) return res.status(400).json({ error: 'Tên danh mục phải từ 1 đến 100 ký tự' });
+    
+    const nameRegex = /^[\p{L}\p{N}\s-]+$/u;
+    if (!nameRegex.test(name)) {
+      return res.status(400).json({ error: 'Tên danh mục không được chứa ký tự đặc biệt' });
+    }
     
     const finalCode = (code || name).toUpperCase().replace(/[^A-Z0-9]/g, '_');
     const existing = db.prepare("SELECT id FROM device_types WHERE code = ? OR name = ?").get(finalCode, name);
@@ -538,6 +572,17 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
 
     if (!Array.isArray(hrmEmployees) || hrmEmployees.length === 0) {
       return res.status(400).json({ error: 'Danh sách nhân sự HRM không hợp lệ hoặc rỗng' });
+    }
+
+    for (const emp of hrmEmployees) {
+      if (emp.fullName !== undefined && emp.fullName !== null) {
+        if (typeof emp.fullName !== 'string' || emp.fullName.length > 200) {
+          return res.status(400).json({ error: 'fullName phải là chuỗi và tối đa 200 ký tự' });
+        }
+      }
+      if (emp.hrmCode !== undefined && emp.hrmCode !== null && typeof emp.hrmCode !== 'string') {
+        return res.status(400).json({ error: 'hrmCode phải là chuỗi' });
+      }
     }
 
     let usersCreated = 0;

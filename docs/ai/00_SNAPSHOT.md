@@ -1,6 +1,6 @@
 # 00 — SNAPSHOT Dự Án (it-assets / Quản lý CCDC Bưu điện Huế)
 
-> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** (branch `feat/auth-rbac`).
+> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** (branch `feat/input-validation`).
 > Nội dung được dựng từ code thực tế (`server/`, `package.json`, `scripts/`), không suy đoán.
 
 ## Tổng quan
