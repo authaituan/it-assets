@@ -13,6 +13,53 @@ app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // ==========================================
+// Rate limit đăng nhập: chống brute-force đoán mật khẩu.
+// Giới hạn theo cặp (IP + hrm_code) — không chặn nhầm nhiều người dùng
+// chung 1 mạng (NAT/wifi công ty) đăng nhập các tài khoản KHÁC nhau, chỉ
+// chặn việc dò mật khẩu liên tục nhắm vào 1 tài khoản cụ thể.
+// Lưu trong bộ nhớ tiến trình (Map, không dùng DB/Redis) — đủ dùng cho quy
+// mô 1 instance hiện tại; sẽ tự reset khi restart server (đánh đổi chấp
+// nhận được, không phải phòng thủ tuyệt đối cho hệ thống nhiều instance).
+// LƯU Ý triển khai: nếu sau này chạy sau reverse proxy (nginx...), cần
+// `app.set('trust proxy', ...)` để req.ip lấy đúng IP thật của client thay
+// vì IP của proxy — hiện chưa cấu hình vì chưa biết mô hình deploy thật.
+// ==========================================
+const LOGIN_MAX_ATTEMPTS = 5;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 phút
+const loginAttempts = new Map(); // key: "ip|hrm_code" -> { count, windowStart }
+
+function getLoginRateLimitKey(req, hrmCode) {
+  return `${req.ip}|${hrmCode}`;
+}
+
+function checkLoginRateLimit(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
+    return { limited: false };
+  }
+  if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+    const retryAfterMs = LOGIN_WINDOW_MS - (now - entry.windowStart);
+    return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
+  }
+  return { limited: false };
+}
+
+function recordFailedLogin(key) {
+  const now = Date.now();
+  const entry = loginAttempts.get(key);
+  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
+    loginAttempts.set(key, { count: 1, windowStart: now });
+  } else {
+    entry.count += 1;
+  }
+}
+
+function clearLoginAttempts(key) {
+  loginAttempts.delete(key);
+}
+
+// ==========================================
 // 0. AUTHENTICATION API (Đăng nhập + JWT)
 // ==========================================
 // POST /api/auth/login  { hrm_code, password }
@@ -25,12 +72,23 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(400).json({ error: 'Vui lòng nhập mã HRM và mật khẩu' });
     }
 
+    const rateLimitKey = getLoginRateLimitKey(req, hrm_code);
+    const rateLimitCheck = checkLoginRateLimit(rateLimitKey);
+    if (rateLimitCheck.limited) {
+      res.set('Retry-After', String(rateLimitCheck.retryAfterSeconds));
+      return res.status(429).json({
+        error: `Đăng nhập sai quá nhiều lần, vui lòng thử lại sau ${Math.ceil(rateLimitCheck.retryAfterSeconds / 60)} phút`
+      });
+    }
+
     const user = db.prepare("SELECT * FROM users WHERE hrm_code = ?").get(hrm_code);
     // Thông báo chung để tránh lộ thông tin tài khoản tồn tại hay không.
     if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
+      recordFailedLogin(rateLimitKey);
       return res.status(401).json({ error: 'Mã HRM hoặc mật khẩu không đúng' });
     }
 
+    clearLoginAttempts(rateLimitKey);
     const token = signToken(user);
     res.json({
       message: 'Đăng nhập thành công',

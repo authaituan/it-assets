@@ -115,13 +115,28 @@
   thành công) → đăng xuất → đăng nhập lại bằng mật khẩu MỚI xác nhận có tác dụng → quản
   lý reset mật khẩu + sửa role cho user đó → xoá user test khỏi DB thật sau khi xong.
 
-## Chưa có / rủi ro (còn lại sau Vòng 1 — không khẩn cấp, nên xử lý trước production)
-- ✅ ~~Chưa có cơ chế cấp/đổi mật khẩu qua UI~~ — đã có, xem mục "User Administration" ở trên.
-- ⚠️ **JWT_SECRET mặc định cho DEV**: cần set biến môi trường `JWT_SECRET` ở production.
-- ⚠️ Chưa có refresh token / logout / rate-limit đăng nhập.
+## Bảo mật đăng nhập (Vòng 2, 2026-08-12)
+- **Rate-limit**: tối đa 5 lần sai trong 15 phút / (IP + mã HRM), lần thứ 6 trả `429`
+  kèm header `Retry-After` — kể cả nếu gửi đúng mật khẩu ở lần thứ 6 vẫn bị chặn (chặn
+  trước khi verify). Lưu trong bộ nhớ tiến trình (Map), không dùng DB/Redis — đủ cho 1
+  instance hiện tại. Verify bằng test tự động (`tests/auth.test.js`) VÀ gọi API thật.
+- **49 test tự động** (tăng từ 32): thêm `tests/users.test.js` (15 test cho 5 route
+  User Administration) + 2 test rate-limit trong `tests/auth.test.js`.
+- Đã dọn `.claude/launch.json` (file tooling IDE lọt nhầm vào repo từ PR trước) + thêm
+  `.claude/` vào `.gitignore`.
+- Hướng dẫn set `JWT_SECRET` thật khi deploy: xem `06_DEPLOYMENT.md` (thao tác vận hành
+  tay khi lên production, không phải code).
+
+## Chưa có / rủi ro (còn lại — không khẩn cấp)
+- ⚠️ **JWT_SECRET mặc định cho DEV**: hướng dẫn đã có ở `06_DEPLOYMENT.md`, nhưng bước
+  set thực tế PO phải tự làm khi deploy (không phải việc code).
+- ⚠️ Chưa có refresh token — token hết hạn sau thời gian cố định (`TOKEN_EXPIRY` trong
+  `server/auth.js`), người dùng phải đăng nhập lại thủ công.
 - ⚠️ Import HRM cả đợt chạy trong 1 transaction: lỗi 1 dòng cuối → rollback toàn bộ, phải
   chạy lại từ đầu (đánh đổi có chủ đích, PO đã được thông báo).
 - ⚠️ Chưa có CI (test tự động chưa chạy tự động trên GitHub, phải tự gõ `npm test`).
+- ⚠️ Rate-limit lưu trong bộ nhớ tiến trình — không chính xác nếu sau này scale ra nhiều
+  instance server (cần Redis lúc đó). Chưa cần xử lý ở quy mô hiện tại.
 
 ## ✅ Vòng 1 — đã xử lý xong toàn bộ (5/5 hạng mục risk/drift ban đầu)
 Chi tiết từng hạng mục xem các mục phía trên. Tổng kết: 2 drift tài liệu, Auth + RBAC,
