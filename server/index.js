@@ -4,12 +4,49 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid');
+const { signToken, verifyPassword, authRequired, requireManager } = require('./auth');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
+
+// ==========================================
+// 0. AUTHENTICATION API (Đăng nhập + JWT)
+// ==========================================
+// POST /api/auth/login  { hrm_code, password }
+// Trả về JWT nếu hợp lệ. Dùng token này ở header cho các route ghi:
+//   Authorization: Bearer <token>
+app.post('/api/auth/login', (req, res) => {
+  try {
+    const { hrm_code, password } = req.body || {};
+    if (!hrm_code || !password) {
+      return res.status(400).json({ error: 'Vui lòng nhập mã HRM và mật khẩu' });
+    }
+
+    const user = db.prepare("SELECT * FROM users WHERE hrm_code = ?").get(hrm_code);
+    // Thông báo chung để tránh lộ thông tin tài khoản tồn tại hay không.
+    if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
+      return res.status(401).json({ error: 'Mã HRM hoặc mật khẩu không đúng' });
+    }
+
+    const token = signToken(user);
+    res.json({
+      message: 'Đăng nhập thành công',
+      token,
+      user: {
+        id: user.id,
+        hrm_code: user.hrm_code,
+        full_name: user.full_name,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 // Helper function to format JSON specs
 const parseSpecs = (specsStr) => {
@@ -268,7 +305,8 @@ app.get('/api/equipments/:id', (req, res) => {
 });
 
 // Create new CCDC equipment (Supports Multi-Device)
-app.post('/api/equipments', (req, res) => {
+// Ghi: yêu cầu token hợp lệ + role quản lý (STAFF chỉ đọc).
+app.post('/api/equipments', authRequired, requireManager, (req, res) => {
   try {
     const {
       hostname,
@@ -337,8 +375,9 @@ app.post('/api/equipments', (req, res) => {
   }
 });
 
-// Update CCDC equipment
-app.put('/api/equipments/:id', (req, res) => {
+// Update CCDC equipment (bao gồm đổi "status" thiết bị)
+// Ghi: yêu cầu token hợp lệ + role quản lý. STAFF thường KHÔNG được đổi status.
+app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
   try {
     const {
       hostname,
@@ -465,7 +504,7 @@ app.get('/api/device-types', (req, res) => {
   }
 });
 
-app.post('/api/device-types', (req, res) => {
+app.post('/api/device-types', authRequired, requireManager, (req, res) => {
   try {
     const { name, code, icon, description } = req.body;
     if (!name) return res.status(400).json({ error: 'Tên danh mục không được để trống' });
@@ -491,7 +530,7 @@ app.post('/api/device-types', (req, res) => {
 // ==========================================
 // 4. HRM AUTO-MAPPING API
 // ==========================================
-app.post('/api/hrm/upload-and-map', (req, res) => {
+app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => {
   try {
     const { hrmEmployees } = req.body;
     // Expected format of hrmEmployees array:

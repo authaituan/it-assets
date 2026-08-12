@@ -58,6 +58,7 @@ db.exec(`
     commune_code TEXT,
     post_office_id TEXT,
     role TEXT DEFAULT 'STAFF',
+    password_hash TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(post_office_id) REFERENCES post_offices(id)
   );
@@ -116,5 +117,20 @@ db.exec(`
     FOREIGN KEY(equipment_id) REFERENCES equipments(id)
   );
 `);
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại:
+// Thêm cột password_hash vào bảng users nếu chưa có (idempotent).
+// ==========================================
+try {
+  const userCols = db.prepare("PRAGMA table_info(users)").all();
+  const hasPasswordHash = userCols.some((col) => col.name === 'password_hash');
+  if (!hasPasswordHash) {
+    db.exec("ALTER TABLE users ADD COLUMN password_hash TEXT");
+    console.log('[db] Migration: đã thêm cột users.password_hash');
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration password_hash:', err.message);
+}
 
 module.exports = db;
