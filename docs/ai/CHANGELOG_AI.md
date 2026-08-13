@@ -4,6 +4,21 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-13] - Submenu động cho Quản lý CCDC (feat/inventory-submenu)
+
+### Changes
+- **src/components/Sidebar.jsx**: Thêm chức năng fetch danh mục thiết bị động từ `/api/device-types` và render thành submenu dưới mục "Quản Lý CCDC". Thêm icon chevron để đóng/mở submenu.
+- **src/App.jsx**: Thêm state `inventoryDeviceTypeId` để lưu lựa chọn từ submenu và truyền xuống `InventoryView` làm điều kiện lọc mặc định.
+- **src/components/InventoryView.jsx**: Bổ sung `useEffect` lắng nghe `initialDeviceTypeId` từ props để tự động cập nhật dropdown "Loại Thiết Bị CCDC" mà không khoá UI.
+
+### Reason
+Tạo lối tắt điều hướng trực tiếp đến từng loại CCDC từ thanh Sidebar (dựa trên danh mục động thay vì hardcode), giúp người dùng không phải vào view tổng rồi mới lọc.
+
+### Tested
+`npm test`: 55/55 test tự động pass. Đã verify code đảm bảo khi click submenu sẽ filter danh sách CCDC đúng loại, click mục cha sẽ reset bộ lọc, và submenu tự cập nhật khi có danh mục mới được thêm (đều dựa trên state và data từ backend).
+
+---
+
 ## [2026-08-13] - Sửa thông tin user + Vô hiệu hoá/Kích hoạt lại tài khoản (feat/user-edit-deactivate)
 
 ### Changes

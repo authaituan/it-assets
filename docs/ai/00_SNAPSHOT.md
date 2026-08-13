@@ -138,6 +138,11 @@
   Hoạt Lại → đăng nhập lại bình thường được → thử tự vô hiệu hoá chính tài khoản đang
   đăng nhập (cả qua UI nút đã disable, lẫn gọi API trực tiếp) → 400 bị chặn.
 
+## Sidebar & Inventory (mới, `feat/inventory-submenu`)
+- **Sidebar động**: Mục "Quản Lý CCDC" có thể expand/collapse hiển thị submenu chứa danh sách các loại thiết bị CCDC. Danh sách này được lấy động từ `GET /api/device-types`.
+- **Lọc tự động**: Khi click vào 1 loại thiết bị trong submenu, `InventoryView` sẽ tự động lọc theo loại thiết bị đó (`initialDeviceTypeId`). Dropdown "Loại Thiết Bị CCDC" trong bảng tự cập nhật mà không bị khoá, cho phép user đổi loại tùy ý.
+- **Reset lọc**: Click vào mục cha "Quản Lý CCDC" sẽ tự động reset dropdown về "-- Tất cả loại thiết bị --" và show đủ danh sách.
+
 ## Bảo mật đăng nhập (Vòng 2, 2026-08-12)
 - **Rate-limit**: tối đa 5 lần sai trong 15 phút / (IP + mã HRM), lần thứ 6 trả `429`
   kèm header `Retry-After` — kể cả nếu gửi đúng mật khẩu ở lần thứ 6 vẫn bị chặn (chặn
