@@ -2,7 +2,9 @@
 
 > Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** — **Vòng 2 hoàn
 > tất** (commit `666329a`) + **đang chạy thật trên mạng LAN nội bộ** tại
-> `http://10.47.33.33:3000` (xem `06_DEPLOYMENT.md` mục 4).
+> `http://10.47.33.33:3000` (xem `06_DEPLOYMENT.md` mục 4) + thêm Submenu động cho Quản
+> Lý CCDC (PR #8) + fix 1 lỗi nghiêm trọng phát sinh (server crash khi có `dist/`, xem
+> `04_DECISIONS.md` mục 8).
 > Nội dung được dựng từ code thực tế (`server/`, `package.json`, `scripts/`), không suy đoán.
 
 ## Tổng quan

@@ -102,6 +102,43 @@ lúc đó. Chưa cần xử lý ở quy mô hiện tại.
   `requireManager` trong `server/index.js`. Có thể tách nhỏ hơn sau nếu phát sinh nhu
   cầu thực tế.
 
+- **2026-08-12 | QUYẾT ĐỊNH | PO (Tân), ghi nhận bởi Claude** — CTO AI tự quyết chọn Dev
+  AI (Antigravity hay Claude Code, model nào) theo đúng khung độ phức tạp/rủi ro ở
+  `01_ROLES.md` mục 5, KHÔNG hỏi lại PO mỗi lần. Bỏ thói quen sai trước đó là mặc định
+  giao mọi việc có giao diện cho Claude Code — cả 2 Dev AI đều có Browser tool riêng, tự
+  chạy thử UI thật được như nhau, nên "có UI hay không" không phải tiêu chí phân công
+  đúng. Áp dụng lâu dài, không cần PO xác nhận lại trừ khi PO chủ động đổi ý.
+
+---
+
+### 8. `app.get('*', ...)` crash server khi thư mục `dist/` tồn tại (Express 5 + path-to-regexp mới)
+**Vấn đề**: `server/index.js` (dòng ~953, phần "Serve frontend static files in production")
+dùng cú pháp wildcard trần `app.get('*', ...)` để fallback SPA — cú pháp này **không còn
+hợp lệ** với phiên bản `path-to-regexp` đi kèm Express hiện tại trong `node_modules`,
+gây crash ngay lúc khởi động (`PathError: Missing parameter name at index 1: *`) bất cứ
+khi nào thư mục `dist/` tồn tại (tức là sau khi chạy `npm run build` — chính là tình
+huống thật của PO khi triển khai LAN nội bộ, xem `06_DEPLOYMENT.md` mục 4). Đây là lỗi
+có sẵn từ code gốc ban đầu (scaffold trước cả Vòng 1), không phải do PR nào trong các
+vòng vừa qua gây ra — chỉ bị "lộ" ra khi có `dist/`, mà trước giờ chưa ai build production
+nên chưa từng gặp.
+
+Phát hiện khi Claude verify PR `feat/inventory-submenu`: Dev AI phụ trách PR đó (báo cáo
+2026-08-12) đã gặp lỗi này lúc chạy `npm test`, nhưng chỉ **né bằng cách xoá thư mục
+`dist/`** trước khi test thay vì sửa gốc — nghĩa là lỗi vẫn còn nguyên trên `main` cho
+tới khi Claude phát hiện lại và sửa dứt điểm.
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-12 (Claude sửa trực tiếp trên `main`) — đổi
+`app.get('*', ...)` thành `app.use((req, res) => {...})` (middleware cuối cùng, không
+cần path-to-regexp parse path pattern nào, tương đương ý nghĩa wildcard cũ). Verify: khởi
+động server thật với `dist/` tồn tại → sống bình thường (trước đó crash ngay), gọi
+`GET /api/device-types` và `GET /` đều đúng, chạy lại 55 test tự động vẫn pass (không
+cần xoá `dist/` nữa như trước).
+
+**Bài học quy trình**: khi Dev AI gặp lỗi ngoài phạm vi công việc được giao và chọn cách
+"né" thay vì sửa, PHẢI ghi rõ vào `04_DECISIONS.md` mục "Drift phát hiện" theo đúng quy
+tắc ở `README_AI.md` — không chỉ nhắc trong báo cáo miệng rồi thôi, vì báo cáo miệng dễ
+bị đọc lướt qua và lỗi vẫn tồn tại trên `main` không ai theo dõi tiếp.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

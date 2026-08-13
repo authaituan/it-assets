@@ -55,6 +55,12 @@ PO copy "Prompt tiếp theo" trong báo cáo → dán cho đúng Dev AI được
    dựa theo bảng ở `01_ROLES.md` mục 5.
 4. Nếu phát hiện drift (README/code/comment mâu thuẫn) → báo ngay trong mục 1, không đợi
    PO hỏi.
+5. **Tự quyết chọn Dev AI theo đúng khung ở `01_ROLES.md` mục 5 (độ phức tạp/rủi ro),
+   KHÔNG hỏi lại PO mỗi lần và KHÔNG mặc định chọn 1 AI cố định cho 1 loại việc** (ví dụ:
+   "có giao diện → luôn Claude Code" là SAI, vì cả Antigravity lẫn Claude Code đều có
+   Browser tool riêng, tự chạy thử UI thật được như nhau — tiêu chí đúng là độ phức
+   tạp/rủi ro của hạng mục, không phải có UI hay không). Quyết định ngày 2026-08-12,
+   PO đã xác nhận áp dụng lâu dài, không cần hỏi lại trừ khi PO chủ động đổi ý.
 
 ## 4. Quy tắc bắt buộc cho Dev AI (Antigravity / Claude Code)
 1. Đọc `README_AI.md` trước, chỉ đọc thêm file thực sự cần cho đúng hạng mục được giao.

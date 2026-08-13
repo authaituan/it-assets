@@ -4,6 +4,27 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-12] - Fix server crash khi có thư mục dist/ (Express 5 + path-to-regexp)
+
+### Changes
+- **server/index.js**: đổi `app.get('*', (req, res) => {...})` (fallback SPA khi serve
+  static `dist/`) thành `app.use((req, res) => {...})` — không cần path-to-regexp parse
+  pattern `'*'` nữa, tránh crash `PathError: Missing parameter name at index 1: *`.
+
+### Reason
+Phát hiện khi Claude verify PR `feat/inventory-submenu` (build production + chạy server
+thật với `dist/` tồn tại → crash ngay lúc khởi động). Lỗi có sẵn từ code gốc, chỉ bị lộ
+ra khi có `dist/` — đúng tình huống thật của PO khi deploy LAN nội bộ (`06_DEPLOYMENT.md`
+mục 4). Dev AI làm PR trước đó từng gặp lỗi này khi chạy `npm test` nhưng chỉ né bằng
+cách xoá `dist/`, không sửa gốc — xem `04_DECISIONS.md` mục 8 để biết đầy đủ.
+
+### Tested
+Build production (`npm run build`) → chạy `node server/index.js` thật với `dist/` tồn
+tại → server sống bình thường (trước đó crash). Gọi `GET /api/device-types` và `GET /`
+đều đúng. Chạy lại 55 test tự động: pass, không cần xoá `dist/` như trước.
+
+---
+
 ## [2026-08-13] - Submenu động cho Quản lý CCDC (feat/inventory-submenu)
 
 ### Changes

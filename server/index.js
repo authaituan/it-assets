@@ -950,7 +950,12 @@ app.put('/api/users/me/password', authRequired, (req, res) => {
 const clientBuildPath = path.join(__dirname, '..', 'dist');
 if (fs.existsSync(clientBuildPath)) {
   app.use(express.static(clientBuildPath));
-  app.get('*', (req, res) => {
+  // Express 5 + path-to-regexp mới không còn chấp nhận wildcard '*' trần
+  // (gây crash "Missing parameter name at index 1: *" ngay lúc khởi động
+  // nếu thư mục dist/ tồn tại). Dùng app.use() không path — middleware
+  // cuối cùng, chạy cho MỌI request chưa được route nào ở trên xử lý,
+  // tương đương ý nghĩa wildcard cũ nhưng không cần path-to-regexp parse.
+  app.use((req, res) => {
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
