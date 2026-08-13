@@ -7,6 +7,7 @@ import InventoryView from './components/InventoryView';
 import UnitTreeView from './components/UnitTreeView';
 import HrmMappingView from './components/HrmMappingView';
 import UserAdminView from './components/UserAdminView';
+import CategoryAdminView from './components/CategoryAdminView';
 import EquipmentDetailModal from './components/EquipmentDetailModal';
 import AddEquipmentModal from './components/AddEquipmentModal';
 import AddCategoryModal from './components/AddCategoryModal';
@@ -137,6 +138,10 @@ export default function App() {
 
               {activeTab === 'hrm' && (
                 <HrmMappingView />
+              )}
+
+              {activeTab === 'categoryadmin' && authUser?.role !== 'STAFF' && (
+                <CategoryAdminView />
               )}
 
               {activeTab === 'useradmin' && authUser?.role !== 'STAFF' && (

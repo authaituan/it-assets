@@ -1,6 +1,6 @@
 # 📦 IT Assets Management System (Hệ Thống Quản Lý CCDC CNTT Bưu Điện)
 
-Hệ thống **Quản Lý Công Cụ Dụng Cụ CNTT Bưu Điện** được thiết kế phục vụ quản lý, giám sát, luân chuyển và bảo trì thiết bị hạ tầng CNTT toàn diện cho Bưu điện Tỉnh Thừa Thiên Huế (`Mã 53`).
+Hệ thống **Quản Lý Công Cụ Dụng Cụ CNTT Bưu Điện** được thiết kế phục vụ quản lý, giám sát, luân chuyển và bảo trì thiết bị hạ tầng CNTT toàn diện cho Bưu điện Thành Phố Huế (`Mã 53`).
 
 ---
 
@@ -60,4 +60,4 @@ npm run dev
 
 ## 📝 Thông Tin Repository
 - **GitHub Repository**: [https://github.com/authaituan/it-assets](https://github.com/authaituan/it-assets)
-- **Đơn vị quản lý**: Bưu điện Tỉnh Thừa Thiên Huế (Mã 53)
+- **Đơn vị quản lý**: Bưu điện Thành Phố Huế (Mã 53)

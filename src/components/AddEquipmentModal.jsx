@@ -17,6 +17,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
   const [serialNumber, setSerialNumber] = useState('');
   const [brandName, setBrandName] = useState('');
   const [model, setModel] = useState('');
+  const [purchaseYear, setPurchaseYear] = useState(new Date().getFullYear());
   const [rawUserName, setRawUserName] = useState('');
   const [notes, setNotes] = useState('');
 
@@ -89,6 +90,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
         serial_number: serialNumber,
         brand_name: brandName,
         model,
+        purchase_year: purchaseYear,
         raw_user_name: rawUserName,
         notes,
         specs
@@ -255,6 +257,22 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
                 placeholder="OptiPlex 3040 / ProDesk 600 G5"
                 className="w-full glass-input p-2.5 rounded-xl"
               />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Năm Mua</label>
+              <input
+                type="number"
+                value={purchaseYear}
+                onChange={e => setPurchaseYear(e.target.value)}
+                min="1990"
+                max="2100"
+                placeholder={String(new Date().getFullYear())}
+                className="w-full glass-input p-2.5 rounded-xl"
+              />
+              <p className="text-[10px] text-slate-500 mt-1">Dùng để sinh mã CCDC (2 số cuối năm), vd 24 trong PC-24-001.</p>
             </div>
           </div>
 

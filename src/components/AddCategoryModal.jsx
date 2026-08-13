@@ -6,6 +6,7 @@ export default function AddCategoryModal({ onClose, onSuccess }) {
   const [name, setName] = useState('');
   const [icon, setIcon] = useState('monitor');
   const [description, setDescription] = useState('');
+  const [assetPrefix, setAssetPrefix] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -33,7 +34,7 @@ export default function AddCategoryModal({ onClose, onSuccess }) {
     const result = await apiFetchJson('/api/device-types', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name: name.trim(), icon, description })
+      body: JSON.stringify({ name: name.trim(), icon, description, asset_prefix: assetPrefix.trim() })
     });
 
     setLoading(false);
@@ -78,6 +79,24 @@ export default function AddCategoryModal({ onClose, onSuccess }) {
               autoFocus
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+              Tiền Tố Mã CCDC
+            </label>
+            <input
+              type="text"
+              value={assetPrefix}
+              onChange={e => setAssetPrefix(e.target.value.toUpperCase())}
+              placeholder="Ví dụ: LAP, PC, MNT, PRN..."
+              maxLength={5}
+              className="w-full glass-input p-3 rounded-xl text-xs font-mono tracking-wider"
+            />
+            <p className="text-[10px] text-slate-500 mt-1">
+              Dùng để sinh mã CCDC tự động, ví dụ <span className="text-cyan-400 font-mono">LAP-24-001</span>. 2-5 ký tự IN HOA/số.
+              Nếu để trống, phải bổ sung ở Quản Lý Danh Mục trước khi tạo thiết bị thuộc loại này.
+            </p>
           </div>
 
           <div>

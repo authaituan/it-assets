@@ -276,10 +276,12 @@ export default function InventoryView({
                           {getDeviceIcon(item.device_type_code)}
                         </div>
                         <div>
-                          <div className="font-bold text-slate-100 flex items-center gap-1.5">
-                            <span>{item.hostname || item.asset_tag}</span>
+                          {/* Ưu tiên hiển thị MÃ CCDC (asset_tag) làm chữ đậm chính. */}
+                          <div className="font-bold text-slate-100 flex items-center gap-1.5 font-mono">
+                            <span>{item.asset_tag || 'Chưa có mã'}</span>
                           </div>
                           <div className="text-[11px] text-slate-400">
+                            {item.hostname && <span className="text-slate-300 font-medium">{item.hostname} · </span>}
                             {item.brand_name || 'Hãng khác'} {item.model || ''}
                           </div>
                         </div>

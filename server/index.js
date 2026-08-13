@@ -387,7 +387,8 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       model,
       post_office_id,
       raw_user_name,
-      notes
+      notes,
+      purchase_year
     } = req.body;
 
     let { specs } = req.body;
@@ -405,11 +406,29 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       specs = {};
     }
 
-    const deviceTypeExists = db.prepare("SELECT 1 FROM device_types WHERE id = ?").get(device_type_id);
-    if (!deviceTypeExists) return res.status(400).json({ error: 'Loại thiết bị không tồn tại trong hệ thống' });
+    const deviceType = db.prepare("SELECT asset_prefix FROM device_types WHERE id = ?").get(device_type_id);
+    if (!deviceType) return res.status(400).json({ error: 'Loại thiết bị không tồn tại trong hệ thống' });
+
+    // Tiền tố mã CCDC bắt buộc phải được cấu hình trước khi tạo thiết bị.
+    const assetPrefix = (deviceType.asset_prefix || '').trim();
+    if (!assetPrefix) {
+      return res.status(400).json({ error: 'Danh mục thiết bị này chưa được cấu hình tiền tố mã CCDC, vui lòng vào Quản Lý Danh Mục để thêm trước khi tạo thiết bị.' });
+    }
 
     const postOfficeExists = db.prepare("SELECT 1 FROM post_offices WHERE id = ?").get(post_office_id);
     if (!postOfficeExists) return res.status(400).json({ error: 'Bưu cục không tồn tại trong hệ thống' });
+
+    // Năm mua: nếu không nhập -> mặc định năm hiện tại. Nếu nhập -> validate khoảng hợp lý.
+    let finalPurchaseYear;
+    if (purchase_year === undefined || purchase_year === null || purchase_year === '') {
+      finalPurchaseYear = new Date().getFullYear();
+    } else {
+      finalPurchaseYear = parseInt(purchase_year, 10);
+      if (Number.isNaN(finalPurchaseYear) || finalPurchaseYear < 1990 || finalPurchaseYear > 2100) {
+        return res.status(400).json({ error: 'Năm mua không hợp lệ (phải trong khoảng 1990 - 2100)' });
+      }
+    }
+    const yy = String(finalPurchaseYear).slice(-2);
 
     // Resolve Brand ID
     let finalBrandId = brand_id;
@@ -424,16 +443,32 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
     }
 
     const eqId = uuidv4();
-    const poCode = db.prepare("SELECT code FROM post_offices WHERE id = ?").get(post_office_id)?.code || '00';
-    const assetTag = `CCDC-${poCode}-${Date.now().toString().slice(-4)}`;
 
-    // Bọc transaction: insert equipment + insert log phải cùng thành công hoặc cùng
-    // rollback, tránh trường hợp tạo được thiết bị nhưng thiếu log (hoặc ngược lại).
+    // Bọc transaction: TÍNH số thứ tự + insert equipment + insert log phải cùng 1
+    // transaction. Việc tính seq (SELECT MAX) nằm CÙNG transaction với INSERT để
+    // tránh race condition (better-sqlite3 đồng bộ, cùng transaction là an toàn,
+    // không cần cơ chế khoá riêng). Transaction trả về asset_tag đã sinh.
     const createEquipmentTxn = db.transaction(() => {
+      // Lấy TẤT CẢ asset_tag khớp tiền tố+năm (KHÔNG lọc deleted_at, để không bao
+      // giờ tái sử dụng số của thiết bị đã xoá mềm) -> parse số thứ tự cuối cùng ->
+      // lấy MAX + 1 (không dùng COUNT, tránh trùng nếu có khoảng trống do xoá).
+      const likePattern = `${assetPrefix}-${yy}-%`;
+      const rows = db.prepare("SELECT asset_tag FROM equipments WHERE asset_tag LIKE ?").all(likePattern);
+      let maxSeq = 0;
+      for (const r of rows) {
+        const m = /-(\d+)$/.exec(r.asset_tag || '');
+        if (m) {
+          const n = parseInt(m[1], 10);
+          if (n > maxSeq) maxSeq = n;
+        }
+      }
+      const seq = String(maxSeq + 1).padStart(3, '0');
+      const assetTag = `${assetPrefix}-${yy}-${seq}`;
+
       db.prepare(`
-        INSERT INTO equipments 
-        (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, notes)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?)
+        INSERT INTO equipments
+        (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, notes, purchase_year)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?, ?)
       `).run(
         eqId,
         assetTag,
@@ -447,17 +482,20 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
         JSON.stringify(specs || {}),
         post_office_id,
         raw_user_name || null,
-        notes || null
+        notes || null,
+        finalPurchaseYear
       );
 
       db.prepare(`
         INSERT INTO asset_transfer_logs (id, equipment_id, action, to_post_office_id, reason)
         VALUES (?, ?, 'CREATE', ?, 'Thêm mới thiết bị CCDC từ hệ thống web')
       `).run(uuidv4(), eqId, post_office_id);
-    });
-    createEquipmentTxn();
 
-    res.status(201).json({ message: 'Tạo CCDC thành công', id: eqId, asset_tag: assetTag });
+      return assetTag;
+    });
+    const generatedAssetTag = createEquipmentTxn();
+
+    res.status(201).json({ message: 'Tạo CCDC thành công', id: eqId, asset_tag: generatedAssetTag });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -475,7 +513,12 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       model,
       status,
       raw_user_name,
-      notes
+      notes,
+      device_type_id,
+      brand_id,
+      brand_name,
+      post_office_id,
+      purchase_year
     } = req.body;
 
     let { specs } = req.body;
@@ -487,6 +530,8 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       }
     }
 
+    if (model && model.length > 255) return res.status(400).json({ error: 'Model không được vượt quá 255 ký tự' });
+
     if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
       console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
       specs = undefined; // sẽ fallback về specs cũ của thiết bị (existing.specs) như code phía dưới
@@ -495,11 +540,56 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
     const existing = db.prepare("SELECT * FROM equipments WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy thiết bị' });
 
+    // device_type_id: nếu gửi lên thì validate tồn tại; nếu không gửi -> giữ nguyên.
+    // LƯU Ý: đổi loại thiết bị KHÔNG đổi lại asset_tag (mã CCDC là định danh cố định
+    // từ lúc tạo — chỉ ghi log UPDATE bình thường, không sinh mã mới).
+    let finalDeviceTypeId = existing.device_type_id;
+    if (device_type_id !== undefined && device_type_id !== null && device_type_id !== '') {
+      const dtExists = db.prepare("SELECT 1 FROM device_types WHERE id = ?").get(device_type_id);
+      if (!dtExists) return res.status(400).json({ error: 'Loại thiết bị không tồn tại trong hệ thống' });
+      finalDeviceTypeId = device_type_id;
+    }
+
+    // post_office_id: tương tự — validate nếu gửi, giữ nguyên nếu không.
+    let finalPostOfficeId = existing.post_office_id;
+    if (post_office_id !== undefined && post_office_id !== null && post_office_id !== '') {
+      const poExists = db.prepare("SELECT 1 FROM post_offices WHERE id = ?").get(post_office_id);
+      if (!poExists) return res.status(400).json({ error: 'Bưu cục không tồn tại trong hệ thống' });
+      finalPostOfficeId = post_office_id;
+    }
+
+    // purchase_year: validate nếu gửi, giữ nguyên nếu không.
+    let finalPurchaseYear = existing.purchase_year;
+    if (purchase_year !== undefined && purchase_year !== null && purchase_year !== '') {
+      const py = parseInt(purchase_year, 10);
+      if (Number.isNaN(py) || py < 1990 || py > 2100) {
+        return res.status(400).json({ error: 'Năm mua không hợp lệ (phải trong khoảng 1990 - 2100)' });
+      }
+      finalPurchaseYear = py;
+    }
+
+    // Resolve Brand (cùng cách với route POST): brand_id trực tiếp, hoặc brand_name ->
+    // tra/tạo brand. Nếu không gửi gì về brand -> giữ nguyên brand cũ.
+    let finalBrandId;
+    if (brand_id !== undefined && brand_id !== null && brand_id !== '') {
+      finalBrandId = brand_id;
+    } else if (brand_name !== undefined && brand_name !== null && brand_name !== '') {
+      const existingBrand = db.prepare("SELECT id FROM brands WHERE name = ?").get(brand_name);
+      if (existingBrand) {
+        finalBrandId = existingBrand.id;
+      } else {
+        finalBrandId = uuidv4();
+        db.prepare("INSERT INTO brands (id, name) VALUES (?, ?)").run(finalBrandId, brand_name);
+      }
+    } else {
+      finalBrandId = existing.brand_id;
+    }
+
     // Bọc transaction: update thiết bị + insert log audit phải cùng thành công/rollback.
     const updateEquipmentTxn = db.transaction(() => {
       db.prepare(`
         UPDATE equipments
-        SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, notes = ?, specs = ?
+        SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, notes = ?, specs = ?, device_type_id = ?, brand_id = ?, post_office_id = ?, purchase_year = ?
         WHERE id = ?
       `).run(
         hostname || null,
@@ -511,6 +601,10 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
         raw_user_name || null,
         notes || null,
         JSON.stringify(specs || parseSpecs(existing.specs)),
+        finalDeviceTypeId,
+        finalBrandId || null,
+        finalPostOfficeId,
+        finalPurchaseYear ?? null,
         req.params.id
       );
 
@@ -637,15 +731,30 @@ app.get('/api/device-types', (req, res) => {
   }
 });
 
+// Tiền tố mã CCDC hợp lệ: 2-5 ký tự IN HOA / số (A-Z, 0-9).
+const ASSET_PREFIX_REGEX = /^[A-Z0-9]{2,5}$/;
+
 app.post('/api/device-types', authRequired, requireManager, (req, res) => {
   try {
-    const { name, code, icon, description } = req.body;
+    const { name, code, icon, description, asset_prefix } = req.body;
     if (!name || typeof name !== 'string') return res.status(400).json({ error: 'Tên danh mục không được để trống' });
     if (name.length < 1 || name.length > 100) return res.status(400).json({ error: 'Tên danh mục phải từ 1 đến 100 ký tự' });
 
     const nameRegex = /^[\p{L}\p{N}\s-]+$/u;
     if (!nameRegex.test(name)) {
       return res.status(400).json({ error: 'Tên danh mục không được chứa ký tự đặc biệt' });
+    }
+
+    // asset_prefix OPTIONAL lúc tạo. Nếu có gửi -> validate. Nếu bỏ trống -> lưu NULL,
+    // sau này tạo thiết bị thuộc danh mục này sẽ bị POST /api/equipments chặn cho tới
+    // khi quản lý bổ sung tiền tố qua Quản Lý Danh Mục.
+    let finalPrefix = null;
+    if (asset_prefix !== undefined && asset_prefix !== null && String(asset_prefix).trim() !== '') {
+      const p = String(asset_prefix).trim().toUpperCase();
+      if (!ASSET_PREFIX_REGEX.test(p)) {
+        return res.status(400).json({ error: 'Tiền tố mã CCDC phải gồm 2-5 ký tự IN HOA hoặc số (A-Z, 0-9)' });
+      }
+      finalPrefix = p;
     }
 
     const finalCode = (code || name).toUpperCase().replace(/[^A-Z0-9]/g, '_');
@@ -655,11 +764,54 @@ app.post('/api/device-types', authRequired, requireManager, (req, res) => {
     }
 
     const id = uuidv4();
-    db.prepare("INSERT INTO device_types (id, code, name, icon, description) VALUES (?, ?, ?, ?, ?)").run(
-      id, finalCode, name, icon || 'monitor', description || null
+    db.prepare("INSERT INTO device_types (id, code, name, icon, description, asset_prefix) VALUES (?, ?, ?, ?, ?, ?)").run(
+      id, finalCode, name, icon || 'monitor', description || null, finalPrefix
     );
 
-    res.status(201).json({ message: 'Tạo danh mục thành công', id, code: finalCode, name });
+    res.status(201).json({ message: 'Tạo danh mục thành công', id, code: finalCode, name, asset_prefix: finalPrefix });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sửa danh mục thiết bị đã có: name, asset_prefix, description.
+// asset_prefix BẮT BUỘC khi sửa (đây là mục đích chính của route — cấu hình tiền tố).
+app.put('/api/device-types/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const { name, asset_prefix, description } = req.body || {};
+
+    const existing = db.prepare("SELECT * FROM device_types WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy danh mục thiết bị' });
+
+    if (!asset_prefix || typeof asset_prefix !== 'string') {
+      return res.status(400).json({ error: 'Vui lòng nhập Tiền tố mã CCDC' });
+    }
+    const finalPrefix = asset_prefix.trim().toUpperCase();
+    if (!ASSET_PREFIX_REGEX.test(finalPrefix)) {
+      return res.status(400).json({ error: 'Tiền tố mã CCDC phải gồm 2-5 ký tự IN HOA hoặc số (A-Z, 0-9)' });
+    }
+
+    // name: giữ nguyên nếu không gửi; nếu gửi -> validate + chống trùng với danh mục khác.
+    let finalName = existing.name;
+    if (name !== undefined && name !== null && String(name).trim() !== '') {
+      const trimmedName = String(name).trim();
+      if (trimmedName.length > 100) return res.status(400).json({ error: 'Tên danh mục phải từ 1 đến 100 ký tự' });
+      const nameRegex = /^[\p{L}\p{N}\s-]+$/u;
+      if (!nameRegex.test(trimmedName)) {
+        return res.status(400).json({ error: 'Tên danh mục không được chứa ký tự đặc biệt' });
+      }
+      const dup = db.prepare("SELECT id FROM device_types WHERE name = ? AND id != ?").get(trimmedName, req.params.id);
+      if (dup) return res.status(400).json({ error: 'Tên danh mục này đã tồn tại ở danh mục khác' });
+      finalName = trimmedName;
+    }
+
+    const finalDescription = (description !== undefined) ? (description || null) : existing.description;
+
+    db.prepare("UPDATE device_types SET name = ?, asset_prefix = ?, description = ? WHERE id = ?").run(
+      finalName, finalPrefix, finalDescription, req.params.id
+    );
+
+    res.json({ message: 'Cập nhật danh mục thành công', id: req.params.id, name: finalName, asset_prefix: finalPrefix });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -16,26 +16,54 @@
 
 ## Bảng dữ liệu chính (`server/db.js`)
 - `province_post_offices` (BĐT/TP) → `commune_post_offices` (BĐX) → `post_offices` (MBC/Bưu cục).
-- `users` (nhân sự chuẩn HRM; có cột `role` mặc định `STAFF`, và `password_hash` cho auth).
-- `device_types`, `brands`, `equipments` (CCDC, specs dạng JSON), `asset_transfer_logs` (lịch sử).
+- `users` (nhân sự chuẩn HRM; có cột `role` mặc định `STAFF`, `password_hash` cho auth, `deactivated_at` vô hiệu hoá).
+- `device_types` (có `asset_prefix` — tiền tố sinh mã CCDC), `brands`, `equipments` (CCDC,
+  specs JSON, có `deleted_at` soft-delete + `purchase_year` năm mua), `asset_transfer_logs` (lịch sử).
 
 ## API hiện có (`server/index.js`)
 - `POST /api/auth/login` — đăng nhập, trả JWT.
 - `GET  /api/dashboard/stats` — KPIs & charts.
 - `GET  /api/equipments`, `GET /api/equipments/:id` — đọc (mở, không cần token).
-- `POST /api/equipments` — **ghi, cần token + role quản lý**. Có validate input (độ dài,
-  SELECT xác nhận `device_type_id`/`post_office_id` tồn tại), bọc transaction (insert +
-  log audit cùng thành công/rollback).
+- `POST /api/equipments` — **ghi, cần token + role quản lý**. Validate input; **sinh
+  `asset_tag` theo lược đồ mới** (xem mục "Lược đồ mã CCDC"); nhận thêm `purchase_year`
+  (mặc định năm hiện tại nếu trống); bọc transaction (tính seq + insert + log cùng
+  thành công/rollback). Chặn 400 nếu danh mục chưa cấu hình `asset_prefix`.
 - `PUT  /api/equipments/:id` — **ghi (gồm đổi status), cần token + role quản lý**. Validate
-  `status` theo đúng 5 giá trị enum. Loại trừ thiết bị đã soft-delete. Bọc transaction.
+  `status` enum. Nhận **đầy đủ** `hostname/ip/mac/serial/model/status/raw_user_name/notes/
+  specs` + (mới) `device_type_id/brand_id/brand_name/post_office_id/purchase_year`. Đổi
+  loại thiết bị **KHÔNG đổi lại `asset_tag`** (mã cố định từ lúc tạo). Loại trừ thiết bị
+  đã soft-delete. Bọc transaction.
 - `DELETE /api/equipments/:id` — **mới**: soft-delete (chỉ set `deleted_at`, không xoá
   cứng), cần token + role quản lý, bọc transaction, ghi log action `DELETE`.
-- `GET  /api/organization/*`, `GET /api/device-types` — đọc.
+- `GET  /api/organization/*`, `GET /api/device-types` — đọc. `GET /api/device-types` trả
+  cả `asset_prefix` (dùng cho view Quản Lý Danh Mục).
 - `POST /api/device-types` — **ghi, cần token + role quản lý**. Validate tên (1-100 ký
-  tự, regex chặn ký tự đặc biệt).
+  tự, regex chặn ký tự đặc biệt); nhận thêm `asset_prefix` (optional, regex `^[A-Z0-9]{2,5}$`).
+- `PUT /api/device-types/:id` — **mới**: sửa `name`/`asset_prefix`/`description` của danh
+  mục đã có. `asset_prefix` bắt buộc khi sửa (regex `^[A-Z0-9]{2,5}$`).
 - `POST /api/hrm/upload-and-map` — **ghi, cần token + role quản lý**. Validate fail-fast
   `fullName`/`hrmCode` trước khi ghi DB. Cả đợt import bọc trong 1 transaction lớn (lỗi
   1 dòng → rollback toàn bộ đợt, xem lưu ý ở mục rủi ro).
+
+## Lược đồ mã CCDC (mới, `feat/asset-tag-scheme`)
+- Định dạng: `<PREFIX>-<YY>-<seq 3 chữ số>`, vd `PC-24-001`, `LAP-26-001`.
+  - `PREFIX` = `device_types.asset_prefix` của loại thiết bị (2-5 ký tự IN HOA/số).
+  - `YY` = 2 số cuối `purchase_year` (năm mua; mặc định năm hiện tại nếu không nhập).
+  - `seq` = MAX số thứ tự hiện có của cặp (PREFIX, YY) **+1** (dùng MAX chứ không COUNT →
+    không trùng khi có khoảng trống do xoá; LIKE `PREFIX-YY-%` KHÔNG lọc `deleted_at` →
+    không tái dùng số của thiết bị đã xoá mềm). Tính TRONG transaction tạo thiết bị.
+- **QUAN TRỌNG**: chỉ áp dụng cho thiết bị TẠO MỚI. **353 thiết bị thật cũ giữ nguyên mã
+  cũ `CCDC-<mã bưu cục>-<seq>`** — migration KHÔNG đổi (xem `04_DECISIONS.md`).
+- Danh mục chưa có `asset_prefix` → tạo thiết bị bị chặn 400 với thông báo rõ ràng, buộc
+  quản lý vào "Quản Lý Danh Mục" đặt tiền tố trước.
+- Migration seed `asset_prefix` cho 8 danh mục hiện có (1 lần, guard bởi cột mới) — vài
+  danh mục gán TẠM, PO cần chỉnh lại, xem bảng chi tiết trong `04_DECISIONS.md`.
+- Frontend: view mới `src/components/CategoryAdminView.jsx` ("Quản Lý Danh Mục", chỉ hiện
+  với role quản lý — sửa `asset_prefix` inline); `AddCategoryModal` thêm ô "Tiền Tố Mã
+  CCDC"; `AddEquipmentModal` thêm ô "Năm Mua"; `EquipmentDetailModal` form Chỉnh Sửa bổ
+  sung ô Model + Loại thiết bị + Hãng + BĐX/Bưu cục (cascading) + Năm Mua;
+  `InventoryView` cột "Mã CCDC / Máy" đổi hiển thị `asset_tag` làm chữ đậm chính (hostname
+  xuống dòng phụ). Thương hiệu đổi: "Hệ Thống Quản Lý CCDC" / "Bưu Điện Thành Phố Huế".
 
 ## Soft-delete & Transaction (mới, gộp từ `feat/soft-delete-transactions`)
 - Cột `equipments.deleted_at` (migration idempotent trong `server/db.js`).

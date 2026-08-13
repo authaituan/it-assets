@@ -70,7 +70,8 @@ db.exec(`
     code TEXT UNIQUE NOT NULL,
     name TEXT NOT NULL,
     icon TEXT,
-    description TEXT
+    description TEXT,
+    asset_prefix TEXT -- tiền tố sinh mã CCDC (vd 'LAP', 'PC'); NULL = chưa cấu hình
   );
 
   -- Brands table
@@ -99,6 +100,7 @@ db.exec(`
     notes TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     deleted_at DATETIME DEFAULT NULL, -- soft-delete: NULL = còn hoạt động, có giá trị = đã "xoá"
+    purchase_year INTEGER, -- năm mua (phục vụ sinh mã CCDC <PREFIX>-<YY>-<seq>); NULL = chưa nhập
     FOREIGN KEY(device_type_id) REFERENCES device_types(id),
     FOREIGN KEY(brand_id) REFERENCES brands(id),
     FOREIGN KEY(post_office_id) REFERENCES post_offices(id),
@@ -164,6 +166,64 @@ try {
   }
 } catch (err) {
   console.error('[db] Lỗi migration deactivated_at:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại:
+// Thêm cột device_types.asset_prefix (tiền tố sinh mã CCDC). Khi cột được
+// thêm LẦN ĐẦU, seed 1 lần giá trị mặc định cho các danh mục ĐANG CÓ tại
+// thời điểm đó (chỉ chạy đúng 1 lần, guard bởi !hasAssetPrefix) — dựa theo
+// `code` hiện có. Danh mục tạo MỚI sau này (asset_prefix NULL) sẽ KHÔNG bị
+// seed lại, cố tình để trống buộc quản lý tự đặt tiền tố (nếu không, POST
+// /api/equipments sẽ chặn tạo thiết bị với thông báo rõ ràng).
+// Bảng quy ước tiền tố PO cung cấp: LAP/PC/MNT/PRN/PTO/PRO/SW/RTR/AP/PHN.
+// Danh mục không khớp rõ ràng -> tạm dùng 3 ký tự đầu của code (viết hoa),
+// LIỆT KÊ trong báo cáo để PO chỉnh lại qua UI Quản Lý Danh Mục.
+// ==========================================
+try {
+  const dtCols = db.prepare("PRAGMA table_info(device_types)").all();
+  const hasAssetPrefix = dtCols.some((col) => col.name === 'asset_prefix');
+  if (!hasAssetPrefix) {
+    db.exec("ALTER TABLE device_types ADD COLUMN asset_prefix TEXT");
+
+    // Map keyed theo `code` thật đang có trong DB (đã đọc trực tiếp, không đoán).
+    const PREFIX_BY_CODE = {
+      COMPUTER: 'PC',            // Máy tính & POS (mixed desktop+laptop+POS) — PO cân nhắc tách PC/LAP
+      PRINTER: 'PRN',           // Máy in Bưu chính
+      M_Y_CHI_U___KIOSK: 'PRO', // Máy Chiếu & Kiosk (mixed projector+kiosk)
+      NETWORK: 'NET',           // Thiết bị Mạng (mixed switch/router/AP) — tạm, 3 ký tự code
+      SCANNER: 'SCA',           // Máy quét mã vạch — tạm, trùng SCALE (PO chỉnh lại)
+      UPS: 'UPS',               // Bộ lưu điện — tạm, 3 ký tự code
+      CAMERA: 'CAM',            // Camera an ninh — tạm, 3 ký tự code
+      SCALE: 'SCA'              // Cân điện tử — tạm, trùng SCANNER (PO chỉnh lại)
+    };
+    const existingTypes = db.prepare("SELECT id, code FROM device_types").all();
+    const updPrefix = db.prepare("UPDATE device_types SET asset_prefix = ? WHERE id = ?");
+    for (const dt of existingTypes) {
+      const fallback = (dt.code || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 3).toUpperCase() || 'GEN';
+      const prefix = PREFIX_BY_CODE[dt.code] || fallback;
+      updPrefix.run(prefix, dt.id);
+    }
+    console.log(`[db] Migration: đã thêm cột device_types.asset_prefix + seed prefix cho ${existingTypes.length} danh mục hiện có`);
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration asset_prefix:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại:
+// Thêm cột equipments.purchase_year (năm mua, phục vụ sinh mã CCDC). NULL
+// với các thiết bị cũ (chấp nhận được — mã cũ CCDC-... giữ nguyên, không đổi).
+// ==========================================
+try {
+  const eqCols2 = db.prepare("PRAGMA table_info(equipments)").all();
+  const hasPurchaseYear = eqCols2.some((col) => col.name === 'purchase_year');
+  if (!hasPurchaseYear) {
+    db.exec("ALTER TABLE equipments ADD COLUMN purchase_year INTEGER");
+    console.log('[db] Migration: đã thêm cột equipments.purchase_year');
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration purchase_year:', err.message);
 }
 
 module.exports = db;

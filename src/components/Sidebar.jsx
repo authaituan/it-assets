@@ -48,8 +48,9 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
     { id: 'hrm', label: 'Tích Hợp HRM Nhân Sự', icon: Users },
   ];
 
-  // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Người Dùng.
+  // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Danh Mục + Quản Lý Người Dùng.
   if (authUser?.role !== 'STAFF') {
+    navItems.push({ id: 'categoryadmin', label: 'Quản Lý Danh Mục', icon: Layers });
     navItems.push({ id: 'useradmin', label: 'Quản Lý Người Dùng', icon: UserCog });
   }
 
@@ -62,8 +63,8 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
             <Cpu className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="font-bold text-lg text-white leading-tight tracking-wide">CCDC POST</h1>
-            <p className="text-xs text-cyan-400 font-medium">Bưu Điện Tỉnh Thừa Thiên Huế</p>
+            <h1 className="font-bold text-lg text-white leading-tight tracking-wide">Hệ Thống Quản Lý CCDC</h1>
+            <p className="text-xs text-cyan-400 font-medium">Bưu Điện Thành Phố Huế</p>
           </div>
         </div>
 
