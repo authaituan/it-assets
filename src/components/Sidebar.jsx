@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   Monitor,
@@ -8,10 +8,39 @@ import {
   ShieldCheck,
   Cpu,
   Layers,
-  UserCog
+  UserCog,
+  Printer, 
+  QrCode, 
+  Wifi, 
+  Zap, 
+  Camera, 
+  Scale,
+  ChevronDown,
+  ChevronRight
 } from 'lucide-react';
 
-export default function Sidebar({ activeTab, setActiveTab, authUser }) {
+export default function Sidebar({ activeTab, setActiveTab, authUser, activeInventoryDeviceTypeId, onSelectInventoryCategory }) {
+  const [deviceTypes, setDeviceTypes] = useState([]);
+  const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
+
+  useEffect(() => {
+    fetch('/api/device-types')
+      .then(res => res.json())
+      .then(data => setDeviceTypes(data))
+      .catch(err => console.error(err));
+  }, []);
+
+  const getDeviceIcon = (code) => {
+    switch (code) {
+      case 'PRINTER': return <Printer className="w-4 h-4 text-purple-400" />;
+      case 'SCANNER': return <QrCode className="w-4 h-4 text-emerald-400" />;
+      case 'NETWORK': return <Wifi className="w-4 h-4 text-amber-400" />;
+      case 'UPS': return <Zap className="w-4 h-4 text-yellow-400" />;
+      case 'CAMERA': return <Camera className="w-4 h-4 text-rose-400" />;
+      case 'SCALE': return <Scale className="w-4 h-4 text-blue-400" />;
+      default: return <Monitor className="w-4 h-4 text-cyan-400" />;
+    }
+  };
   const navItems = [
     { id: 'dashboard', label: 'Tổng Quan KPI', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản Lý CCDC', icon: Monitor },
@@ -44,6 +73,71 @@ export default function Sidebar({ activeTab, setActiveTab, authUser }) {
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
+
+            if (item.id === 'inventory') {
+              const handleInventoryClick = () => {
+                if (isActive && !activeInventoryDeviceTypeId) {
+                  setIsInventoryExpanded(!isInventoryExpanded);
+                } else {
+                  setActiveTab('inventory');
+                  setIsInventoryExpanded(true);
+                }
+              };
+
+              return (
+                <div key={item.id} className="flex flex-col">
+                  <div className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}>
+                    <button
+                      onClick={handleInventoryClick}
+                      className="flex items-center gap-3 flex-1 text-left"
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsInventoryExpanded(!isInventoryExpanded);
+                      }}
+                      className="p-1 hover:bg-slate-700/50 rounded-lg transition-colors ml-2"
+                    >
+                      {isInventoryExpanded ? (
+                        <ChevronDown className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      ) : (
+                        <ChevronRight className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      )}
+                    </button>
+                  </div>
+
+                  {isInventoryExpanded && (
+                    <div className="mt-1.5 ml-4 pl-3.5 border-l border-slate-700/50 space-y-1">
+                      {deviceTypes.map((dt) => {
+                        const isSubActive = isActive && activeInventoryDeviceTypeId === dt.id;
+                        return (
+                          <button
+                            key={dt.id}
+                            onClick={() => onSelectInventoryCategory(dt.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                              isSubActive 
+                                ? 'bg-cyan-500/10 text-cyan-300' 
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            {getDeviceIcon(dt.code)}
+                            <span className="truncate leading-tight">{dt.name}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
             return (
               <button
                 key={item.id}

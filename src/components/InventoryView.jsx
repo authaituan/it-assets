@@ -21,11 +21,12 @@ import {
   Plus
 } from 'lucide-react';
 
-export default function InventoryView({ 
-  search, 
-  setSearch, 
-  onSelectEquipment, 
-  onOpenAddModal 
+export default function InventoryView({
+  search,
+  setSearch,
+  onSelectEquipment,
+  onOpenAddModal,
+  initialDeviceTypeId
 }) {
   const [items, setItems] = useState([]);
   const [communes, setCommunes] = useState([]);
@@ -52,6 +53,13 @@ export default function InventoryView({
       .then(data => setDeviceTypes(data))
       .catch(err => console.error(err));
   }, []);
+
+  // Update selectedDeviceTypeId when initialDeviceTypeId changes
+  useEffect(() => {
+    if (initialDeviceTypeId !== undefined) {
+      setSelectedDeviceTypeId(initialDeviceTypeId || '');
+    }
+  }, [initialDeviceTypeId]);
 
   // Cascade Load Post Offices when Commune changes
   useEffect(() => {

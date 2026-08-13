@@ -33,6 +33,7 @@ export default function App() {
   const [theme, setTheme] = useState('cyberpunk');
   const [refreshKey, setRefreshKey] = useState(0);
   const [authUser, setAuthUser] = useState(getInitialAuthUser);
+  const [inventoryDeviceTypeId, setInventoryDeviceTypeId] = useState(null);
 
   // Bất kỳ request ghi nào (qua src/utils/api.js) nhận 401 từ backend sẽ tự
   // xoá token + phát event này -> quay về LoginView, không để lộ lỗi JSON thô.
@@ -73,7 +74,21 @@ export default function App() {
       ) : (
         <>
           {/* Sidebar */}
-          <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} authUser={authUser} />
+          <Sidebar 
+            activeTab={activeTab} 
+            setActiveTab={(tab) => {
+              setActiveTab(tab);
+              if (tab === 'inventory') {
+                setInventoryDeviceTypeId(null);
+              }
+            }} 
+            authUser={authUser} 
+            activeInventoryDeviceTypeId={inventoryDeviceTypeId}
+            onSelectInventoryCategory={(id) => {
+              setActiveTab('inventory');
+              setInventoryDeviceTypeId(id);
+            }}
+          />
 
           {/* Main Content Area */}
           <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
@@ -109,6 +124,7 @@ export default function App() {
                   setSearch={setSearch}
                   onSelectEquipment={(eq) => setSelectedEquipment(eq)}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
+                  initialDeviceTypeId={inventoryDeviceTypeId}
                 />
               )}
 
