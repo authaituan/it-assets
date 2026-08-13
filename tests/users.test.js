@@ -221,3 +221,94 @@ test('PUT /api/users/me/password không có token -> 401', async () => {
   });
   assert.equal(res.status, 401);
 });
+
+// ==========================================
+// Deactivate / Reactivate (server/index.js: PUT /api/users/:id/deactivate,
+// PUT /api/users/:id/reactivate) + POST /api/auth/login chặn user đã khoá.
+// ==========================================
+
+test('PUT /api/users/:id/deactivate role STAFF -> 403', async () => {
+  const { status } = await call('PUT', `/api/users/${mgrId}/deactivate`, { token: staffToken });
+  assert.equal(status, 403);
+});
+
+test('PUT /api/users/:id/deactivate tự vô hiệu hoá CHÍNH MÌNH -> 400 (chặn tự khoá)', async () => {
+  const { status, body } = await call('PUT', `/api/users/${mgrId}/deactivate`, { token: mgrToken });
+  assert.equal(status, 400);
+  assert.ok(body.error);
+  const row = ctx.db.prepare('SELECT deactivated_at FROM users WHERE id = ?').get(mgrId);
+  assert.equal(row.deactivated_at, null, 'tài khoản của chính mình phải vẫn hoạt động, không bị khoá');
+});
+
+test('PUT /api/users/:id/deactivate user không tồn tại -> 404', async () => {
+  const { status } = await call('PUT', '/api/users/khong-ton-tai/deactivate', { token: mgrToken });
+  assert.equal(status, 404);
+});
+
+test('Deactivate user khác -> 200, deactivated_at được set, GET /api/users trả về field này, và user đó KHÔNG đăng nhập được nữa dù đúng mật khẩu (message riêng, khác sai mật khẩu)', async () => {
+  const { body: created } = await call('POST', '/api/users', {
+    token: mgrToken,
+    body: { hrm_code: 'DEACTIVATE_01', full_name: 'Se Bi Khoa', password: 'Password123' }
+  });
+
+  // Trước khi khoá: đăng nhập bình thường được.
+  const beforeLogin = await login('DEACTIVATE_01', 'Password123');
+  assert.equal(beforeLogin.status, 200);
+
+  const deactivateRes = await call('PUT', `/api/users/${created.id}/deactivate`, { token: mgrToken });
+  assert.equal(deactivateRes.status, 200);
+
+  const row = ctx.db.prepare('SELECT deactivated_at FROM users WHERE id = ?').get(created.id);
+  assert.ok(row.deactivated_at, 'deactivated_at phải được set sau khi vô hiệu hoá');
+
+  // GET /api/users phải VẪN trả về user này (không ẩn như equipments soft-delete)
+  // kèm field deactivated_at để UI biết trạng thái.
+  const listRes = await call('GET', '/api/users', { token: mgrToken });
+  const foundInList = listRes.body.find((u) => u.id === created.id);
+  assert.ok(foundInList, 'user đã bị vô hiệu hoá vẫn phải xuất hiện trong GET /api/users');
+  assert.ok(foundInList.deactivated_at, 'GET /api/users phải trả về deactivated_at cho frontend biết trạng thái');
+
+  // Đăng nhập lại với ĐÚNG mật khẩu -> vẫn bị chặn, message RIÊNG khác sai mật khẩu.
+  const afterLogin = await login('DEACTIVATE_01', 'Password123');
+  assert.equal(afterLogin.status, 401);
+  assert.match(afterLogin.body.error, /vô hiệu hoá/i);
+
+  const wrongPasswordLogin = await login('DEACTIVATE_01', 'MatKhauSai999');
+  assert.equal(wrongPasswordLogin.status, 401);
+  assert.notEqual(
+    wrongPasswordLogin.body.error,
+    afterLogin.body.error,
+    'message khi tài khoản bị khoá phải KHÁC message khi sai mật khẩu'
+  );
+});
+
+test('PUT /api/users/:id/reactivate role STAFF -> 403', async () => {
+  const { body: created } = await call('POST', '/api/users', {
+    token: mgrToken,
+    body: { hrm_code: 'REACTIVATE_STAFF_CHECK', full_name: 'Check Staff 403', password: 'Password123' }
+  });
+  await call('PUT', `/api/users/${created.id}/deactivate`, { token: mgrToken });
+
+  const { status } = await call('PUT', `/api/users/${created.id}/reactivate`, { token: staffToken });
+  assert.equal(status, 403);
+});
+
+test('Reactivate -> 200, deactivated_at về NULL, đăng nhập lại được bình thường', async () => {
+  const { body: created } = await call('POST', '/api/users', {
+    token: mgrToken,
+    body: { hrm_code: 'REACTIVATE_01', full_name: 'Se Duoc Kich Hoat Lai', password: 'Password123' }
+  });
+
+  await call('PUT', `/api/users/${created.id}/deactivate`, { token: mgrToken });
+  const blockedLogin = await login('REACTIVATE_01', 'Password123');
+  assert.equal(blockedLogin.status, 401);
+
+  const reactivateRes = await call('PUT', `/api/users/${created.id}/reactivate`, { token: mgrToken });
+  assert.equal(reactivateRes.status, 200);
+
+  const row = ctx.db.prepare('SELECT deactivated_at FROM users WHERE id = ?').get(created.id);
+  assert.equal(row.deactivated_at, null, 'deactivated_at phải về NULL sau khi kích hoạt lại');
+
+  const restoredLogin = await login('REACTIVATE_01', 'Password123');
+  assert.equal(restoredLogin.status, 200, 'sau khi kích hoạt lại phải đăng nhập được bình thường');
+});

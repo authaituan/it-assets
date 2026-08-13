@@ -97,8 +97,22 @@
   `hashPassword()` có sẵn trong `server/auth.js` trước khi lưu).
 - `PUT /api/users/:id` — cần token + role quản lý: sửa `full_name`/`role`. Chặn tự đổi
   `role` của chính mình (so `req.user.id` với `:id`) → 400, tránh tự khoá quyền quản lý.
+  UI đã có ô sửa `full_name` inline (gộp chung với sửa role, cùng 1 nút "Sửa").
 - `PUT /api/users/:id/reset-password` — cần token + role quản lý: reset mật khẩu cho
   user khác, không cần biết mật khẩu cũ.
+- `PUT /api/users/:id/deactivate` / `PUT /api/users/:id/reactivate` — **mới**
+  (`feat/user-edit-deactivate`), cần token + role quản lý: set/xoá cột
+  `users.deactivated_at` (migration idempotent trong `server/db.js`, cùng pattern với
+  `equipments.deleted_at`). `deactivate` chặn tự vô hiệu hoá chính mình (so
+  `req.user.id` với `:id`) → 400, copy đúng pattern chặn tự đổi role. Khác equipments
+  soft-delete: `GET /api/users` **KHÔNG ẩn** user đã vô hiệu hoá khỏi danh sách (trả
+  thêm field `deactivated_at` để UI hiện badge + nút Kích Hoạt Lại) — mục đích khác
+  nhau, quản lý cần thấy ai đang bị khoá.
+- `POST /api/auth/login` — user có `deactivated_at IS NOT NULL` bị chặn đăng nhập
+  **kể cả đúng mật khẩu**, trả 401 message riêng "Tài khoản đã bị vô hiệu hoá, vui
+  lòng liên hệ quản trị viên" (khác message sai mật khẩu). Kiểm tra SAU khi verify mật
+  khẩu đúng (không phải trước) để tránh lộ trạng thái vô hiệu hoá cho người chưa chứng
+  minh biết mật khẩu.
 - `PUT /api/users/me/password` — **chỉ cần token** (KHÔNG cần role quản lý, mọi user kể
   cả STAFF tự đổi được mật khẩu của mình): yêu cầu `currentPassword` đúng (verify bằng
   `verifyPassword()`) mới cho đổi `newPassword`.
@@ -114,6 +128,15 @@
   Quản Lý Người Dùng → tự đổi mật khẩu (sai mật khẩu hiện tại → lỗi rõ ràng; đúng → đổi
   thành công) → đăng xuất → đăng nhập lại bằng mật khẩu MỚI xác nhận có tác dụng → quản
   lý reset mật khẩu + sửa role cho user đó → xoá user test khỏi DB thật sau khi xong.
+- **Sửa thông tin + vô hiệu hoá (mới, `feat/user-edit-deactivate`)**: bảng thêm cột
+  "Trạng Thái" (badge "Đang hoạt động"/"Đã khoá", hàng bị mờ khi khoá). Nút "Sửa" sửa
+  cả `full_name` + `role` cùng lúc inline (role tự disable khi sửa chính mình, giống
+  cách nút "Vô Hiệu Hoá" tự disable với chính mình). Đã test qua UI thật: sửa tên user
+  khác → đúng trên danh sách → vô hiệu hoá → badge đổi "Đã khoá" → đăng nhập lại bằng
+  đúng mật khẩu của user đó → bị chặn với message riêng ("Tài khoản đã bị vô hiệu hoá,
+  vui lòng liên hệ quản trị viên") khác hẳn message sai mật khẩu → quản lý bấm Kích
+  Hoạt Lại → đăng nhập lại bình thường được → thử tự vô hiệu hoá chính tài khoản đang
+  đăng nhập (cả qua UI nút đã disable, lẫn gọi API trực tiếp) → 400 bị chặn.
 
 ## Bảo mật đăng nhập (Vòng 2, 2026-08-12)
 - **Rate-limit**: tối đa 5 lần sai trong 15 phút / (IP + mã HRM), lần thứ 6 trả `429`
