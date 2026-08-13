@@ -17,19 +17,19 @@
 
 Toàn bộ đã verify bằng `git fetch` + đọc code thật trên `main`, không dựa vào báo cáo.
 
-## ✅ VÒNG 2 — Gần hoàn tất (2026-08-12)
+## ✅ VÒNG 2 — HOÀN TẤT (2026-08-12, main = `666329a`)
 
-| Việc | Trạng thái | Ghi chú |
+| Việc | PR | Trạng thái |
 |---|---|---|
-| Route quản trị user (tạo/đổi mật khẩu qua UI) | [x] Merged (PR #5) | 5 route + UI đầy đủ, 15 test tự động |
-| Rate-limit đăng nhập (chống brute-force) | [x] Code xong, **chờ PO push + merge** | 5 lần sai/15 phút theo (IP+hrm_code), verify bằng test + curl thật |
-| Set `JWT_SECRET` thật khi deploy production | [x] Hướng dẫn xong (`06_DEPLOYMENT.md`) | Thao tác vận hành, PO tự làm khi deploy thật, không phải code |
-| Dọn `.claude/launch.json` lọt vào repo | [x] Code xong, **chờ PO push + merge** | Phát hiện khi audit lại toàn bộ repo |
-| Test tự động cho route user-admin | [x] Code xong, **chờ PO push + merge** | `tests/users.test.js`, 15 test — tổng còn 49 test |
-| Refresh token / logout phía server | [ ] Chưa giao | Còn lại duy nhất của Vòng 2, xem mục dưới |
+| Route quản trị user (tạo/đổi mật khẩu qua UI) | #5 | [x] Merged |
+| Rate-limit đăng nhập (chống brute-force) | #6 | [x] Merged |
+| Set `JWT_SECRET` thật khi deploy production | #6 | [x] Hướng dẫn xong (`06_DEPLOYMENT.md`) |
+| Dọn `.claude/launch.json` lọt vào repo | #6 | [x] Merged |
+| Test tự động cho route user-admin | #6 | [x] Merged |
+| Sửa tên user + Vô hiệu hoá/Kích hoạt lại tài khoản (phát sinh khi PO review UI) | #7 | [x] Merged |
 
-**4 việc trên (rate-limit, dọn file, test mới, 06_DEPLOYMENT.md) đã code + test xong
-trong sandbox Claude, đóng gói sẵn để PO áp vào máy — xem hướng dẫn ở tin nhắn kèm theo.**
+Toàn bộ đã verify bằng `git fetch` + tự chạy test trên `main` thật, không dựa vào báo cáo.
+Tổng test hiện tại: **55/55 pass**.
 
 ## 🔵 VÒNG 3 — Đề xuất (chưa giao)
 
@@ -37,7 +37,7 @@ trong sandbox Claude, đóng gói sẵn để PO áp vào máy — xem hướng 
 |---|---|---|
 | Refresh token / logout phía server | Có thể để sau | Hiện token hết hạn phải đăng nhập lại thủ công, chưa có cơ chế tự làm mới |
 | CI (tự động chạy `npm test` qua GitHub Actions) | Có thể để sau | Hiện phải tự gõ `npm test` |
-| Tách `server/index.js` thành route files riêng | Khi file quá dài | Hiện ~950 dòng (tăng dần), cân nhắc khi thêm module mới |
+| Tách `server/index.js` thành route files riêng | Khi file quá dài | Hiện ~960 dòng (tăng dần), cân nhắc khi thêm module mới |
 
 ## ✅ Đã hoàn thành (tick khi CTO AI xác nhận có evidence)
 - [x] CRUD Create/Read/Update/Delete (soft) cho Equipment.
@@ -47,5 +47,6 @@ trong sandbox Claude, đóng gói sẵn để PO áp vào máy — xem hướng 
 - [x] 4 theme giao diện.
 - [x] Bộ tài liệu AI (`docs/ai/`) — khởi tạo 2026-08-12.
 - [x] Auth + RBAC (backend + frontend đầy đủ).
-- [x] User Administration (tạo/sửa/xoá quyền, đổi mật khẩu) + rate-limit đăng nhập.
-- [x] 49 test tự động.
+- [x] User Administration đầy đủ: tạo, sửa tên/role, reset mật khẩu, vô hiệu hoá/kích
+  hoạt lại — kèm rate-limit đăng nhập chống brute-force.
+- [x] 55 test tự động.
