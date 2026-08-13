@@ -1,8 +1,8 @@
 # 00 — SNAPSHOT Dự Án (it-assets / Quản lý CCDC Bưu điện Huế)
 
-> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** — **Vòng 1
-> hoàn tất**, đã merge vào `main` (commit `fe8aa3e`), verify bằng `git fetch` trực tiếp
-> (không dựa vào báo cáo suông) cho từng bước.
+> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** — **Vòng 2 hoàn
+> tất** (commit `666329a`) + **đang chạy thật trên mạng LAN nội bộ** tại
+> `http://10.47.33.33:3000` (xem `06_DEPLOYMENT.md` mục 4).
 > Nội dung được dựng từ code thực tế (`server/`, `package.json`, `scripts/`), không suy đoán.
 
 ## Tổng quan
