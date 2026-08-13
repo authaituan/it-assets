@@ -24,6 +24,7 @@ function seedMinimalOrg(db) {
   const communeCode = 'TESTC';
   const postOfficeCode = 'TESTPO';
   const deviceTypeCode = 'TEST_DEVICE';
+  const assetPrefix = 'TST'; // cần có prefix, nếu không POST /api/equipments sẽ chặn (400)
 
   db.prepare(`INSERT INTO province_post_offices (id, code, name) VALUES (?, ?, ?)`)
     .run(provinceId, provinceCode, 'Tỉnh Test');
@@ -31,10 +32,10 @@ function seedMinimalOrg(db) {
     .run(communeId, communeCode, 'BĐX Test', provinceId);
   db.prepare(`INSERT INTO post_offices (id, code, name, commune_id) VALUES (?, ?, ?, ?)`)
     .run(postOfficeId, postOfficeCode, 'Bưu cục Test', communeId);
-  db.prepare(`INSERT INTO device_types (id, code, name) VALUES (?, ?, ?)`)
-    .run(deviceTypeId, deviceTypeCode, 'Máy Test');
+  db.prepare(`INSERT INTO device_types (id, code, name, asset_prefix) VALUES (?, ?, ?, ?)`)
+    .run(deviceTypeId, deviceTypeCode, 'Máy Test', assetPrefix);
 
-  return { provinceId, communeId, postOfficeId, deviceTypeId, provinceCode, communeCode, postOfficeCode, deviceTypeCode };
+  return { provinceId, communeId, postOfficeId, deviceTypeId, provinceCode, communeCode, postOfficeCode, deviceTypeCode, assetPrefix };
 }
 
 // Seed 1 user với password_hash thật (dùng hashPassword thật từ server/auth.js)

@@ -4,6 +4,56 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-13] - Lược đồ mã CCDC có nghĩa + sửa/mở rộng chỉnh sửa thiết bị + đổi thương hiệu (feat/asset-tag-scheme)
+
+### Changes
+- **server/db.js**: thêm cột `device_types.asset_prefix` + `equipments.purchase_year`
+  (CREATE TABLE + migration idempotent). Khi thêm `asset_prefix` lần đầu, seed 1 lần
+  prefix cho 8 danh mục hiện có theo `code` (PC/PRN/PRO/NET/SCA/UPS/CAM/SCA — vài cái
+  tạm, xem `04_DECISIONS.md`). KHÔNG đổi asset_tag của thiết bị cũ.
+- **server/index.js**: `POST /api/equipments` sinh `asset_tag` mới `<PREFIX>-<YY>-<seq>`
+  (tính MAX+1 theo cặp prefix+năm, trong transaction; chặn 400 nếu danh mục chưa có
+  prefix); nhận `purchase_year`. `PUT /api/equipments/:id` nhận thêm `device_type_id/
+  brand_id/brand_name/post_office_id/purchase_year` (đổi loại KHÔNG đổi lại asset_tag).
+  `POST /api/device-types` nhận `asset_prefix`; route mới `PUT /api/device-types/:id`
+  (sửa name/asset_prefix/description, validate prefix `^[A-Z0-9]{2,5}$`).
+- **src/components/CategoryAdminView.jsx** (mới): view "Quản Lý Danh Mục" — sửa
+  `asset_prefix` inline (role quản lý). Wire vào Sidebar + App.jsx.
+- **AddCategoryModal.jsx**: thêm ô "Tiền Tố Mã CCDC". **AddEquipmentModal.jsx**: thêm ô
+  "Năm Mua". **EquipmentDetailModal.jsx**: form Chỉnh Sửa bổ sung Model + Loại thiết bị +
+  Hãng + BĐX/Bưu cục (cascading, preselect đúng) + Năm Mua; hiển thị asset_tag làm tiêu
+  đề. **InventoryView.jsx**: cột "Mã CCDC / Máy" hiển thị `asset_tag` làm chữ đậm chính.
+- **Sidebar.jsx + LoginView.jsx + README.md**: đổi thương hiệu "CCDC POST"/"Bưu Điện Tỉnh
+  Thừa Thiên Huế" → "Hệ Thống Quản Lý CCDC"/"Bưu Điện Thành Phố Huế".
+- **tests/helpers/fixtures.js**: `seedMinimalOrg` thêm `asset_prefix='TST'` (nếu không
+  POST equipment sẽ bị chặn 400 — sửa cho khớp lược đồ mới, không phải bug).
+- **tests/equipments.test.js**: +5 test cho lược đồ mới (001/002 tăng dần, năm khác từ
+  001, mặc định năm hiện tại, chặn khi thiếu prefix, PUT đổi loại giữ nguyên asset_tag).
+
+### Reason
+Mã `CCDC-<mã bưu cục>-<4 số cuối timestamp>` cũ vô nghĩa. Đổi sang mã có ý nghĩa
+`<PREFIX>-<YY>-<seq>` cho thiết bị mới. Đồng thời sửa các thiếu sót: form Sửa thiếu ô
+model/loại/hãng/bưu cục/năm; InventoryView hiển thị nhầm hostname thay vì mã CCDC; chưa
+sửa được danh mục đã tạo.
+
+### Tested
+`npm test`: 55 test cũ + 5 mới → **60/60 pass**. UI thật (Vite :3000 → Express :5000):
+tạo danh mục "TST" (prefix TST) → tạo 2 thiết bị cùng năm 2024 → `TST-24-001`, `TST-24-002`;
+tạo năm 2025 → `TST-25-001` (bắt đầu lại từ 001); danh mục để trống prefix → tạo thiết bị
+bị chặn 400 message rõ ràng; sửa prefix danh mục đó thành NPX qua UI Quản Lý Danh Mục →
+tạo thiết bị → `NPX-24-001`; sửa 1 thiết bị đổi model+loại+bưu cục+năm mua → cả 4 lưu
+đúng, asset_tag `TST-24-001` KHÔNG đổi dù đổi loại; InventoryView hiện đúng mã CCDC làm
+chữ đậm; verify thiết bị THẬT `CCDC-530000-0018` giữ nguyên mã sau migration; màn đăng
+nhập + Sidebar hiện tên đơn vị mới. Dọn sạch dữ liệu test (4 thiết bị, 2 danh mục, 1 user)
+sau khi xong — active equipments về đúng 353, device_types về 8.
+
+### PO cần xử lý tiếp
+Vài `asset_prefix` gán tạm (COMPUTER=PC gộp desktop+laptop+POS; NETWORK=NET gộp SW/RTR/AP;
+SCANNER+SCALE cùng `SCA`; UPS/CAM/PRO...) — PO vào "Quản Lý Danh Mục" chỉnh lại, xem bảng
+chi tiết trong `04_DECISIONS.md`.
+
+---
+
 ## [2026-08-12] - Fix server crash khi có thư mục dist/ (Express 5 + path-to-regexp)
 
 ### Changes

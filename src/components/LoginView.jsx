@@ -52,8 +52,8 @@ export default function LoginView({ onLoginSuccess }) {
               <Cpu className="w-7 h-7" />
             </div>
             <div>
-              <h1 className="font-bold text-lg text-white leading-tight">CCDC POST</h1>
-              <p className="text-xs text-cyan-400 font-medium">Bưu Điện Tỉnh Thừa Thiên Huế</p>
+              <h1 className="font-bold text-lg text-white leading-tight">Hệ Thống Quản Lý CCDC</h1>
+              <p className="text-xs text-cyan-400 font-medium">Bưu Điện Thành Phố Huế</p>
             </div>
           </div>
 

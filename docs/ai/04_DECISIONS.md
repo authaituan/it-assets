@@ -109,6 +109,35 @@ lúc đó. Chưa cần xử lý ở quy mô hiện tại.
   chạy thử UI thật được như nhau, nên "có UI hay không" không phải tiêu chí phân công
   đúng. Áp dụng lâu dài, không cần PO xác nhận lại trừ khi PO chủ động đổi ý.
 
+- **2026-08-13 | QUYẾT ĐỊNH | theo prompt PO, thực hiện bởi Claude (`feat/asset-tag-scheme`)**
+  — Lược đồ mã CCDC mới `<PREFIX>-<YY>-<seq 3 chữ số>` (vd `PC-24-001`) **CHỈ áp dụng cho
+  thiết bị TẠO MỚI** từ nay. **TUYỆT ĐỐI KHÔNG đổi `asset_tag` của 353 thiết bị thật đã có**
+  (vẫn giữ định dạng cũ `CCDC-<mã bưu cục>-<seq>`) — các thiết bị này đang được dùng trên
+  hệ thống LAN production (`06_DEPLOYMENT.md`), đổi mã hàng loạt sẽ phá vỡ tham chiếu thực
+  tế. Migration chỉ THÊM cột (`device_types.asset_prefix`, `equipments.purchase_year`),
+  không UPDATE `asset_tag` cũ. Đã verify sau migration + toàn bộ thao tác test: thiết bị
+  thật `CCDC-530000-0018` giữ nguyên mã. Nếu sau này PO muốn đổi mã đồng loạt cho thiết bị
+  cũ → phải là quyết định riêng của PO, có backup DB trước, KHÔNG Dev AI nào tự làm.
+
+- **2026-08-13 | CẦN PO XEM LẠI | `asset_prefix` gán TẠM cho danh mục hiện có** — Migration
+  đã tự seed `asset_prefix` cho 8 danh mục thật dựa theo `code`. Bảng dưới đây liệt kê rõ
+  mức độ chắc chắn; **PO cần vào "Quản Lý Danh Mục" chỉnh lại các dòng ⚠️**:
+  | Danh mục (name) | code | prefix đã gán | Đánh giá |
+  |---|---|---|---|
+  | Máy in Bưu chính | PRINTER | `PRN` | ✅ Khớp rõ (máy in) |
+  | Máy tính & POS | COMPUTER | `PC` | ⚠️ Danh mục GỘP desktop+laptop+POS (352 thiết bị). Gán `PC` theo "máy tính". PO cân nhắc TÁCH thành 2 danh mục PC (bàn) + LAP (laptop) nếu cần phân biệt. |
+  | Máy Chiếu & Kiosk | M_Y_CHI_U___KIOSK | `PRO` | ⚠️ Danh mục GỘP máy chiếu (PRO) + Kiosk. Gán `PRO` theo "máy chiếu". |
+  | Thiết bị Mạng | NETWORK | `NET` | ⚠️ Danh mục GỘP switch(SW)+router(RTR)+wifi(AP). Không khớp 1 loại nào → tạm `NET` (3 ký tự code). |
+  | Máy quét mã vạch | SCANNER | `SCA` | ⚠️ Không nằm trong 10 loại PO đưa → tạm 3 ký tự code. **TRÙNG prefix với "Cân điện tử"** (xem dưới) — PO nên đổi 1 trong 2. |
+  | Cân điện tử | SCALE | `SCA` | ⚠️ Không nằm trong 10 loại → tạm 3 ký tự code. **TRÙNG prefix với "Máy quét mã vạch"**. |
+  | Bộ lưu điện (UPS) | UPS | `UPS` | ⚠️ Không nằm trong 10 loại → tạm 3 ký tự code (đủ rõ nghĩa, PO xác nhận là được). |
+  | Camera an ninh | CAMERA | `CAM` | ⚠️ Không nằm trong 10 loại → tạm 3 ký tự code (đủ rõ nghĩa). |
+
+  Lưu ý kỹ thuật: prefix TRÙNG nhau (SCANNER+SCALE cùng `SCA`) KHÔNG gây trùng `asset_tag`
+  (thuật toán MAX+1 theo cả namespace `SCA-YY-%` vẫn đảm bảo mã duy nhất), chỉ khiến 2
+  danh mục dùng CHUNG dãy số thứ tự — về mặt nghiệp vụ nên tách, nhưng không phải lỗi dữ
+  liệu. Cả 2 danh mục này hiện có 0 thiết bị nên đổi prefix bây giờ hoàn toàn an toàn.
+
 ---
 
 ### 8. `app.get('*', ...)` crash server khi thư mục `dist/` tồn tại (Express 5 + path-to-regexp mới)

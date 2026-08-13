@@ -198,3 +198,83 @@ test('DELETE thiết bị không tồn tại (id ngẫu nhiên) -> 404', async (
   });
   assert.equal(res.status, 404);
 });
+
+// ==========================================
+// Lược đồ mã CCDC mới: <PREFIX>-<YY>-<seq 3 chữ số>, tăng riêng theo (prefix, năm).
+// (feat/asset-tag-scheme)
+// ==========================================
+async function createEq(body) {
+  const res = await fetch(`${ctx.baseUrl}/api/equipments`, {
+    method: 'POST',
+    headers: authHeaders(),
+    body: JSON.stringify(body)
+  });
+  let data = {};
+  try { data = await res.json(); } catch (e) { /* no body */ }
+  return { status: res.status, body: data };
+}
+
+test('asset_tag mới: sinh đúng <PREFIX>-<YY>-001, 002 tăng dần theo cùng (prefix, năm)', async () => {
+  const yy = String(2024).slice(-2); // dùng năm cố định để test số thứ tự ổn định
+  const a = await createEq({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, purchase_year: 2024 });
+  assert.equal(a.status, 201);
+  assert.equal(a.body.asset_tag, `${fixtures.assetPrefix}-${yy}-001`);
+
+  const b = await createEq({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, purchase_year: 2024 });
+  assert.equal(b.status, 201);
+  assert.equal(b.body.asset_tag, `${fixtures.assetPrefix}-${yy}-002`);
+});
+
+test('asset_tag mới: năm mua KHÁC thì số thứ tự bắt đầu lại từ 001 (không cộng dồn chung)', async () => {
+  const yy25 = String(2025).slice(-2);
+  const c = await createEq({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, purchase_year: 2025 });
+  assert.equal(c.status, 201);
+  assert.equal(c.body.asset_tag, `${fixtures.assetPrefix}-${yy25}-001`, 'năm khác phải bắt đầu lại từ 001');
+});
+
+test('asset_tag mới: không nhập purchase_year -> dùng năm hiện tại', async () => {
+  const yyNow = String(new Date().getFullYear()).slice(-2);
+  const d = await createEq({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId });
+  assert.equal(d.status, 201);
+  assert.ok(
+    d.body.asset_tag.startsWith(`${fixtures.assetPrefix}-${yyNow}-`),
+    `asset_tag phải bắt đầu bằng ${fixtures.assetPrefix}-${yyNow}- khi không nhập năm, nhận: ${d.body.asset_tag}`
+  );
+});
+
+test('POST equipments với danh mục CHƯA có asset_prefix -> 400 thông báo rõ ràng', async () => {
+  // Tạo 1 device_type không có asset_prefix (chèn thẳng DB, mô phỏng danh mục chưa cấu hình).
+  const { uid } = require('./helpers/fixtures');
+  const noPrefixTypeId = uid();
+  ctx.db.prepare("INSERT INTO device_types (id, code, name, asset_prefix) VALUES (?, ?, ?, NULL)")
+    .run(noPrefixTypeId, 'NOPREFIX_TYPE', 'Danh Mục Chưa Cấu Hình');
+
+  const res = await createEq({ device_type_id: noPrefixTypeId, post_office_id: fixtures.postOfficeId });
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /tiền tố mã CCDC/i);
+});
+
+test('PUT equipments: đổi device_type_id KHÔNG đổi lại asset_tag đã có', async () => {
+  const created = await createEq({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, purchase_year: 2024 });
+  assert.equal(created.status, 201);
+  const originalTag = created.body.asset_tag;
+
+  // Tạo device_type thứ 2 (có prefix khác) để đổi sang.
+  const { uid } = require('./helpers/fixtures');
+  const otherTypeId = uid();
+  ctx.db.prepare("INSERT INTO device_types (id, code, name, asset_prefix) VALUES (?, ?, ?, ?)")
+    .run(otherTypeId, 'OTHER_TYPE', 'Loại Khác', 'OTH');
+
+  const putRes = await fetch(`${ctx.baseUrl}/api/equipments/${created.body.id}`, {
+    method: 'PUT',
+    headers: authHeaders(),
+    body: JSON.stringify({ device_type_id: otherTypeId, model: 'Model Moi', purchase_year: 2027 })
+  });
+  assert.equal(putRes.status, 200);
+
+  const row = ctx.db.prepare('SELECT asset_tag, device_type_id, model, purchase_year FROM equipments WHERE id = ?').get(created.body.id);
+  assert.equal(row.asset_tag, originalTag, 'asset_tag KHÔNG được đổi khi đổi loại thiết bị');
+  assert.equal(row.device_type_id, otherTypeId, 'device_type_id phải được cập nhật');
+  assert.equal(row.model, 'Model Moi', 'model phải được cập nhật');
+  assert.equal(row.purchase_year, 2027, 'purchase_year phải được cập nhật');
+});

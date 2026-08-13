@@ -35,24 +35,44 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
   const [rawUserName, setRawUserName] = useState('');
   const [status, setStatus] = useState('IN_USE');
   const [notes, setNotes] = useState('');
+  const [model, setModel] = useState('');
+  const [purchaseYear, setPurchaseYear] = useState('');
+  const [deviceTypeId, setDeviceTypeId] = useState('');
+  const [brandName, setBrandName] = useState('');
+  const [communeId, setCommuneId] = useState('');
+  const [postOfficeId, setPostOfficeId] = useState('');
   const [cpu, setCpu] = useState('');
   const [ram, setRam] = useState('');
   const [storage, setStorage] = useState('');
   const [os, setOs] = useState('');
 
+  // Dropdown data (load 1 lần) — dùng cho các ô đổi loại thiết bị / bưu cục.
+  const [deviceTypes, setDeviceTypes] = useState([]);
+  const [communes, setCommunes] = useState([]);
+  const [allPostOffices, setAllPostOffices] = useState([]);
+  const [communeInitialized, setCommuneInitialized] = useState(false);
+
   const eqId = equipment?.id;
+
+  // Load danh mục thiết bị + BĐX + toàn bộ bưu cục (để lọc cascading client-side).
+  useEffect(() => {
+    fetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
+    fetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
+    fetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (!eqId) return;
     let isMounted = true;
     setLoading(true);
+    setCommuneInitialized(false);
 
     fetch(`/api/equipments/${eqId}`)
       .then(res => res.json())
       .then(data => {
         if (!isMounted) return;
         setDetail(data);
-        
+
         // Populate edit form states
         setHostname(data.hostname || '');
         setIpAddress(data.ip_address || '');
@@ -61,6 +81,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         setRawUserName(data.assigned_user_name || data.raw_user_name || '');
         setStatus(data.status || 'IN_USE');
         setNotes(data.notes || '');
+        setModel(data.model || '');
+        setPurchaseYear(data.purchase_year || '');
+        setDeviceTypeId(data.device_type_id || '');
+        setBrandName(data.brand_name || '');
+        setPostOfficeId(data.post_office_id || '');
 
         const specs = data.specs || {};
         setCpu(specs.cpu || '');
@@ -79,6 +104,20 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
       isMounted = false;
     };
   }, [eqId]);
+
+  // Suy ra BĐX (commune) hiện tại của thiết bị từ bưu cục đang gán, để preselect
+  // dropdown — chỉ chạy 1 lần sau khi cả detail lẫn danh sách bưu cục đã sẵn sàng.
+  useEffect(() => {
+    if (communeInitialized) return;
+    if (!postOfficeId || allPostOffices.length === 0) return;
+    const po = allPostOffices.find(p => p.id === postOfficeId);
+    if (po) {
+      setCommuneId(po.commune_id);
+      setCommuneInitialized(true);
+    }
+  }, [postOfficeId, allPostOffices, communeInitialized]);
+
+  const postOfficesForCommune = allPostOffices.filter(p => p.commune_id === communeId);
 
   if (!equipment) return null;
 
@@ -107,6 +146,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         raw_user_name: rawUserName,
         status,
         notes,
+        model,
+        purchase_year: purchaseYear,
+        device_type_id: deviceTypeId,
+        brand_name: brandName,
+        post_office_id: postOfficeId,
         specs: updatedSpecs
       })
     });
@@ -121,7 +165,9 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
     setSaveSuccess(true);
     setIsEditing(false);
 
-    // Update local detail view
+    // Update local detail view. Đổi loại thiết bị/bưu cục/hãng: nạp lại từ server
+    // để hiển thị tên mới (post_office_name, device_type_name...) cho đúng, tránh
+    // hiển thị dữ liệu cũ. Gọi onUpdated để danh sách ngoài cũng refresh.
     setDetail(prev => ({
       ...prev,
       hostname,
@@ -131,6 +177,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
       raw_user_name: rawUserName,
       status,
       notes,
+      model,
+      purchase_year: purchaseYear,
+      device_type_id: deviceTypeId,
+      brand_name: brandName,
+      post_office_id: postOfficeId,
       specs: updatedSpecs
     }));
 
@@ -169,8 +220,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               <Monitor className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white">{detail?.hostname || equipment.hostname || equipment.asset_tag}</h3>
-              <p className="text-xs text-slate-400">{equipment.brand_name || 'Hãng khác'} {equipment.model || ''}</p>
+              <h3 className="font-bold text-base text-white font-mono">{detail?.asset_tag || equipment.asset_tag || 'Chưa có mã'}</h3>
+              <p className="text-xs text-slate-400">
+                {(detail?.hostname || equipment.hostname) && <span className="text-slate-300">{detail?.hostname || equipment.hostname} · </span>}
+                {detail?.brand_name || equipment.brand_name || 'Hãng khác'} {detail?.model || equipment.model || ''}
+              </p>
             </div>
           </div>
 
@@ -298,6 +352,98 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                   onChange={e => setRawUserName(e.target.value)}
                   className="w-full glass-input p-2.5 rounded-xl text-xs"
                 />
+              </div>
+            </div>
+
+            {/* Loại thiết bị + Hãng */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Loại Thiết Bị</label>
+                <select
+                  value={deviceTypeId}
+                  onChange={e => setDeviceTypeId(e.target.value)}
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                >
+                  {deviceTypes.map(dt => (
+                    <option key={dt.id} value={dt.id}>{dt.name}</option>
+                  ))}
+                </select>
+                <p className="text-[10px] text-slate-500 mt-1">Đổi loại KHÔNG đổi lại mã CCDC đã có.</p>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Hãng Sản Xuất</label>
+                <input
+                  type="text"
+                  value={brandName}
+                  onChange={e => setBrandName(e.target.value)}
+                  placeholder="Dell, HP, Posbank..."
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Model + Năm Mua */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Dòng Máy / Model</label>
+                <input
+                  type="text"
+                  value={model}
+                  onChange={e => setModel(e.target.value)}
+                  placeholder="OptiPlex 3040 / ProDesk 600 G5"
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Năm Mua</label>
+                <input
+                  type="number"
+                  value={purchaseYear}
+                  onChange={e => setPurchaseYear(e.target.value)}
+                  min="1990"
+                  max="2100"
+                  placeholder="Chưa có"
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Đổi Bưu cục (cascading BĐX -> Bưu cục) */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Điện Xã (BĐX)</label>
+                <select
+                  value={communeId}
+                  onChange={e => {
+                    const newCommune = e.target.value;
+                    setCommuneId(newCommune);
+                    // Người dùng đổi BĐX -> chọn lại bưu cục đầu tiên của BĐX đó.
+                    const firstPo = allPostOffices.find(p => p.commune_id === newCommune);
+                    setPostOfficeId(firstPo ? firstPo.id : '');
+                  }}
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                >
+                  <option value="">-- Chọn BĐX --</option>
+                  {communes.map(c => (
+                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Cục (MBC)</label>
+                <select
+                  value={postOfficeId}
+                  onChange={e => setPostOfficeId(e.target.value)}
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                >
+                  <option value="">-- Chọn Bưu cục --</option>
+                  {postOfficesForCommune.map(po => (
+                    <option key={po.id} value={po.id}>{po.code} - {po.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
 
