@@ -88,6 +88,14 @@ app.post('/api/auth/login', (req, res) => {
       return res.status(401).json({ error: 'Mã HRM hoặc mật khẩu không đúng' });
     }
 
+    // Mật khẩu đúng nhưng tài khoản đã bị vô hiệu hoá -> vẫn chặn đăng nhập, dùng
+    // message RIÊNG (khác lỗi sai mật khẩu) để người dùng biết rõ cần liên hệ quản
+    // trị viên. Kiểm tra SAU KHI verify mật khẩu đúng (không phải trước) để tránh lộ
+    // trạng thái vô hiệu hoá của 1 tài khoản cho người chưa chứng minh biết mật khẩu.
+    if (user.deactivated_at) {
+      return res.status(401).json({ error: 'Tài khoản đã bị vô hiệu hoá, vui lòng liên hệ quản trị viên' });
+    }
+
     clearLoginAttempts(rateLimitKey);
     const token = signToken(user);
     res.json({
@@ -778,8 +786,10 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
 // Danh sách user — KHÔNG bao giờ trả password_hash (SELECT tường minh từng cột).
 app.get('/api/users', authRequired, requireManager, (req, res) => {
   try {
+    // Vẫn trả về CẢ user đã vô hiệu hoá (khác equipments soft-delete vốn ẩn khỏi danh
+    // sách) — UI cần thấy để biết ai đang bị khoá + có nút Kích Hoạt Lại.
     const users = db.prepare(`
-      SELECT id, hrm_code, full_name, role, post_office_code, commune_code, post_office_id, created_at
+      SELECT id, hrm_code, full_name, role, post_office_code, commune_code, post_office_id, created_at, deactivated_at
       FROM users
       ORDER BY created_at DESC
     `).all();
@@ -871,6 +881,40 @@ app.put('/api/users/:id/reset-password', authRequired, requireManager, (req, res
     db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), req.params.id);
 
     res.json({ message: 'Đặt lại mật khẩu thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Vô hiệu hoá tài khoản (KHÔNG xoá cứng, chỉ set deactivated_at) — chặn đăng nhập
+// từ lần sau (xem POST /api/auth/login). Chặn tự vô hiệu hoá chính mình (so
+// req.user.id với :id) — copy đúng pattern đã dùng để chặn tự đổi role.
+app.put('/api/users/:id/deactivate', authRequired, requireManager, (req, res) => {
+  try {
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({ error: 'Không thể tự vô hiệu hoá chính tài khoản đang đăng nhập' });
+    }
+
+    const existing = db.prepare("SELECT id FROM users WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+
+    db.prepare("UPDATE users SET deactivated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
+
+    res.json({ message: 'Đã vô hiệu hoá tài khoản' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Khôi phục tài khoản đã vô hiệu hoá (set deactivated_at = NULL).
+app.put('/api/users/:id/reactivate', authRequired, requireManager, (req, res) => {
+  try {
+    const existing = db.prepare("SELECT id FROM users WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
+
+    db.prepare("UPDATE users SET deactivated_at = NULL WHERE id = ?").run(req.params.id);
+
+    res.json({ message: 'Đã kích hoạt lại tài khoản' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

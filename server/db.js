@@ -60,6 +60,7 @@ db.exec(`
     role TEXT DEFAULT 'STAFF',
     password_hash TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    deactivated_at DATETIME DEFAULT NULL, -- vô hiệu hoá: NULL = còn hoạt động, có giá trị = đã bị khoá
     FOREIGN KEY(post_office_id) REFERENCES post_offices(id)
   );
 
@@ -147,6 +148,22 @@ try {
   }
 } catch (err) {
   console.error('[db] Lỗi migration deleted_at:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại:
+// Thêm cột deactivated_at vào bảng users nếu chưa có (idempotent, phục vụ
+// vô hiệu hoá tài khoản — cùng pattern với equipments.deleted_at ở trên).
+// ==========================================
+try {
+  const userCols2 = db.prepare("PRAGMA table_info(users)").all();
+  const hasDeactivatedAt = userCols2.some((col) => col.name === 'deactivated_at');
+  if (!hasDeactivatedAt) {
+    db.exec("ALTER TABLE users ADD COLUMN deactivated_at DATETIME DEFAULT NULL");
+    console.log('[db] Migration: đã thêm cột users.deactivated_at (vô hiệu hoá tài khoản)');
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration deactivated_at:', err.message);
 }
 
 module.exports = db;

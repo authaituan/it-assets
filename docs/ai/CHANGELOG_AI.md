@@ -4,6 +4,52 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-13] - Sửa thông tin user + Vô hiệu hoá/Kích hoạt lại tài khoản (feat/user-edit-deactivate)
+
+### Changes
+- **server/db.js**: thêm cột `users.deactivated_at DATETIME DEFAULT NULL` vào CREATE
+  TABLE gốc + migration ALTER TABLE idempotent riêng cho DB đã tồn tại (copy đúng
+  pattern đã dùng cho `equipments.deleted_at`).
+- **server/index.js**:
+  - `GET /api/users`: thêm `deactivated_at` vào SELECT (vẫn trả về CẢ user đã khoá,
+    không ẩn như equipments soft-delete — quản lý cần thấy để biết ai đang bị khoá).
+  - `POST /api/auth/login`: chặn đăng nhập nếu `user.deactivated_at` có giá trị, kể cả
+    đúng mật khẩu → 401 message riêng "Tài khoản đã bị vô hiệu hoá, vui lòng liên hệ
+    quản trị viên" (khác message sai mật khẩu). Check đặt SAU khi verify mật khẩu đúng
+    để tránh lộ trạng thái khoá cho người chưa chứng minh biết mật khẩu.
+  - `PUT /api/users/:id/deactivate` (mới): set `deactivated_at = CURRENT_TIMESTAMP`.
+    Chặn tự vô hiệu hoá chính mình (so `req.user.id` với `:id`) → 400, copy đúng
+    pattern đã dùng để chặn tự đổi role.
+  - `PUT /api/users/:id/reactivate` (mới): set `deactivated_at = NULL`.
+  - `PUT /api/users/:id` (route cũ, không đổi logic) — chỉ cần UI gửi đúng `full_name`.
+  - Không sửa `server/auth.js`, dùng lại `authRequired`/`requireManager` nguyên trạng.
+- **src/components/UserAdminView.jsx**: viết lại — gộp "Sửa Role" thành nút "Sửa" sửa
+  cả `full_name` + `role` inline cùng lúc (dropdown role tự disable khi sửa chính
+  mình); thêm cột "Trạng Thái" (badge "Đang hoạt động"/"Đã khoá", hàng mờ khi khoá);
+  thêm nút "Vô Hiệu Hoá"/"Kích Hoạt Lại" (tự disable với chính mình, xác nhận bằng
+  `window.confirm` trước khi vô hiệu hoá). Tất cả request ghi qua `apiFetchJson`.
+- **tests/users.test.js**: thêm 6 test case cho `deactivate`/`reactivate` + login khi
+  đã bị khoá (kể cả đúng mật khẩu vẫn bị chặn, message khác message sai mật khẩu).
+
+### Reason
+`PUT /api/users/:id` backend đã nhận `full_name` từ trước nhưng UI chưa có ô sửa tên
+(chỉ có "Sửa Role"). Cũng chưa có cách nào khoá/mở lại 1 tài khoản — chỉ có xoá cứng
+qua script Node thủ công (rủi ro, không thể khôi phục). Đóng nốt vòng lặp quản trị
+user còn thiếu.
+
+### Tested
+`npm test`: 49 test cũ vẫn pass + 6 test mới → **55/55 pass**. UI thật (Vite :3000 →
+Express :5000, Chrome thật): sửa tên user khác → đúng trên danh sách → vô hiệu hoá →
+badge đổi "Đã khoá", hàng mờ, nút đổi "Kích Hoạt Lại" → đăng xuất → đăng nhập lại bằng
+CHÍNH tài khoản vừa khoá với ĐÚNG mật khẩu → bị chặn, message "Tài khoản đã bị vô hiệu
+hoá..." khác hẳn message sai mật khẩu → đăng nhập lại bằng quản lý → Kích Hoạt Lại →
+đăng nhập lại bằng tài khoản đó → vào bình thường → thử tự vô hiệu hoá chính tài khoản
+đang đăng nhập (nút đã tự disable trên UI + gọi API trực tiếp qua console) → 400 bị
+chặn cả 2 cách. Xoá 2 user test khỏi DB thật sau khi xong, verify `equipments`/
+`device_types`/2 user thật của hệ thống không đổi.
+
+---
+
 ## [2026-08-12] - Vòng 2: dọn tooling, thêm test user-admin, rate-limit đăng nhập, hướng dẫn deploy
 
 ### Changes
