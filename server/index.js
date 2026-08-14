@@ -924,6 +924,7 @@ app.get('/api/personnel/search', authRequired, requireManager, (req, res) => {
     const all = db.prepare(`
       SELECT id, hrm_code, full_name, post_office_code, commune_code
       FROM users
+      WHERE deactivated_at IS NULL
       ORDER BY created_at DESC
     `).all();
 
@@ -945,7 +946,7 @@ app.get('/api/personnel', authRequired, requireManager, (req, res) => {
   try {
     const { search, postOfficeCode, communeCode, page = 1, limit = 20 } = req.query;
 
-    let whereClause = ["1=1"];
+    let whereClause = ["1=1", "deactivated_at IS NULL"];
     let params = [];
 
     if (postOfficeCode) {
@@ -1086,6 +1087,28 @@ app.put('/api/personnel/:id', authRequired, requireManager, (req, res) => {
     `).run(finalHrmCode, finalFullName, finalPostOfficeCode, finalCommuneCode, req.params.id);
 
     res.json({ message: 'Cập nhật nhân sự thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Xoá nhân sự (soft-delete bằng deactivated_at). Chặn nếu người này có tài khoản đăng nhập.
+app.delete('/api/personnel/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy nhân sự' });
+
+    if (existing.password_hash !== null) {
+      return res.status(400).json({ error: 'Người này cũng có tài khoản đăng nhập, vui lòng quản lý qua Quản Lý Người Dùng (Vô Hiệu Hoá) thay vì xoá ở đây.' });
+    }
+
+    if (existing.deactivated_at !== null) {
+      return res.status(400).json({ error: 'Đã bị xoá trước đó' });
+    }
+
+    db.prepare("UPDATE users SET deactivated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
+
+    res.json({ message: 'Đã xoá nhân sự thành công' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

@@ -1,14 +1,23 @@
-import React, { useState } from 'react';
-import { X, UserPlus, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, UserPlus, Edit, AlertCircle } from 'lucide-react';
 import { apiFetchJson } from '../utils/api';
 
-export default function AddPersonnelModal({ onClose, onSuccess }) {
+export default function AddPersonnelModal({ onClose, onSuccess, editingPersonnel }) {
   const [hrmCode, setHrmCode] = useState('');
   const [fullName, setFullName] = useState('');
   const [postOfficeCode, setPostOfficeCode] = useState('');
   const [communeCode, setCommuneCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (editingPersonnel) {
+      setHrmCode(editingPersonnel.hrm_code || '');
+      setFullName(editingPersonnel.full_name || '');
+      setPostOfficeCode(editingPersonnel.post_office_code || '');
+      setCommuneCode(editingPersonnel.commune_code || '');
+    }
+  }, [editingPersonnel]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -20,8 +29,11 @@ export default function AddPersonnelModal({ onClose, onSuccess }) {
     setLoading(true);
     setError('');
 
-    const result = await apiFetchJson('/api/personnel', {
-      method: 'POST',
+    const endpoint = editingPersonnel ? `/api/personnel/${editingPersonnel.id}` : '/api/personnel';
+    const method = editingPersonnel ? 'PUT' : 'POST';
+
+    const result = await apiFetchJson(endpoint, {
+      method,
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         hrm_code: hrmCode.trim(),
@@ -45,8 +57,8 @@ export default function AddPersonnelModal({ onClose, onSuccess }) {
       <div className="glass-panel w-full max-w-md rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
         <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
           <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <UserPlus className="w-5 h-5 text-cyan-400" />
-            <span>Thêm Người Sử Dụng</span>
+            {editingPersonnel ? <Edit className="w-5 h-5 text-cyan-400" /> : <UserPlus className="w-5 h-5 text-cyan-400" />}
+            <span>{editingPersonnel ? 'Chỉnh Sửa Người Sử Dụng' : 'Thêm Người Sử Dụng'}</span>
           </h3>
           <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
@@ -125,8 +137,8 @@ export default function AddPersonnelModal({ onClose, onSuccess }) {
               disabled={loading}
               className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
             >
-              <UserPlus className="w-4 h-4" />
-              <span>{loading ? 'Đang Thêm...' : 'THÊM NGƯỜI SỬ DỤNG'}</span>
+              {editingPersonnel ? <Edit className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
+              <span>{loading ? 'Đang Xử Lý...' : (editingPersonnel ? 'LƯU THAY ĐỔI' : 'THÊM NGƯỜI SỬ DỤNG')}</span>
             </button>
           </div>
         </form>
