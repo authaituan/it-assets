@@ -20,6 +20,8 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
   const [purchaseYear, setPurchaseYear] = useState(new Date().getFullYear());
   const [rawUserName, setRawUserName] = useState('');
   const [notes, setNotes] = useState('');
+  const [categoryRaw, setCategoryRaw] = useState('');
+  const [categoryRawOptions, setCategoryRawOptions] = useState([]);
 
   // Specs state
   const [cpu, setCpu] = useState('');
@@ -46,6 +48,10 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
     fetch('/api/organization/communes')
       .then(res => res.json())
       .then(data => setCommunes(data));
+
+    fetch('/api/equipments/category-raw-options')
+      .then(res => res.json())
+      .then(data => setCategoryRawOptions(data || []));
   }, []);
 
   useEffect(() => {
@@ -93,6 +99,7 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
         purchase_year: purchaseYear,
         raw_user_name: rawUserName,
         notes,
+        category_raw: categoryRaw,
         specs
       })
     });
@@ -273,6 +280,23 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
                 className="w-full glass-input p-2.5 rounded-xl"
               />
               <p className="text-[10px] text-slate-500 mt-1">Dùng để sinh mã CCDC (2 số cuối năm), vd 24 trong PC-24-001.</p>
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1">Phân Loại Chi Tiết</label>
+              <input
+                type="text"
+                list="add-category-raw-options"
+                value={categoryRaw}
+                onChange={e => setCategoryRaw(e.target.value)}
+                placeholder="Ví dụ: Máy tính để bàn Dell"
+                className="w-full glass-input p-2.5 rounded-xl"
+              />
+              <datalist id="add-category-raw-options">
+                {categoryRawOptions.map(opt => (
+                  <option key={opt.label} value={opt.label} />
+                ))}
+              </datalist>
             </div>
           </div>
 

@@ -4,6 +4,26 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-14] - Hiển thị & Lọc Phân Loại Chi Tiết (feat/category-raw-label)
+
+### Changes
+- **server/index.js**:
+  - `GET /api/equipments/category-raw-options`: Route mới lấy danh sách các `category_raw` duy nhất.
+  - `GET /api/equipments`: Thêm query `categoryRaw` lọc bằng `json_extract`.
+  - `POST /api/equipments` & `PUT /api/equipments/:id`: Nhận thêm `category_raw` riêng rẽ và gộp vào object `specs` an toàn.
+- **src/components/InventoryView.jsx**: 
+  - Thêm dropdown lọc "Phân Loại Chi Tiết" bên cạnh "Loại Thiết Bị CCDC".
+  - Bảng CCDC hiển thị label `category_raw` (badge).
+- **src/components/EquipmentDetailModal.jsx** & **AddEquipmentModal.jsx**: Thêm ô `<input list="..."><datalist>` để nhập/chọn Phân Loại Chi Tiết (`category_raw`).
+
+### Reason
+Dữ liệu từ Excel ("Loại máy") lưu trong `specs.category_raw` nhưng chưa hiển thị/lọc/sửa được.
+
+### Tested
+Test trực tiếp UI (đã thay đổi các file trên branch `feat/category-raw-label`).
+
+---
+
 ## [2026-08-13] - Lược đồ mã CCDC có nghĩa + sửa/mở rộng chỉnh sửa thiết bị + đổi thương hiệu (feat/asset-tag-scheme)
 
 ### Changes

@@ -45,6 +45,8 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
   const [ram, setRam] = useState('');
   const [storage, setStorage] = useState('');
   const [os, setOs] = useState('');
+  const [categoryRaw, setCategoryRaw] = useState('');
+  const [categoryRawOptions, setCategoryRawOptions] = useState([]);
 
   // Dropdown data (load 1 lần) — dùng cho các ô đổi loại thiết bị / bưu cục.
   const [deviceTypes, setDeviceTypes] = useState([]);
@@ -54,11 +56,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
   const eqId = equipment?.id;
 
-  // Load danh mục thiết bị + BĐX + toàn bộ bưu cục (để lọc cascading client-side).
   useEffect(() => {
     fetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
     fetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
     fetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
+    fetch('/api/equipments/category-raw-options').then(r => r.json()).then(data => setCategoryRawOptions(data || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -92,6 +94,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         setRam(specs.ram || '');
         setStorage(specs.storage || '');
         setOs(specs.os || '');
+        setCategoryRaw(specs.category_raw || '');
 
         setLoading(false);
       })
@@ -148,6 +151,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         notes,
         model,
         purchase_year: purchaseYear,
+        category_raw: categoryRaw,
         device_type_id: deviceTypeId,
         brand_name: brandName,
         post_office_id: postOfficeId,
@@ -410,6 +414,25 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Phân Loại Chi Tiết</label>
+                <input
+                  type="text"
+                  list="edit-category-raw-options"
+                  value={categoryRaw}
+                  onChange={e => setCategoryRaw(e.target.value)}
+                  placeholder="Ví dụ: Máy tính để bàn Dell"
+                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                />
+                <datalist id="edit-category-raw-options">
+                  {categoryRawOptions.map(opt => (
+                    <option key={opt.label} value={opt.label} />
+                  ))}
+                </datalist>
+              </div>
+            </div>
+
             {/* Đổi Bưu cục (cascading BĐX -> Bưu cục) */}
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -576,6 +599,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                 <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
                   <div className="text-[10px] text-slate-400">Hệ Điều Hành</div>
                   <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.os || 'N/A'}</div>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
+                  <div className="text-[10px] text-slate-400">Phân Loại Chi Tiết</div>
+                  <div className="text-xs font-semibold text-indigo-400 mt-0.5">{detail?.specs?.category_raw || 'N/A'}</div>
                 </div>
 
               </div>

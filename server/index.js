@@ -225,6 +225,7 @@ app.get('/api/equipments', (req, res) => {
       deviceTypeId,
       brandId,
       status,
+      categoryRaw,
       page = 1,
       limit = 20
     } = req.query;
@@ -272,6 +273,11 @@ app.get('/api/equipments', (req, res) => {
     if (status) {
       whereClause.push("e.status = ?");
       params.push(status);
+    }
+
+    if (categoryRaw) {
+      whereClause.push("json_extract(e.specs, '$.category_raw') = ?");
+      params.push(categoryRaw);
     }
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -324,6 +330,32 @@ app.get('/api/equipments', (req, res) => {
     });
   } catch (error) {
     console.error("Get equipments error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET unique category_raw options for dropdown filter
+app.get('/api/equipments/category-raw-options', (req, res) => {
+  try {
+    const { deviceTypeId } = req.query;
+    let sql = `
+      SELECT json_extract(specs, '$.category_raw') as label, COUNT(*) as count 
+      FROM equipments 
+      WHERE deleted_at IS NULL 
+        AND json_extract(specs, '$.category_raw') IS NOT NULL 
+        AND json_extract(specs, '$.category_raw') != ''
+    `;
+    let params = [];
+    if (deviceTypeId) {
+      sql += " AND device_type_id = ?";
+      params.push(deviceTypeId);
+    }
+    sql += " GROUP BY label ORDER BY count DESC";
+    
+    const options = db.prepare(sql).all(...params);
+    res.json(options);
+  } catch (error) {
+    console.error("Get category-raw-options error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -388,7 +420,8 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       post_office_id,
       raw_user_name,
       notes,
-      purchase_year
+      purchase_year,
+      category_raw
     } = req.body;
 
     let { specs } = req.body;
@@ -404,6 +437,11 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
     if (specs !== undefined && (typeof specs !== 'object' || Array.isArray(specs) || specs === null)) {
       console.warn("Cảnh báo: 'specs' không hợp lệ (phải là object thuần). Đã bỏ qua specs.");
       specs = {};
+    }
+
+    const mergedSpecs = { ...(specs || {}) };
+    if (category_raw !== undefined) {
+      mergedSpecs.category_raw = category_raw;
     }
 
     const deviceType = db.prepare("SELECT asset_prefix FROM device_types WHERE id = ?").get(device_type_id);
@@ -479,7 +517,7 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
         device_type_id,
         finalBrandId || null,
         model || null,
-        JSON.stringify(specs || {}),
+        JSON.stringify(mergedSpecs),
         post_office_id,
         raw_user_name || null,
         notes || null,
@@ -518,7 +556,8 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       brand_id,
       brand_name,
       post_office_id,
-      purchase_year
+      purchase_year,
+      category_raw
     } = req.body;
 
     let { specs } = req.body;
@@ -539,6 +578,12 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
 
     const existing = db.prepare("SELECT * FROM equipments WHERE id = ? AND deleted_at IS NULL").get(req.params.id);
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy thiết bị' });
+
+    const currentSpecs = specs !== undefined ? specs : parseSpecs(existing.specs);
+    const mergedSpecs = { ...currentSpecs };
+    if (category_raw !== undefined) {
+      mergedSpecs.category_raw = category_raw;
+    }
 
     // device_type_id: nếu gửi lên thì validate tồn tại; nếu không gửi -> giữ nguyên.
     // LƯU Ý: đổi loại thiết bị KHÔNG đổi lại asset_tag (mã CCDC là định danh cố định
@@ -600,7 +645,7 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
         status || existing.status,
         raw_user_name || null,
         notes || null,
-        JSON.stringify(specs || parseSpecs(existing.specs)),
+        JSON.stringify(mergedSpecs),
         finalDeviceTypeId,
         finalBrandId || null,
         finalPostOfficeId,
