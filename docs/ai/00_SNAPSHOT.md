@@ -210,6 +210,47 @@
   chạy sống tại cổng 5000 khi làm hạng mục này) để tránh ghi dữ liệu test vào
   353 thiết bị thật.
 
+## Frontend Người Sử Dụng (mới, `feat/personnel-frontend`)
+- Thay thế hẳn view HRM cũ `src/components/HrmMappingView.jsx` (đã xoá) bằng
+  `src/components/PersonnelView.jsx` — layout theo đúng pattern
+  `InventoryView.jsx` (glass-panel/glass-input, bảng + phân trang). Cột bảng:
+  Mã HRM, Tên Nhân Viên, Mã BC, Mã BĐX — 2 cột sau tự tra tên thật qua
+  `GET /api/organization/post-offices` / `GET /api/organization/communes`
+  (khớp theo `code`), hiện thẳng mã nếu không tra được tên.
+- `src/components/AddPersonnelModal.jsx` (mới): modal 4 ô nhập, gọi
+  `POST /api/personnel` qua `apiFetchJson`.
+- `src/components/ImportPersonnelModal.jsx` (mới): đọc file `.xlsx` THẬT
+  bằng `exceljs` ngay trên trình duyệt (`ExcelJS.Workbook().xlsx.load()` từ
+  `file.arrayBuffer()`, KHÔNG qua backend) — đọc đúng 4 cột A-D, bỏ qua dòng
+  tiêu đề, hiện bảng xem trước + chặn Import nếu có dòng thiếu Mã HRM/Tên,
+  gọi `POST /api/personnel/import` sau khi xác nhận.
+- `src/components/Sidebar.jsx`: mục "Tích Hợp HRM Nhân Sự" đổi thành "Người
+  Sử Dụng" (id đổi từ `hrm` → `personnel`); `src/App.jsx` render
+  `PersonnelView` thay `HrmMappingView`.
+- ⚠️ **Cố ý KHÔNG sửa** `src/components/Header.jsx`: nút "Upload File HRM" ở
+  header vẫn gọi `onOpenHrmModal` (định nghĩa trong `App.jsx`, nay trỏ sang
+  tab `personnel`) — nút vẫn hoạt động đúng (mở đúng view mới) nhưng NHÃN chữ
+  "Upload File HRM" nay không còn khớp nội dung thật, vì `Header.jsx` nằm
+  ngoài phạm vi hạng mục này (tránh đụng file hạng mục khác đang làm). Xem
+  `04_DECISIONS.md` mục 11.
+- Đã test qua UI thật (Vite dev server thật :3000 + backend thật :5000, KHÔNG
+  phải server production đang chạy sống — thời điểm làm hạng mục này server
+  production không chạy, xác nhận bằng `netstat` trước khi khởi động):
+  tạo 1 tài khoản ADMIN tạm để đăng nhập (xoá lại sau khi xong) → import file
+  `.xlsx` thật 3 dòng (bỏ qua header) → xem trước đúng → Import → 3 tạo mới →
+  xuất hiện đúng trong danh sách kèm tên BC/BĐX tra được → thêm 1 người thủ
+  công → xuất hiện đúng → "Quản Lý Người Dùng" xác nhận KHÔNG thấy 4 nhân sự
+  vừa tạo (đúng vì chưa có mật khẩu) → xoá sạch toàn bộ dữ liệu test (tài
+  khoản tạm + 4 dòng personnel) khỏi `data/ccdc.db` thật sau khi xong, verify
+  lại bằng query còn đúng 2 tài khoản gốc.
+- ⚠️ **Phát hiện khi verify** (không phải do hạng mục này gây ra): 1 thiết bị
+  test còn sót trong `data/ccdc.db` thật (`asset_tag = PC-24-001`,
+  `hostname = TEST-NEW-001`, tạo lúc 2026-08-14 03:34:36, KHÔNG soft-delete)
+  — đã tồn tại TRƯỚC khi hạng mục này bắt đầu (xác nhận qua dashboard baseline
+  354 thiết bị hoạt động lúc mới đăng nhập). Nghi là dữ liệu test sót lại từ
+  hạng mục song song (`AddEquipmentModal`/`EquipmentDetailModal`) chưa dọn.
+  KHÔNG tự xoá (ngoài phạm vi + không chắc chắn về ngữ cảnh), báo PO xem lại.
+
 ## Sidebar & Inventory (mới, `feat/inventory-submenu`)
 - **Sidebar động**: Mục "Quản Lý CCDC" có thể expand/collapse hiển thị submenu chứa danh sách các loại thiết bị CCDC. Danh sách này được lấy động từ `GET /api/device-types`.
 - **Lọc tự động**: Khi click vào 1 loại thiết bị trong submenu, `InventoryView` sẽ tự động lọc theo loại thiết bị đó (`initialDeviceTypeId`). Dropdown "Loại Thiết Bị CCDC" trong bảng tự cập nhật mà không bị khoá, cho phép user đổi loại tùy ý. Bổ sung thêm Dropdown "Phân Loại Chi Tiết" (động theo `category_raw`).

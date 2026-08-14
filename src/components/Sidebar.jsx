@@ -45,7 +45,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
     { id: 'dashboard', label: 'Tổng Quan KPI', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản Lý CCDC', icon: Monitor },
     { id: 'unittree', label: 'Sơ Đồ BĐX & Bưu Cục', icon: Network },
-    { id: 'hrm', label: 'Tích Hợp HRM Nhân Sự', icon: Users },
+    { id: 'personnel', label: 'Người Sử Dụng', icon: Users },
   ];
 
   // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Danh Mục + Quản Lý Người Dùng.

@@ -229,6 +229,42 @@ mới thay `tests/hrm.test.js` đã xoá). KHÔNG test qua curl trên server pro
 ghi dữ liệu test vào 353 thiết bị thật, PO tự quyết định có cần verify thủ công qua UI
 thật hay không trước khi merge.
 
+---
+
+### 11. Frontend Personnel (`feat/personnel-frontend`): nút Header "Upload File HRM" cố ý không sửa nhãn
+**Bối cảnh**: Hạng mục chỉ được phép sửa `Sidebar.jsx`, `App.jsx` + thêm/xoá component
+mới, KHÔNG được đụng `Header.jsx` (tránh trùng phạm vi với hạng mục khác). `Header.jsx`
+có sẵn 1 nút riêng "Upload File HRM" gọi prop `onOpenHrmModal` — prop này được định nghĩa
+trong `App.jsx` (`onOpenHrmModal={() => setActiveTab('personnel')}`), nên chỉ cần đổi
+chuỗi id trong `App.jsx` là nút vẫn hoạt động đúng (mở đúng `PersonnelView` mới), không
+cần chạm `Header.jsx`.
+
+**Hệ quả**: Nhãn chữ "Upload File HRM" trên nút đó (`src/components/Header.jsx:116`)
+không còn khớp ngữ nghĩa (giờ mở view "Người Sử Dụng" chứ không phải riêng upload). Đây
+là drift chữ hiển thị (không phải lỗi logic) — để lại cho hạng mục sau (hoặc PO duyệt)
+sửa nhãn, tránh đụng file ngoài phạm vi giao.
+
+**Trạng thái**: Ghi nhận, chưa xử lý (chờ PO quyết định gộp vào hạng mục nào sửa
+`Header.jsx` tiếp theo).
+
+---
+
+### 12. Phát hiện 1 thiết bị test sót lại trong `data/ccdc.db` thật (không phải do hạng mục này)
+**Phát hiện**: Trong lúc verify dữ liệu sau khi dọn test của `feat/personnel-frontend`,
+thấy thiết bị `asset_tag = PC-24-001`, `hostname = TEST-NEW-001`, `created_at =
+2026-08-14 03:34:36`, `deleted_at = NULL` (đang hoạt động, KHÔNG soft-delete) trong DB
+thật. Xác nhận **không phải do hạng mục này tạo ra** — thời điểm dashboard hiện baseline
+"354 thiết bị hoạt động" ngay sau khi đăng nhập (trước khi làm bất kỳ thao tác nào của
+hạng mục này) đã bao gồm sẵn thiết bị này.
+
+**Nghi vấn**: Có thể là dữ liệu test sót lại từ 1 hạng mục song song đang sửa
+`AddEquipmentModal.jsx`/`EquipmentDetailModal.jsx` (tên `TEST-NEW-001` gợi ý test tạo
+thiết bị mới) chưa dọn sau khi test qua UI thật.
+
+**Xử lý**: KHÔNG tự xoá (ngoài phạm vi hạng mục `feat/personnel-frontend`, và không chắc
+chắn thiết bị này có đang được 1 phiên làm việc khác dùng dở hay không). Báo PO xem lại,
+xoá thủ công nếu xác nhận là rác test.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.
