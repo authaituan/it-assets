@@ -186,6 +186,8 @@
   `hrm_code` bắt buộc + unique, `full_name` bắt buộc.
 - `PUT /api/personnel/:id` — cần token + role quản lý: sửa 4 field trên,
   `hrm_code` (nếu đổi) vẫn phải unique.
+- `DELETE /api/personnel/:id` — **mới**: soft-delete (vô hiệu hoá) nhân sự. 
+  Set `deactivated_at = CURRENT_TIMESTAMP`. Bị chặn nếu người dùng đang có tài khoản đăng nhập (`password_hash IS NOT NULL`).
 - `POST /api/personnel/import` — cần token + role quản lý: import hàng loạt
   `{ personnel: [{hrmCode, fullName, postOfficeCode, communeCode}] }`. Validate
   fail-fast TRƯỚC khi ghi DB (1 dòng lỗi → chặn cả batch). Hợp lệ hết → UPSERT
@@ -211,14 +213,14 @@
   353 thiết bị thật.
 
 ## Frontend Người Sử Dụng (mới, `feat/personnel-frontend`)
-- Thay thế hẳn view HRM cũ `src/components/HrmMappingView.jsx` (đã xoá) bằng
-  `src/components/PersonnelView.jsx` — layout theo đúng pattern
+- `src/components/PersonnelView.jsx` — layout theo đúng pattern
   `InventoryView.jsx` (glass-panel/glass-input, bảng + phân trang). Cột bảng:
   Mã HRM, Tên Nhân Viên, Mã BC, Mã BĐX — 2 cột sau tự tra tên thật qua
   `GET /api/organization/post-offices` / `GET /api/organization/communes`
-  (khớp theo `code`), hiện thẳng mã nếu không tra được tên.
-- `src/components/AddPersonnelModal.jsx` (mới): modal 4 ô nhập, gọi
-  `POST /api/personnel` qua `apiFetchJson`.
+  (khớp theo `code`), hiện thẳng mã nếu không tra được tên. Thêm nút "Sửa" và "Xoá"
+  (vô hiệu hoá) trên mỗi dòng. Xoá có xác nhận và hiện lỗi nếu người đó có tài khoản đăng nhập.
+- `src/components/AddPersonnelModal.jsx` (đã nâng cấp): hỗ trợ cả chế độ Thêm mới và Sửa.
+  Sử dụng prop `editingPersonnel` để tự điền dữ liệu, chuyển API từ POST sang PUT.
 - `src/components/ImportPersonnelModal.jsx` (mới): đọc file `.xlsx` THẬT
   bằng `exceljs` ngay trên trình duyệt (`ExcelJS.Workbook().xlsx.load()` từ
   `file.arrayBuffer()`, KHÔNG qua backend) — đọc đúng 4 cột A-D, bỏ qua dòng

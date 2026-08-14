@@ -4,6 +4,25 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-14] - Thêm chức năng Sửa/Xoá cho Người Sử Dụng (feat/personnel-edit-delete)
+
+### Changes
+- **server/index.js**:
+  - `DELETE /api/personnel/:id`: Route mới (authRequired, requireManager). Chặn xoá (trả 400) nếu người dùng có tài khoản đăng nhập (`password_hash IS NOT NULL`). Set `deactivated_at = CURRENT_TIMESTAMP`.
+  - `GET /api/personnel` và `GET /api/personnel/search`: Thêm filter `WHERE deactivated_at IS NULL` để không hiển thị người đã xoá.
+- **src/components/PersonnelView.jsx**: 
+  - Thêm nút thao tác "Sửa" và "Xoá" trên mỗi dòng.
+  - Xử lý xác nhận xoá và hiển thị lỗi nếu API chặn (người có tài khoản đăng nhập).
+- **src/components/AddPersonnelModal.jsx**:
+  - Đổi chế độ Sửa/Thêm mới dựa vào prop `editingPersonnel`.
+  - Cập nhật tiêu đề modal, nút Lưu Thay Đổi và gọi API (`PUT /api/personnel/:id` khi sửa).
+- **Tested**: API tests passed (`npm test` 79/79). Test UI qua backend thật cho các logic xoá chặn tài khoản đăng nhập, sửa thông tin thành công và loại trừ người đã xoá khỏi API tìm kiếm.
+
+### Reason
+Bổ sung tính năng Sửa/Xoá (soft-delete tái sử dụng cột `deactivated_at`) còn thiếu cho module Người Sử Dụng theo yêu cầu của PO.
+
+---
+
 ## [2026-08-14] - Autocomplete gán Người Sử Dụng cho thiết bị (feat/personnel-autocomplete)
 
 ### Changes

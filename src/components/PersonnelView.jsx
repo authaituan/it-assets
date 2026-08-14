@@ -7,7 +7,9 @@ import {
   ChevronLeft,
   ChevronRight,
   MapPin,
-  Building2
+  Building2,
+  Edit,
+  Trash2
 } from 'lucide-react';
 import { apiFetchJson } from '../utils/api';
 import AddPersonnelModal from './AddPersonnelModal';
@@ -29,6 +31,23 @@ export default function PersonnelView() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [editingPersonnel, setEditingPersonnel] = useState(null);
+
+  const handleEdit = (personnel) => {
+    setEditingPersonnel(personnel);
+    setIsAddModalOpen(true);
+  };
+
+  const handleDelete = async (personnel) => {
+    if (!window.confirm(`Bạn có chắc muốn xoá nhân sự "${personnel.full_name}" không?`)) return;
+    
+    const result = await apiFetchJson(`/api/personnel/${personnel.id}`, { method: 'DELETE' });
+    if (!result.ok) {
+      alert(`Lỗi: ${result.error}`);
+      return;
+    }
+    fetchPersonnel();
+  };
 
   useEffect(() => {
     fetch('/api/organization/post-offices')
@@ -103,7 +122,10 @@ export default function PersonnelView() {
               <span>Import Excel</span>
             </button>
             <button
-              onClick={() => setIsAddModalOpen(true)}
+              onClick={() => {
+                setEditingPersonnel(null);
+                setIsAddModalOpen(true);
+              }}
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
             >
               <Plus className="w-4 h-4" />
@@ -158,6 +180,7 @@ export default function PersonnelView() {
                   <th className="py-3.5 px-4">Tên Nhân Viên</th>
                   <th className="py-3.5 px-4">Mã BC</th>
                   <th className="py-3.5 px-4">Mã BĐX</th>
+                  <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
@@ -175,6 +198,24 @@ export default function PersonnelView() {
                       <div className="flex items-center gap-1.5 text-slate-300">
                         <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                         <span className="truncate max-w-[200px]">{displayCommune(p.commune_code)}</span>
+                      </div>
+                    </td>
+                    <td className="py-3.5 px-4">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleEdit(p)}
+                          title="Sửa"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                        >
+                          <Edit className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(p)}
+                          title="Xoá"
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
                       </div>
                     </td>
                   </tr>
@@ -216,8 +257,12 @@ export default function PersonnelView() {
 
       {isAddModalOpen && (
         <AddPersonnelModal
-          onClose={() => setIsAddModalOpen(false)}
+          onClose={() => {
+            setIsAddModalOpen(false);
+            setEditingPersonnel(null);
+          }}
           onSuccess={fetchPersonnel}
+          editingPersonnel={editingPersonnel}
         />
       )}
 
