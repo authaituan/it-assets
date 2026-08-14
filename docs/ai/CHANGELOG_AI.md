@@ -4,6 +4,29 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-14] - Personnel API thay thế HRM cũ (feat/personnel-backend, CHỈ BACKEND)
+
+### Changes
+- **server/index.js**: Xoá hẳn `POST /api/hrm/upload-and-map`. Thêm 5 route mới:
+  `GET /api/personnel`, `GET /api/personnel/search`, `POST /api/personnel`,
+  `PUT /api/personnel/:id`, `POST /api/personnel/import` (UPSERT theo `hrm_code`,
+  validate fail-fast trước khi ghi, bọc `db.transaction()`). Sửa `GET /api/users` thêm
+  `WHERE password_hash IS NOT NULL`. `POST/PUT /api/equipments` nhận thêm
+  `assigned_user_id` (optional, nullable, validate tồn tại trong `users`).
+- **tests/**: Xoá `tests/hrm.test.js`, thêm `tests/personnel.test.js` (30 test case,
+  cùng port 5903). `npm test`: 79/79 pass.
+- **package.json**: script `test` trỏ `tests/personnel.test.js` thay `tests/hrm.test.js`.
+- **docs/ai/**: cập nhật `00_SNAPSHOT.md`, `03_ARCHITECTURE_MAP.md`, thêm mục 10 vào
+  `04_DECISIONS.md` (drift: `HrmMappingView.jsx` frontend vẫn gọi route đã xoá, để lại
+  cho 2 hạng mục frontend sau xử lý).
+
+### Reason
+Bảng `users` cần tách rõ 2 mục đích (tài khoản đăng nhập vs. nhân sự nguồn gán thiết
+bị) để chuẩn bị cho UI Personnel + autocomplete gán "Người Sử Dụng" ở các hạng mục
+frontend sau.
+
+---
+
 ## [2026-08-14] - Hiển thị & Lọc Phân Loại Chi Tiết (feat/category-raw-label)
 
 ### Changes
