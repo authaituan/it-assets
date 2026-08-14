@@ -250,6 +250,39 @@
   354 thiết bị hoạt động lúc mới đăng nhập). Nghi là dữ liệu test sót lại từ
   hạng mục song song (`AddEquipmentModal`/`EquipmentDetailModal`) chưa dọn.
   KHÔNG tự xoá (ngoài phạm vi + không chắc chắn về ngữ cảnh), báo PO xem lại.
+  **Cập nhật (`feat/personnel-autocomplete`)**: thiết bị này đã được soft-delete
+  (`deleted_at` có giá trị) bởi 1 phiên làm việc khác trong lúc hạng mục
+  autocomplete đang chạy — xác nhận không phải do hạng mục này xử lý.
+
+## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
+- `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và
+  `src/components/AddEquipmentModal.jsx`: ô nhập text tự do "Người Sử Dụng"
+  cũ thay bằng ô tìm kiếm gõ-để-gợi-ý (autocomplete) — debounce ~300ms gọi
+  `GET /api/personnel/search?q=...` qua `apiFetchJson` (route yêu cầu token +
+  role quản lý). Gợi ý hiện dạng `Mã HRM-Họ Tên-Mã BC-Mã BĐX`.
+- State mới `assignedUserId` đi kèm `rawUserName` (ô hiển thị): chọn 1 gợi ý
+  → set cả 2; gõ tự do (không chọn gợi ý) → tự gỡ `assignedUserId` về `null`
+  (chỉ `raw_user_name` được lưu dạng text thô). Lưu (Thêm mới/Sửa) gửi cả
+  `assigned_user_id` (null nếu để trống) VÀ `raw_user_name` lên
+  `POST/PUT /api/equipments`. Thiết bị đang có `assigned_user_id` sẵn (mở
+  form Sửa) hiện đúng tên người đang gán trong ô ngay từ đầu.
+- Logic autocomplete được viết lặp lại (duplicate) ở cả 2 file thay vì tách
+  component dùng chung — đúng theo phạm vi hạng mục chỉ được sửa 2 file này.
+- Đã test qua UI thật (Vite :3000 + backend thật :5000, xác nhận không có
+  server production nào đang chạy trước khi khởi động; đồng thời phát hiện
+  branch bị tạo lệch trước khi `feat/personnel-frontend` merge vào `main` —
+  đã xoá branch cũ tạo lại đúng từ `main` mới nhất, xem `04_DECISIONS.md`
+  mục 13): tạo 2 nhân sự test qua `POST /api/personnel` (curl) → gõ tên vào ô
+  Sửa của 1 thiết bị có sẵn → gợi ý đúng định dạng → chọn → Lưu → verify
+  `GET /api/equipments` trả đúng `assigned_user_id` → tạo thiết bị MỚI kèm
+  gán qua autocomplete → verify `assigned_user_id` đúng ngay từ lúc tạo → tạo
+  thiết bị MỚI để trống ô Người Sử Dụng → không lỗi, `assigned_user_id: null`
+  → xoá gán (clear ô) trên thiết bị đã Sửa trước đó → Lưu → verify
+  `assigned_user_id` về `null` → xoá sạch 2 thiết bị test + 2 nhân sự test +
+  tài khoản admin tạm khỏi `data/ccdc.db` thật, verify lại còn đúng 2 tài
+  khoản gốc (`admin`, `ADMIN01`) và 355 thiết bị (353 thật +
+  2 dòng soft-delete lịch sử đã biết).
+- `npm test`: 79/79 pass (không đổi backend).
 
 ## Sidebar & Inventory (mới, `feat/inventory-submenu`)
 - **Sidebar động**: Mục "Quản Lý CCDC" có thể expand/collapse hiển thị submenu chứa danh sách các loại thiết bị CCDC. Danh sách này được lấy động từ `GET /api/device-types`.
