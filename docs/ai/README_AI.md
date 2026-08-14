@@ -26,6 +26,10 @@
 2. **Evidence-based**: mọi claim về code phải trỏ được `path:line`. Không đoán.
 3. **Không dump code vào chat/báo cáo** — chỉ trích dẫn `file:line` + mô tả ngắn.
 4. **Không tự ý mở rộng phạm vi** — chỉ làm đúng 1 hạng mục được giao trong prompt.
+4b. **Không dùng `git add .` một cách vô thức** — luôn `git status` đọc kỹ từng dòng
+   trước khi add, chỉ `git add <đúng file thuộc phạm vi>`. Đã 2 lần file thừa (script
+   debug tạm, file dữ liệu bị chạm nhầm) lọt vào commit vì thói quen `git add .`, xem
+   `04_DECISIONS.md` mục 9.
 5. Sau khi xong việc, PHẢI thêm 1 dòng vào `CHANGELOG_AI.md` — không cập nhật = coi như
    chưa xong.
 6. Nếu phát hiện README/comment/code lệch nhau (semantic drift) → ghi vào

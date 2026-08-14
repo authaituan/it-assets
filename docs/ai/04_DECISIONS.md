@@ -168,6 +168,32 @@ cần xoá `dist/` nữa như trước).
 tắc ở `README_AI.md` — không chỉ nhắc trong báo cáo miệng rồi thôi, vì báo cáo miệng dễ
 bị đọc lướt qua và lỗi vẫn tồn tại trên `main` không ai theo dõi tiếp.
 
+---
+
+### 9. `git add .` nhiều lần gom nhầm file thừa vào commit (lặp lại 2 lần)
+**Vấn đề**: Ít nhất 2 lần khác nhau, Dev AI dùng `git add .` (thay vì `git add
+<file_cụ_thể>`) trước khi commit, vô tình gom theo các file KHÔNG thuộc phạm vi công
+việc được giao:
+1. PR `feat/category-raw-label` (lần đầu, 2026-08-12): kèm theo
+   `scripts/reclassify_by_category_raw.js` (291 dòng, sót lại từ 1 prompt đã bị PO huỷ
+   bỏ trước đó — xem lịch sử trao đổi) và làm đổi vài byte metadata của `dulieu.xlsx`
+   (nội dung không đổi, đã verify từng dòng bằng script Python so sánh openpyxl).
+2. Ngay ở commit "dọn dẹp" tiếp theo (923c8cf) sửa lỗi (1), lại vô tình thêm MỚI file
+   `scripts/test_ui_behavior.js` (126 dòng, script debug dùng để mô phỏng gọi API test
+   UI khi Browser tool bị lỗi hạ tầng) và làm `dulieu.xlsx` đổi byte thêm 1 lần nữa
+   (lần thứ 3 tính từ đầu — nội dung vẫn không đổi, đã verify lại).
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-12 (Claude sửa trực tiếp trên `main`) — xoá
+`scripts/test_ui_behavior.js`, khôi phục `dulieu.xlsx` về đúng byte gốc (đã so khớp với
+bản tại commit `78cc83b`, trước khi bất kỳ PR nào trong Vòng 3 chạm vào), và thêm file
+`.gitattributes` đánh dấu `*.xlsx binary` — ngăn Git tự ý xử lý/chuẩn hoá file này, vốn
+là nguyên nhân nghi ngờ gây ra hiện tượng đổi byte lặp lại nhiều lần dù nội dung không đổi.
+
+**Bài học quy trình**: Dev AI (và PO khi tự thao tác git) nên dùng `git add <file cụ
+thể>` thay vì `git add .` khi biết rõ phạm vi thay đổi, đặc biệt với các nhánh có làm
+việc thử nghiệm/debug tạo ra file tạm trong thư mục dự án. `git status` PHẢI được đọc kỹ
+từng dòng trước khi `git add .`, không chỉ chạy theo quán tính.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

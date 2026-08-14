@@ -1,0 +1,8 @@
+# dulieu.xlsx là dữ liệu gốc dùng để seed lần đầu — không bao giờ nên đổi nữa sau khi
+# import xong. Đánh dấu binary tường minh để Git không tự động chuẩn hoá line-ending
+# (CRLF/LF) hay bất kỳ xử lý text nào lên file này — từng gặp 3 lần file bị đổi vài byte
+# ngoài ý muốn (nội dung không đổi, chỉ nhiễu metadata) do thiếu khai báo này.
+dulieu.xlsx binary
+
+# Áp dụng chung cho mọi file .xlsx trong dự án (đề phòng thêm file Excel khác sau này).
+*.xlsx binary
