@@ -40,6 +40,8 @@ export default function InventoryView({
   const [selectedPostOfficeId, setSelectedPostOfficeId] = useState('');
   const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
+  const [categoryRawOptions, setCategoryRawOptions] = useState([]);
+  const [selectedCategoryRaw, setSelectedCategoryRaw] = useState('');
 
   // Load Communes & Device Types on Mount
   useEffect(() => {
@@ -60,6 +62,24 @@ export default function InventoryView({
       setSelectedDeviceTypeId(initialDeviceTypeId || '');
     }
   }, [initialDeviceTypeId]);
+
+  // Fetch category raw options
+  useEffect(() => {
+    let url = '/api/equipments/category-raw-options';
+    if (selectedDeviceTypeId) {
+      url += `?deviceTypeId=${selectedDeviceTypeId}`;
+    }
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        const options = data || [];
+        setCategoryRawOptions(options);
+        if (selectedCategoryRaw && !options.some(o => o.label === selectedCategoryRaw)) {
+          setSelectedCategoryRaw('');
+        }
+      })
+      .catch(err => console.error(err));
+  }, [selectedDeviceTypeId]);
 
   // Cascade Load Post Offices when Commune changes
   useEffect(() => {
@@ -86,6 +106,7 @@ export default function InventoryView({
     if (selectedCommuneId) params.append('communeId', selectedCommuneId);
     if (selectedPostOfficeId) params.append('postOfficeId', selectedPostOfficeId);
     if (selectedDeviceTypeId) params.append('deviceTypeId', selectedDeviceTypeId);
+    if (selectedCategoryRaw) params.append('categoryRaw', selectedCategoryRaw);
     if (selectedStatus) params.append('status', selectedStatus);
 
     fetch(`/api/equipments?${params.toString()}`)
@@ -103,7 +124,7 @@ export default function InventoryView({
 
   useEffect(() => {
     fetchEquipments();
-  }, [search, selectedCommuneId, selectedPostOfficeId, selectedDeviceTypeId, selectedStatus, pagination.page]);
+  }, [search, selectedCommuneId, selectedPostOfficeId, selectedDeviceTypeId, selectedCategoryRaw, selectedStatus, pagination.page]);
 
   // Helper icon renderer
   const getDeviceIcon = (code) => {
@@ -157,7 +178,7 @@ export default function InventoryView({
         </div>
 
         {/* Cascading Filter Controls */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-2 border-t border-slate-800">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 pt-2 border-t border-slate-800">
           {/* Filter 1: BĐX Commune Dropdown */}
           <div>
             <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">
@@ -214,6 +235,27 @@ export default function InventoryView({
               ))}
             </select>
           </div>
+
+          {/* Filter 3.5: Category Raw Dropdown */}
+          {categoryRawOptions.length > 0 && (
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">
+                Phân Loại Chi Tiết
+              </label>
+              <select
+                value={selectedCategoryRaw}
+                onChange={(e) => setSelectedCategoryRaw(e.target.value)}
+                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+              >
+                <option value="">-- Tất cả phân loại --</option>
+                {categoryRawOptions.map(opt => (
+                  <option key={opt.label} value={opt.label}>
+                    {opt.label} ({opt.count})
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Filter 4: Status Dropdown */}
           <div>
@@ -284,6 +326,11 @@ export default function InventoryView({
                             {item.hostname && <span className="text-slate-300 font-medium">{item.hostname} · </span>}
                             {item.brand_name || 'Hãng khác'} {item.model || ''}
                           </div>
+                          {item.specs?.category_raw && (
+                            <div className="mt-1 inline-flex px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/30 text-[10px] text-indigo-400 font-medium">
+                              {item.specs.category_raw}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </td>

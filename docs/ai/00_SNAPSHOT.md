@@ -23,7 +23,8 @@
 ## API hiện có (`server/index.js`)
 - `POST /api/auth/login` — đăng nhập, trả JWT.
 - `GET  /api/dashboard/stats` — KPIs & charts.
-- `GET  /api/equipments`, `GET /api/equipments/:id` — đọc (mở, không cần token).
+- `GET  /api/equipments/category-raw-options` — lấy tuỳ chọn phân loại chi tiết (từ `specs.category_raw`).
+- `GET  /api/equipments`, `GET /api/equipments/:id` — đọc (mở, không cần token), hỗ trợ lọc `categoryRaw`.
 - `POST /api/equipments` — **ghi, cần token + role quản lý**. Validate input; **sinh
   `asset_tag` theo lược đồ mới** (xem mục "Lược đồ mã CCDC"); nhận thêm `purchase_year`
   (mặc định năm hiện tại nếu trống); bọc transaction (tính seq + insert + log cùng
@@ -170,7 +171,7 @@
 
 ## Sidebar & Inventory (mới, `feat/inventory-submenu`)
 - **Sidebar động**: Mục "Quản Lý CCDC" có thể expand/collapse hiển thị submenu chứa danh sách các loại thiết bị CCDC. Danh sách này được lấy động từ `GET /api/device-types`.
-- **Lọc tự động**: Khi click vào 1 loại thiết bị trong submenu, `InventoryView` sẽ tự động lọc theo loại thiết bị đó (`initialDeviceTypeId`). Dropdown "Loại Thiết Bị CCDC" trong bảng tự cập nhật mà không bị khoá, cho phép user đổi loại tùy ý.
+- **Lọc tự động**: Khi click vào 1 loại thiết bị trong submenu, `InventoryView` sẽ tự động lọc theo loại thiết bị đó (`initialDeviceTypeId`). Dropdown "Loại Thiết Bị CCDC" trong bảng tự cập nhật mà không bị khoá, cho phép user đổi loại tùy ý. Bổ sung thêm Dropdown "Phân Loại Chi Tiết" (động theo `category_raw`).
 - **Reset lọc**: Click vào mục cha "Quản Lý CCDC" sẽ tự động reset dropdown về "-- Tất cả loại thiết bị --" và show đủ danh sách.
 
 ## Bảo mật đăng nhập (Vòng 2, 2026-08-12)
