@@ -4,6 +4,33 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-14] - UI Người Sử Dụng thay thế HRM cũ (feat/personnel-frontend)
+
+### Changes
+- Xoá `src/components/HrmMappingView.jsx`. Thêm `src/components/PersonnelView.jsx`
+  (layout theo `InventoryView.jsx`, cột Mã HRM/Tên/Mã BC/Mã BĐX tự tra tên qua
+  organization API), `src/components/AddPersonnelModal.jsx` (gọi `POST /api/personnel`),
+  `src/components/ImportPersonnelModal.jsx` (parse `.xlsx` thật bằng `exceljs` ngay trên
+  browser, preview trước khi gọi `POST /api/personnel/import`).
+- `src/components/Sidebar.jsx`: đổi nhãn "Tích Hợp HRM Nhân Sự" → "Người Sử Dụng".
+- `src/App.jsx`: render `PersonnelView` thay `HrmMappingView`.
+- Test qua UI thật (Vite + backend thật, không phải server production đang chạy — xác
+  nhận không có server sống trước khi khởi động): import Excel 3 dòng → preview đúng →
+  Import → tạo mới đúng 3 → thêm 1 người thủ công → cả 4 xuất hiện đúng trong danh sách
+  kèm tên BC/BĐX tra được → "Quản Lý Người Dùng" xác nhận KHÔNG thấy các nhân sự này
+  (đúng, chưa có mật khẩu) → dọn sạch dữ liệu test khỏi `data/ccdc.db` thật.
+- `npm test`: 79/79 pass (không đổi backend).
+- Phát hiện (không do hạng mục này gây ra, xem `04_DECISIONS.md` mục 12): 1 thiết bị
+  test sót lại trong DB thật (`PC-24-001`/`TEST-NEW-001`), đã có từ trước khi hạng mục
+  này bắt đầu — báo PO, không tự xử lý.
+
+### Reason
+Hoàn thiện UI cho Personnel API đã có sẵn từ `feat/personnel-backend`, thay thế hẳn màn
+hình "Tích Hợp HRM Nhân Sự" cũ (gọi route đã xoá) bằng luồng quản lý nhân sự + import
+Excel thật.
+
+---
+
 ## [2026-08-14] - Personnel API thay thế HRM cũ (feat/personnel-backend, CHỈ BACKEND)
 
 ### Changes

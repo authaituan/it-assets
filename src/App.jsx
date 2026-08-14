@@ -5,7 +5,7 @@ import LoginView from './components/LoginView';
 import DashboardView from './components/DashboardView';
 import InventoryView from './components/InventoryView';
 import UnitTreeView from './components/UnitTreeView';
-import HrmMappingView from './components/HrmMappingView';
+import PersonnelView from './components/PersonnelView';
 import UserAdminView from './components/UserAdminView';
 import CategoryAdminView from './components/CategoryAdminView';
 import EquipmentDetailModal from './components/EquipmentDetailModal';
@@ -103,7 +103,7 @@ export default function App() {
               }}
               onOpenAddModal={() => setIsAddModalOpen(true)}
               onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
-              onOpenHrmModal={() => setActiveTab('hrm')}
+              onOpenHrmModal={() => setActiveTab('personnel')}
               theme={theme}
               setTheme={setTheme}
               authUser={authUser}
@@ -136,8 +136,8 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'hrm' && (
-                <HrmMappingView />
+              {activeTab === 'personnel' && (
+                <PersonnelView />
               )}
 
               {activeTab === 'categoryadmin' && authUser?.role !== 'STAFF' && (
