@@ -4,6 +4,31 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-14] - Autocomplete gán Người Sử Dụng cho thiết bị (feat/personnel-autocomplete)
+
+### Changes
+- `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) & `src/components/AddEquipmentModal.jsx`:
+  thay ô nhập text tự do "Người Sử Dụng" bằng ô tìm kiếm gõ-để-gợi-ý, debounce ~300ms gọi
+  `GET /api/personnel/search` (qua `apiFetchJson`), gợi ý dạng `Mã HRM-Họ Tên-Mã BC-Mã BĐX`.
+  Chọn gợi ý → set `assignedUserId` + `rawUserName`; gõ tự do → gỡ `assignedUserId`. Lưu gửi
+  cả `assigned_user_id` (null nếu trống) và `raw_user_name` lên `POST/PUT /api/equipments`.
+- Logic autocomplete lặp lại ở cả 2 file (không tách component dùng chung) — đúng phạm vi
+  hạng mục chỉ được sửa 2 file này.
+- Test qua UI thật: tạo 2 nhân sự test qua curl → gán qua autocomplete lúc Sửa (verify
+  `assigned_user_id` đúng) → tạo thiết bị mới kèm gán ngay lúc tạo (verify đúng) → tạo/sửa
+  để trống (verify không lỗi, `assigned_user_id: null`) → xoá gán đã có (verify về null) →
+  dọn sạch dữ liệu test.
+- `npm test`: 79/79 pass.
+- Sự cố quy trình: branch bị tạo lệch do `main` nhận thêm merge `feat/personnel-frontend`
+  giữa lúc code — đã xoá branch cũ (chưa push) và tạo lại đúng từ `main` mới nhất, không
+  mất code đang sửa dở (`git stash`/`pop`). Chi tiết `04_DECISIONS.md` mục 13.
+
+### Reason
+Hoàn thiện trải nghiệm gán "Người Sử Dụng" cho thiết bị bằng ID thật (`assigned_user_id`)
+thay vì chỉ text tự do, tận dụng Personnel API đã có sẵn từ 2 hạng mục trước.
+
+---
+
 ## [2026-08-14] - UI Người Sử Dụng thay thế HRM cũ (feat/personnel-frontend)
 
 ### Changes

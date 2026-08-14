@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   X,
   Monitor,
@@ -33,6 +33,14 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
   const [macAddress, setMacAddress] = useState('');
   const [serialNumber, setSerialNumber] = useState('');
   const [rawUserName, setRawUserName] = useState('');
+  // Gán Người Sử Dụng qua autocomplete (feat/personnel-autocomplete):
+  // assignedUserId đi kèm rawUserName (chuỗi hiển thị trong ô). Gõ tự do
+  // (không chọn gợi ý) sẽ tự gỡ assignedUserId về null — chỉ set lại khi
+  // người dùng chọn đúng 1 gợi ý từ GET /api/personnel/search.
+  const [assignedUserId, setAssignedUserId] = useState(null);
+  const [personnelSuggestions, setPersonnelSuggestions] = useState([]);
+  const [showPersonnelSuggestions, setShowPersonnelSuggestions] = useState(false);
+  const personnelDebounceRef = useRef(null);
   const [status, setStatus] = useState('IN_USE');
   const [notes, setNotes] = useState('');
   const [model, setModel] = useState('');
@@ -81,6 +89,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         setMacAddress(data.mac_address || '');
         setSerialNumber(data.serial_number || '');
         setRawUserName(data.assigned_user_name || data.raw_user_name || '');
+        setAssignedUserId(data.assigned_user_id || null);
         setStatus(data.status || 'IN_USE');
         setNotes(data.notes || '');
         setModel(data.model || '');
@@ -122,6 +131,35 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
   const postOfficesForCommune = allPostOffices.filter(p => p.commune_id === communeId);
 
+  // Autocomplete "Người Sử Dụng": debounce ~300ms rồi gọi GET /api/personnel/search
+  // (route yêu cầu token + role quản lý -> apiFetchJson, không phải fetch thường).
+  const handlePersonnelSearchChange = (val) => {
+    setRawUserName(val);
+    setAssignedUserId(null); // gõ tự do -> huỷ liên kết với gợi ý đã chọn trước đó
+    setShowPersonnelSuggestions(true);
+
+    if (personnelDebounceRef.current) clearTimeout(personnelDebounceRef.current);
+
+    if (!val || !val.trim()) {
+      setPersonnelSuggestions([]);
+      return;
+    }
+
+    personnelDebounceRef.current = setTimeout(async () => {
+      const result = await apiFetchJson(`/api/personnel/search?q=${encodeURIComponent(val.trim())}`);
+      if (result.ok) {
+        setPersonnelSuggestions(Array.isArray(result.data) ? result.data : []);
+      }
+    }, 300);
+  };
+
+  const handleSelectPersonnel = (p) => {
+    setAssignedUserId(p.id);
+    setRawUserName(p.full_name);
+    setPersonnelSuggestions([]);
+    setShowPersonnelSuggestions(false);
+  };
+
   if (!equipment) return null;
 
   const handleSave = async (e) => {
@@ -147,6 +185,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
         mac_address: macAddress,
         serial_number: serialNumber,
         raw_user_name: rawUserName,
+        assigned_user_id: assignedUserId || null,
         status,
         notes,
         model,
@@ -179,6 +218,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
       mac_address: macAddress,
       serial_number: serialNumber,
       raw_user_name: rawUserName,
+      assigned_user_id: assignedUserId || null,
       status,
       notes,
       model,
@@ -348,14 +388,35 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                 />
               </div>
 
-              <div>
+              <div className="relative">
                 <label className="block text-[11px] font-semibold text-slate-300 mb-1">Người Sử Dụng Bàn Giao</label>
                 <input
                   type="text"
                   value={rawUserName}
-                  onChange={e => setRawUserName(e.target.value)}
+                  onChange={e => handlePersonnelSearchChange(e.target.value)}
+                  onFocus={() => { if (personnelSuggestions.length > 0) setShowPersonnelSuggestions(true); }}
+                  onBlur={() => setTimeout(() => setShowPersonnelSuggestions(false), 150)}
+                  placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
+                  autoComplete="off"
                   className="w-full glass-input p-2.5 rounded-xl text-xs"
                 />
+                {assignedUserId && (
+                  <p className="text-[10px] text-emerald-400 mt-1">Đã gán liên kết với nhân sự (assigned_user_id).</p>
+                )}
+                {showPersonnelSuggestions && personnelSuggestions.length > 0 && (
+                  <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl divide-y divide-slate-800">
+                    {personnelSuggestions.map((p) => (
+                      <li
+                        key={p.id}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => handleSelectPersonnel(p)}
+                        className="px-3 py-2 text-[11px] text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-300 cursor-pointer"
+                      >
+                        {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </div>
             </div>
 

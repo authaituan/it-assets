@@ -265,6 +265,40 @@ thiết bị mới) chưa dọn sau khi test qua UI thật.
 chắn thiết bị này có đang được 1 phiên làm việc khác dùng dở hay không). Báo PO xem lại,
 xoá thủ công nếu xác nhận là rác test.
 
+**Cập nhật (`feat/personnel-autocomplete`, 2026-08-14)**: Thiết bị này đã được
+soft-delete (`deleted_at` có giá trị) bởi 1 phiên làm việc khác trong lúc hạng mục
+autocomplete đang chạy — xác nhận không phải do hạng mục `feat/personnel-autocomplete`
+xử lý, chỉ tình cờ phát hiện khi verify lại số lượng thiết bị sau khi dọn dữ liệu test
+của chính hạng mục này.
+
+---
+
+### 13. Branch `feat/personnel-autocomplete` bị tạo lệch (trước khi `feat/personnel-frontend` merge), phải xoá tạo lại
+**Vấn đề**: Prompt giao việc chỉ yêu cầu kiểm tra `feat/personnel-backend` đã merge vào
+`main` trước khi tạo branch `feat/personnel-autocomplete` (không đề cập
+`feat/personnel-frontend`). Dev AI checkout `main` + tạo branch mới đúng lúc `main` mới
+chỉ có `feat/personnel-backend` merge — sau đó, trong lúc Dev AI đang code (đọc file,
+sửa 2 file JSX), PR `feat/personnel-frontend` được merge vào `main` (ngoài kiểm soát của
+phiên làm việc này). Branch `feat/personnel-autocomplete` cũ vẫn trỏ ở commit CŨ (trước
+merge đó) → nếu tiếp tục commit lên nhánh cũ sẽ thiếu toàn bộ thay đổi của
+`feat/personnel-frontend` (UI Người Sử Dụng, PersonnelView...) khi merge sau này.
+
+**Phát hiện**: Lúc mở trình duyệt test UI, Vite dev server serve code hiện tại trên đĩa
+nhưng `git branch --show-current` bất ngờ báo `main` (không phải branch vừa tạo) — kiểm
+tra `git log`/`git diff` xác nhận branch cũ trỏ ở `7c3b751` (chỉ có personnel-backend),
+trong khi `main` đã tiến lên `d97342f` (có thêm personnel-frontend).
+
+**Xử lý**: `git stash` 2 file đang sửa dở (`EquipmentDetailModal.jsx`,
+`AddEquipmentModal.jsx`) → `git branch -D feat/personnel-autocomplete` (branch cũ CHƯA
+từng push lên origin, xoá an toàn) → tạo lại branch mới cùng tên từ `main` mới nhất
+(đã có personnel-frontend) → `git stash pop` để khôi phục 2 file đang sửa dở → verify lại
+nội dung 2 file không mất gì trước khi tiếp tục.
+
+**Bài học quy trình**: Khi 1 hạng mục kéo dài (đọc code + sửa nhiều file + test UI mất
+nhiều phút), `main` có thể tiến thêm do PR khác merge song song — Dev AI nên `git status`
++ `git branch --show-current` kiểm tra lại trước khi commit cuối cùng, không chỉ tin vào
+câu lệnh `git checkout -b` chạy ở đầu phiên.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.
