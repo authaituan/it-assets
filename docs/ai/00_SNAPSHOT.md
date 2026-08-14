@@ -42,9 +42,8 @@
   tự, regex chặn ký tự đặc biệt); nhận thêm `asset_prefix` (optional, regex `^[A-Z0-9]{2,5}$`).
 - `PUT /api/device-types/:id` — **mới**: sửa `name`/`asset_prefix`/`description` của danh
   mục đã có. `asset_prefix` bắt buộc khi sửa (regex `^[A-Z0-9]{2,5}$`).
-- `POST /api/hrm/upload-and-map` — **ghi, cần token + role quản lý**. Validate fail-fast
-  `fullName`/`hrmCode` trước khi ghi DB. Cả đợt import bọc trong 1 transaction lớn (lỗi
-  1 dòng → rollback toàn bộ đợt, xem lưu ý ở mục rủi ro).
+- `GET/POST/PUT /api/personnel*` — **mới** (`feat/personnel-backend`), thay thế hẳn route
+  HRM cũ `POST /api/hrm/upload-and-map` (đã xoá). Xem mục "Personnel API" bên dưới.
 
 ## Lược đồ mã CCDC (mới, `feat/asset-tag-scheme`)
 - Định dạng: `<PREFIX>-<YY>-<seq 3 chữ số>`, vd `PC-24-001`, `LAP-26-001`.
@@ -168,6 +167,48 @@
   vui lòng liên hệ quản trị viên") khác hẳn message sai mật khẩu → quản lý bấm Kích
   Hoạt Lại → đăng nhập lại bình thường được → thử tự vô hiệu hoá chính tài khoản đang
   đăng nhập (cả qua UI nút đã disable, lẫn gọi API trực tiếp) → 400 bị chặn.
+
+## Personnel API (mới, `feat/personnel-backend`, CHỈ BACKEND)
+- Thay thế hẳn route HRM cũ `POST /api/hrm/upload-and-map` (đã xoá khỏi
+  `server/index.js`). Bảng `users` dùng chung 2 mục đích: tài khoản đăng nhập
+  (`role`, `password_hash`) VÀ nguồn "Người Sử Dụng" gán cho thiết bị
+  (`equipments.assigned_user_id`); route personnel CHỈ thao tác 4 field
+  `hrm_code/full_name/post_office_code/commune_code`, không bao giờ đụng
+  `role`/`password_hash`.
+- `GET /api/personnel` — cần token + role quản lý: danh sách nhân sự, hỗ trợ
+  `search` (khớp `hrm_code` HOẶC `full_name`, chuẩn hoá bỏ dấu/không phân biệt
+  hoa thường), lọc `postOfficeCode`/`communeCode`, phân trang (cùng pattern
+  `GET /api/equipments`).
+- `GET /api/personnel/search?q=...` — cần token + role quản lý: tối đa 10 kết
+  quả khớp `hrm_code`/`full_name` đã chuẩn hoá, dùng cho autocomplete (UI làm ở
+  hạng mục sau).
+- `POST /api/personnel` — cần token + role quản lý: thêm nhân sự thủ công,
+  `hrm_code` bắt buộc + unique, `full_name` bắt buộc.
+- `PUT /api/personnel/:id` — cần token + role quản lý: sửa 4 field trên,
+  `hrm_code` (nếu đổi) vẫn phải unique.
+- `POST /api/personnel/import` — cần token + role quản lý: import hàng loạt
+  `{ personnel: [{hrmCode, fullName, postOfficeCode, communeCode}] }`. Validate
+  fail-fast TRƯỚC khi ghi DB (1 dòng lỗi → chặn cả batch). Hợp lệ hết → UPSERT
+  theo `hrm_code` trong 1 `db.transaction()` — khác route HRM cũ (khớp theo
+  `hrm_code OR full_name`), route mới CHỈ khớp theo `hrm_code`. **KHÔNG** mang
+  theo tính năng "Auto-Match Equipment by Raw User Name" của route cũ — gán
+  thiết bị nay làm tường minh qua `assigned_user_id`, xem mục dưới.
+- `GET /api/users` — sửa: thêm `WHERE password_hash IS NOT NULL` để không lẫn
+  nhân sự thuần (thêm qua `/api/personnel`, không có `password_hash`) vào danh
+  sách tài khoản đăng nhập.
+- `POST /api/equipments` và `PUT /api/equipments/:id` — nhận thêm field
+  `assigned_user_id` (optional, nullable, validate tồn tại trong `users` nếu
+  có → 400 nếu không). `raw_user_name` giữ nguyên hành vi cũ, độc lập với
+  `assigned_user_id`.
+- ⚠️ **Drift đã biết**: `src/components/HrmMappingView.jsx` (frontend) vẫn gọi
+  route cũ đã xoá → sẽ lỗi 404 nếu còn render. Hạng mục này CHỈ backend theo
+  đúng phạm vi giao; frontend sẽ được 2 hạng mục sau xử lý. Chi tiết xem
+  `04_DECISIONS.md` mục 10.
+- Test: 79/79 test tự động pass (`npm test`), gồm `tests/personnel.test.js`
+  mới (thay `tests/hrm.test.js` đã xoá) phủ đủ 5 route personnel + 2 thay đổi
+  ở equipments/users. Chưa test qua curl trên server production thật (đang
+  chạy sống tại cổng 5000 khi làm hạng mục này) để tránh ghi dữ liệu test vào
+  353 thiết bị thật.
 
 ## Sidebar & Inventory (mới, `feat/inventory-submenu`)
 - **Sidebar động**: Mục "Quản Lý CCDC" có thể expand/collapse hiển thị submenu chứa danh sách các loại thiết bị CCDC. Danh sách này được lấy động từ `GET /api/device-types`.

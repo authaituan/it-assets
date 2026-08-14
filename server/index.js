@@ -419,6 +419,7 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
       model,
       post_office_id,
       raw_user_name,
+      assigned_user_id,
       notes,
       purchase_year,
       category_raw
@@ -428,6 +429,16 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
 
     if (!device_type_id || !post_office_id) {
       return res.status(400).json({ error: 'Vui lòng chọn Loại thiết bị và Bưu cục' });
+    }
+
+    // assigned_user_id (optional): nếu gửi và không rỗng, phải tồn tại trong
+    // bảng users (nhân sự HOẶC tài khoản đăng nhập — cùng bảng). raw_user_name
+    // (tên thô, không cần khớp bản ghi users) giữ nguyên hành vi cũ, không đổi.
+    let finalAssignedUserId = null;
+    if (assigned_user_id !== undefined && assigned_user_id !== null && assigned_user_id !== '') {
+      const userExists = db.prepare("SELECT 1 FROM users WHERE id = ?").get(assigned_user_id);
+      if (!userExists) return res.status(400).json({ error: 'Người sử dụng (assigned_user_id) không tồn tại trong hệ thống' });
+      finalAssignedUserId = assigned_user_id;
     }
 
     if (hostname && hostname.length > 255) return res.status(400).json({ error: 'Tên máy (hostname) không được vượt quá 255 ký tự' });
@@ -505,8 +516,8 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
 
       db.prepare(`
         INSERT INTO equipments
-        (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, notes, purchase_year)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?, ?)
+        (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, post_office_id, raw_user_name, assigned_user_id, notes, purchase_year)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'IN_USE', ?, ?, ?, ?, ?)
       `).run(
         eqId,
         assetTag,
@@ -520,6 +531,7 @@ app.post('/api/equipments', authRequired, requireManager, (req, res) => {
         JSON.stringify(mergedSpecs),
         post_office_id,
         raw_user_name || null,
+        finalAssignedUserId,
         notes || null,
         finalPurchaseYear
       );
@@ -551,6 +563,7 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       model,
       status,
       raw_user_name,
+      assigned_user_id,
       notes,
       device_type_id,
       brand_id,
@@ -603,6 +616,19 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
       finalPostOfficeId = post_office_id;
     }
 
+    // assigned_user_id: nullable — undefined -> giữ nguyên; null/'' -> gỡ gán
+    // (bỏ người sử dụng); giá trị khác -> validate tồn tại trong users.
+    let finalAssignedUserId = existing.assigned_user_id;
+    if (assigned_user_id !== undefined) {
+      if (assigned_user_id === null || assigned_user_id === '') {
+        finalAssignedUserId = null;
+      } else {
+        const userExists = db.prepare("SELECT 1 FROM users WHERE id = ?").get(assigned_user_id);
+        if (!userExists) return res.status(400).json({ error: 'Người sử dụng (assigned_user_id) không tồn tại trong hệ thống' });
+        finalAssignedUserId = assigned_user_id;
+      }
+    }
+
     // purchase_year: validate nếu gửi, giữ nguyên nếu không.
     let finalPurchaseYear = existing.purchase_year;
     if (purchase_year !== undefined && purchase_year !== null && purchase_year !== '') {
@@ -634,7 +660,7 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
     const updateEquipmentTxn = db.transaction(() => {
       db.prepare(`
         UPDATE equipments
-        SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, notes = ?, specs = ?, device_type_id = ?, brand_id = ?, post_office_id = ?, purchase_year = ?
+        SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?, raw_user_name = ?, assigned_user_id = ?, notes = ?, specs = ?, device_type_id = ?, brand_id = ?, post_office_id = ?, purchase_year = ?
         WHERE id = ?
       `).run(
         hostname || null,
@@ -644,6 +670,7 @@ app.put('/api/equipments/:id', authRequired, requireManager, (req, res) => {
         model || null,
         status || existing.status,
         raw_user_name || null,
+        finalAssignedUserId,
         notes || null,
         JSON.stringify(mergedSpecs),
         finalDeviceTypeId,
@@ -866,113 +893,261 @@ app.put('/api/device-types/:id', authRequired, requireManager, (req, res) => {
 // ==========================================
 // 4. HRM AUTO-MAPPING API
 // ==========================================
-app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => {
-  try {
-    const { hrmEmployees } = req.body;
-    // Expected format of hrmEmployees array:
-    // [{ hrmCode: 'HRM102', fullName: 'THANH THÌN', postOfficeCode: '536750', communeCode: '5300' }]
+// ==========================================
+// Helper string normalizer (bỏ dấu + viết thường), dùng chung cho tìm kiếm
+// nhân sự (search/autocomplete). Copy nguyên logic từ route HRM cũ
+// (POST /api/hrm/upload-and-map, đã xoá — xem docs/ai/04_DECISIONS.md) trước
+// khi xoá route đó, giữ lại đúng hành vi chuẩn hoá.
+// ==========================================
+const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
-    if (!Array.isArray(hrmEmployees) || hrmEmployees.length === 0) {
-      return res.status(400).json({ error: 'Danh sách nhân sự HRM không hợp lệ hoặc rỗng' });
+// ==========================================
+// 4b. PERSONNEL API (nhân sự — bảng `users`, KHÔNG liên quan tài khoản đăng
+// nhập). Thay thế route HRM cũ `POST /api/hrm/upload-and-map` (đã xoá).
+// Bảng `users` dùng chung cho 2 mục đích: tài khoản đăng nhập (role,
+// password_hash) VÀ nguồn gán "Người Sử Dụng" cho thiết bị
+// (equipments.assigned_user_id). Route personnel CHỈ thao tác 4 field
+// hrm_code/full_name/post_office_code/commune_code, KHÔNG bao giờ đụng
+// role/password_hash.
+// ==========================================
+
+// Autocomplete: tối đa 10 kết quả khớp hrm_code HOẶC full_name (chuẩn hoá).
+// Đặt TRƯỚC /api/personnel/import và GET /api/personnel để route tĩnh
+// không bị route khác "nuốt" nhầm (dù ở đây không có route :id nên không
+// bắt buộc, vẫn giữ thói quen route tĩnh đứng trước cho rõ ràng).
+app.get('/api/personnel/search', authRequired, requireManager, (req, res) => {
+  try {
+    const q = (req.query.q || '').trim();
+    if (!q) return res.json([]);
+
+    const normQ = normalizeStr(q);
+    const all = db.prepare(`
+      SELECT id, hrm_code, full_name, post_office_code, commune_code
+      FROM users
+      ORDER BY created_at DESC
+    `).all();
+
+    const results = all.filter((u) => {
+      const normHrm = normalizeStr(u.hrm_code);
+      const normName = normalizeStr(u.full_name);
+      return normHrm.includes(normQ) || normName.includes(normQ);
+    }).slice(0, 10);
+
+    res.json(results);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Danh sách nhân sự, hỗ trợ search (hrm_code HOẶC full_name, đã chuẩn hoá),
+// lọc theo postOfficeCode/communeCode, phân trang (cùng pattern GET /api/equipments).
+app.get('/api/personnel', authRequired, requireManager, (req, res) => {
+  try {
+    const { search, postOfficeCode, communeCode, page = 1, limit = 20 } = req.query;
+
+    let whereClause = ["1=1"];
+    let params = [];
+
+    if (postOfficeCode) {
+      whereClause.push("post_office_code = ?");
+      params.push(postOfficeCode);
+    }
+    if (communeCode) {
+      whereClause.push("commune_code = ?");
+      params.push(communeCode);
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+
+    // search: khớp hrm_code HOẶC full_name, chuẩn hoá bỏ dấu/không phân biệt
+    // hoa thường. SQLite không có hàm bỏ dấu sẵn -> lấy tập đã lọc theo
+    // postOfficeCode/communeCode trước, rồi lọc chính xác lại bằng
+    // normalizeStr() ở tầng ứng dụng, cuối cùng mới phân trang thủ công.
+    if (search && search.trim()) {
+      const normSearch = normalizeStr(search);
+      const all = db.prepare(`
+        SELECT id, hrm_code, full_name, post_office_code, commune_code, post_office_id, created_at
+        FROM users
+        WHERE ${whereClause.join(' AND ')}
+        ORDER BY created_at DESC
+      `).all(...params);
+
+      const filtered = all.filter((u) => {
+        const normHrm = normalizeStr(u.hrm_code);
+        const normName = normalizeStr(u.full_name);
+        return normHrm.includes(normSearch) || normName.includes(normSearch);
+      });
+
+      const total = filtered.length;
+      const offset = (pageNum - 1) * limitNum;
+      const items = filtered.slice(offset, offset + limitNum);
+
+      return res.json({
+        items,
+        pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+      });
+    }
+
+    const countSql = `SELECT COUNT(*) as total FROM users WHERE ${whereClause.join(' AND ')}`;
+    const total = db.prepare(countSql).get(...params).total;
+
+    const offset = (pageNum - 1) * limitNum;
+    const items = db.prepare(`
+      SELECT id, hrm_code, full_name, post_office_code, commune_code, post_office_id, created_at
+      FROM users
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY created_at DESC
+      LIMIT ? OFFSET ?
+    `).all(...params, limitNum, offset);
+
+    res.json({
+      items,
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    console.error("Get personnel error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Thêm 1 nhân sự thủ công. hrm_code bắt buộc + unique, full_name bắt buộc.
+// KHÔNG nhận/set role hay password_hash (khác POST /api/users).
+app.post('/api/personnel', authRequired, requireManager, (req, res) => {
+  try {
+    const { hrm_code, full_name, post_office_code, commune_code } = req.body || {};
+
+    if (!hrm_code || typeof hrm_code !== 'string' || !hrm_code.trim()) {
+      return res.status(400).json({ error: 'Vui lòng nhập Mã HRM' });
+    }
+    if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
+      return res.status(400).json({ error: 'Vui lòng nhập Họ và Tên' });
+    }
+
+    const trimmedHrmCode = hrm_code.trim();
+    const existing = db.prepare("SELECT id FROM users WHERE hrm_code = ?").get(trimmedHrmCode);
+    if (existing) {
+      return res.status(400).json({ error: 'Mã HRM này đã tồn tại trong hệ thống' });
+    }
+
+    const id = uuidv4();
+    db.prepare(`
+      INSERT INTO users (id, hrm_code, full_name, post_office_code, commune_code)
+      VALUES (?, ?, ?, ?, ?)
+    `).run(id, trimmedHrmCode, full_name.trim(), post_office_code || null, commune_code || null);
+
+    res.status(201).json({
+      message: 'Thêm nhân sự thành công',
+      id,
+      hrm_code: trimmedHrmCode,
+      full_name: full_name.trim(),
+      post_office_code: post_office_code || null,
+      commune_code: commune_code || null
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Sửa 4 field nhân sự. hrm_code (nếu đổi) vẫn phải unique.
+app.put('/api/personnel/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const { hrm_code, full_name, post_office_code, commune_code } = req.body || {};
+    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy nhân sự' });
+
+    let finalHrmCode = existing.hrm_code;
+    if (hrm_code !== undefined && hrm_code !== null) {
+      if (typeof hrm_code !== 'string' || !hrm_code.trim()) {
+        return res.status(400).json({ error: 'Mã HRM không hợp lệ' });
+      }
+      const trimmed = hrm_code.trim();
+      if (trimmed !== existing.hrm_code) {
+        const dup = db.prepare("SELECT id FROM users WHERE hrm_code = ? AND id != ?").get(trimmed, req.params.id);
+        if (dup) return res.status(400).json({ error: 'Mã HRM này đã tồn tại trong hệ thống' });
+      }
+      finalHrmCode = trimmed;
+    }
+
+    let finalFullName = existing.full_name;
+    if (full_name !== undefined && full_name !== null) {
+      if (typeof full_name !== 'string' || !full_name.trim()) {
+        return res.status(400).json({ error: 'Họ và Tên không hợp lệ' });
+      }
+      finalFullName = full_name.trim();
+    }
+
+    const finalPostOfficeCode = post_office_code !== undefined ? (post_office_code || null) : existing.post_office_code;
+    const finalCommuneCode = commune_code !== undefined ? (commune_code || null) : existing.commune_code;
+
+    db.prepare(`
+      UPDATE users SET hrm_code = ?, full_name = ?, post_office_code = ?, commune_code = ?
+      WHERE id = ?
+    `).run(finalHrmCode, finalFullName, finalPostOfficeCode, finalCommuneCode, req.params.id);
+
+    res.json({ message: 'Cập nhật nhân sự thành công' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Import hàng loạt nhân sự: { personnel: [{hrmCode, fullName, postOfficeCode, communeCode}, ...] }.
+// Validate fail-fast TRƯỚC khi ghi DB: 1 dòng lỗi -> chặn cả batch, không ghi
+// dòng nào. Hợp lệ hết -> UPSERT theo hrm_code trong 1 transaction (copy logic
+// UPSERT users từ route HRM cũ trước khi xoá, nhưng khớp DUY NHẤT theo
+// hrm_code — KHÔNG khớp thêm theo full_name như bản cũ).
+app.post('/api/personnel/import', authRequired, requireManager, (req, res) => {
+  try {
+    const { personnel } = req.body || {};
+
+    if (!Array.isArray(personnel) || personnel.length === 0) {
+      return res.status(400).json({ error: 'Danh sách nhân sự không hợp lệ hoặc rỗng' });
     }
 
     // Validate fail-fast TRƯỚC khi mở transaction / ghi bất kỳ dữ liệu nào.
-    for (const emp of hrmEmployees) {
-      if (emp.fullName !== undefined && emp.fullName !== null) {
-        if (typeof emp.fullName !== 'string' || emp.fullName.length > 200) {
-          return res.status(400).json({ error: 'fullName phải là chuỗi và tối đa 200 ký tự' });
-        }
+    for (const p of personnel) {
+      if (!p || typeof p.hrmCode !== 'string' || !p.hrmCode.trim()) {
+        return res.status(400).json({ error: 'Mỗi nhân sự phải có hrmCode dạng chuỗi, không rỗng' });
       }
-      if (emp.hrmCode !== undefined && emp.hrmCode !== null && typeof emp.hrmCode !== 'string') {
-        return res.status(400).json({ error: 'hrmCode phải là chuỗi' });
+      if (typeof p.fullName !== 'string' || !p.fullName.trim() || p.fullName.length > 200) {
+        return res.status(400).json({ error: 'Mỗi nhân sự phải có fullName dạng chuỗi, không rỗng, tối đa 200 ký tự' });
       }
     }
 
-    let usersCreated = 0;
-    let usersUpdated = 0;
-    let assetsAutoMapped = 0;
-    let mappingDetails = [];
+    let created = 0;
+    let updated = 0;
 
-    // Helper string normalizer
-    const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    const importPersonnelTxn = db.transaction((items) => {
+      items.forEach((p) => {
+        const hrmCode = p.hrmCode.trim();
+        const fullName = p.fullName.trim();
+        const postOfficeCode = p.postOfficeCode || null;
+        const communeCode = p.communeCode || null;
 
-    // Bọc TOÀN BỘ đợt import HRM trong 1 transaction: mỗi nhân sự kéo theo nhiều
-    // thao tác ghi (users + equipments + asset_transfer_logs). Nếu 1 dòng dữ liệu
-    // lỗi giữa chừng, rollback toàn bộ đợt thay vì để lại trạng thái mapping dở dang.
-    const importHrmTxn = db.transaction((employees) => {
-    employees.forEach(emp => {
-      const { hrmCode, fullName, postOfficeCode, communeCode } = emp;
-      if (!fullName) return;
+        const po = postOfficeCode ? db.prepare("SELECT id FROM post_offices WHERE code = ?").get(postOfficeCode) : null;
+        const poId = po ? po.id : null;
 
-      // Find matching Post Office by code
-      const po = db.prepare("SELECT id FROM post_offices WHERE code = ?").get(postOfficeCode || '');
-      const poId = po ? po.id : null;
-
-      // Insert or Update User record
-      let user = db.prepare("SELECT * FROM users WHERE hrm_code = ? OR full_name = ?").get(hrmCode || '', fullName);
-      let userId;
-
-      if (user) {
-        userId = user.id;
-        db.prepare(`
-          UPDATE users
-          SET hrm_code = ?, full_name = ?, post_office_code = ?, commune_code = ?, post_office_id = ?
-          WHERE id = ?
-        `).run(hrmCode || user.hrm_code, fullName, postOfficeCode || user.post_office_code, communeCode || user.commune_code, poId || user.post_office_id, userId);
-        usersUpdated++;
-      } else {
-        userId = uuidv4();
-        db.prepare(`
-          INSERT INTO users (id, hrm_code, full_name, post_office_code, commune_code, post_office_id)
-          VALUES (?, ?, ?, ?, ?, ?)
-        `).run(userId, hrmCode || null, fullName, postOfficeCode || null, communeCode || null, poId);
-        usersCreated++;
-      }
-
-      // Auto-Match Equipment by Raw User Name
-      const normName = normalizeStr(fullName);
-      const unmappedEquipments = db.prepare("SELECT id, raw_user_name, post_office_id FROM equipments WHERE assigned_user_id IS NULL AND raw_user_name IS NOT NULL AND raw_user_name != ''").all();
-
-      unmappedEquipments.forEach(eq => {
-        const normRaw = normalizeStr(eq.raw_user_name);
-        if (normRaw === normName || normRaw.includes(normName) || normName.includes(normRaw)) {
-          // Check if post office matches or commune matches
+        const existing = db.prepare("SELECT id FROM users WHERE hrm_code = ?").get(hrmCode);
+        if (existing) {
           db.prepare(`
-            UPDATE equipments
-            SET assigned_user_id = ?
+            UPDATE users SET full_name = ?, post_office_code = ?, commune_code = ?, post_office_id = ?
             WHERE id = ?
-          `).run(userId, eq.id);
-
+          `).run(fullName, postOfficeCode, communeCode, poId, existing.id);
+          updated++;
+        } else {
           db.prepare(`
-            INSERT INTO asset_transfer_logs (id, equipment_id, action, to_user_id, reason)
-            VALUES (?, ?, 'HRM_SYNC', ?, 'Tự động mapping từ file HRM nhân sự')
-          `).run(uuidv4(), eq.id, userId);
-
-          assetsAutoMapped++;
-          mappingDetails.push({
-            equipmentId: eq.id,
-            rawName: eq.raw_user_name,
-            matchedUser: fullName,
-            hrmCode: hrmCode || 'N/A'
-          });
+            INSERT INTO users (id, hrm_code, full_name, post_office_code, commune_code, post_office_id)
+            VALUES (?, ?, ?, ?, ?, ?)
+          `).run(uuidv4(), hrmCode, fullName, postOfficeCode, communeCode, poId);
+          created++;
         }
       });
     });
-    }); // hết importHrmTxn
-    importHrmTxn(hrmEmployees);
+    importPersonnelTxn(personnel);
 
-    res.json({
-      message: 'Xử lý Auto-Mapping HRM hoàn tất!',
-      stats: {
-        totalHrmInput: hrmEmployees.length,
-        usersCreated,
-        usersUpdated,
-        assetsAutoMapped
-      },
-      mappingDetails
-    });
+    res.json({ created, updated });
   } catch (error) {
-    console.error("HRM mapping error:", error);
+    console.error("Import personnel error:", error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -981,6 +1156,10 @@ app.post('/api/hrm/upload-and-map', authRequired, requireManager, (req, res) => 
 // 5. USER ADMINISTRATION API
 // ==========================================
 // Danh sách user — KHÔNG bao giờ trả password_hash (SELECT tường minh từng cột).
+// CHỈ trả tài khoản đăng nhập THẬT (password_hash IS NOT NULL) — bảng `users`
+// giờ dùng chung cho cả nhân sự thuần (không có password_hash, quản lý qua
+// /api/personnel), nên route này phải lọc để không lẫn nhân sự vào danh sách
+// tài khoản đăng nhập.
 app.get('/api/users', authRequired, requireManager, (req, res) => {
   try {
     // Vẫn trả về CẢ user đã vô hiệu hoá (khác equipments soft-delete vốn ẩn khỏi danh
@@ -988,6 +1167,7 @@ app.get('/api/users', authRequired, requireManager, (req, res) => {
     const users = db.prepare(`
       SELECT id, hrm_code, full_name, role, post_office_code, commune_code, post_office_id, created_at, deactivated_at
       FROM users
+      WHERE password_hash IS NOT NULL
       ORDER BY created_at DESC
     `).all();
     res.json(users);

@@ -194,6 +194,41 @@ thể>` thay vì `git add .` khi biết rõ phạm vi thay đổi, đặc biệt
 việc thử nghiệm/debug tạo ra file tạm trong thư mục dự án. `git status` PHẢI được đọc kỹ
 từng dòng trước khi `git add .`, không chỉ chạy theo quán tính.
 
+---
+
+### 10. Xoá route HRM cũ, thay bằng Personnel API (`feat/personnel-backend`)
+**Quyết định**: `POST /api/hrm/upload-and-map` bị xoá hẳn khỏi `server/index.js`, thay
+bằng 5 route mới trong section "PERSONNEL API": `GET /api/personnel`,
+`GET /api/personnel/search`, `POST /api/personnel`, `PUT /api/personnel/:id`,
+`POST /api/personnel/import`. Logic UPSERT-theo-`hrm_code` và hàm `normalizeStr` (bỏ
+dấu + viết thường) được copy nguyên sang route mới trước khi xoá route cũ — điểm khác
+biệt duy nhất: route cũ khớp user hiện có theo `hrm_code OR full_name`, route mới CHỈ
+khớp theo `hrm_code` (rõ ràng hơn, tránh gộp nhầm 2 người trùng tên). Route cũ còn có
+tính năng "Auto-Match Equipment by Raw User Name" (tự gán `assigned_user_id` cho thiết
+bị dựa trên khớp `raw_user_name`) — tính năng này **KHÔNG được mang sang** route
+`/api/personnel/import` mới, vì nay đã có cơ chế gán tường minh qua field
+`assigned_user_id` ở `POST/PUT /api/equipments` (validate tồn tại trong `users`), không
+cần đoán/khớp mờ theo tên nữa.
+
+**Drift phát sinh cần PO lưu ý**: `src/components/HrmMappingView.jsx` (frontend) vẫn
+đang gọi `POST /api/hrm/upload-and-map` (`src/components/HrmMappingView.jsx:65`) — route
+này đã xoá nên component sẽ nhận lỗi 404 nếu còn được render. Hạng mục
+`feat/personnel-backend` **CHỈ backend** theo đúng phạm vi được giao (không đụng file
+`.jsx`), 2 hạng mục sau (frontend, làm sau khi nhánh này merge vào `main`) cần cập nhật
+`HrmMappingView.jsx` để gọi route mới hoặc thay bằng UI Personnel mới, nếu không app sẽ
+có 1 màn hình chết trong lúc chờ.
+
+**Bảng `users` dùng chung 2 mục đích**: tài khoản đăng nhập (`role`, `password_hash`
+NOT NULL) và nhân sự thuần từ Personnel API (`password_hash` NULL). `GET /api/users`
+được sửa thêm `WHERE password_hash IS NOT NULL` để không lẫn nhân sự thuần vào danh
+sách tài khoản đăng nhập (UI Quản Lý Người Dùng).
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-14, 79/79 test tự động pass (`tests/personnel.test.js`
+mới thay `tests/hrm.test.js` đã xoá). KHÔNG test qua curl trên server production thật
+(đang chạy sống tại cổng 5000, phát hiện trong lúc làm hạng mục này) — cân nhắc rủi ro
+ghi dữ liệu test vào 353 thiết bị thật, PO tự quyết định có cần verify thủ công qua UI
+thật hay không trước khi merge.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

@@ -37,10 +37,12 @@
 6. Route đọc (GET) không gắn middleware → mở.
 
 ## Route ghi được bảo vệ
-- `POST /api/equipments`
-- `PUT  /api/equipments/:id`  ← gồm đổi `status`
+- `POST /api/equipments`  ← nhận thêm `assigned_user_id` (feat/personnel-backend)
+- `PUT  /api/equipments/:id`  ← gồm đổi `status`; nhận thêm `assigned_user_id`
 - `POST /api/device-types`
-- `POST /api/hrm/upload-and-map`
+- `POST /api/personnel`, `PUT /api/personnel/:id`, `POST /api/personnel/import`,
+  `GET /api/personnel`, `GET /api/personnel/search`  ← thay thế
+  `POST /api/hrm/upload-and-map` (đã xoá, `feat/personnel-backend`)
 
 ## Ghi chú kỹ thuật
 - Không dùng ORM; truy vấn SQL trực tiếp qua `db.prepare(...)`.
@@ -59,5 +61,7 @@
      → dùng chung 1 kết nối DB, tránh SQLite lock đa tiến trình.
 - `tests/helpers/fixtures.js`: seed tối thiểu (1 tỉnh/1 BĐX/1 bưu cục/1 device_type + user)
   qua chính `db` handle, dùng `hashPassword` thật từ `server/auth.js`.
-- Mỗi file test (`auth`/`equipments`/`hrm`) chạy port riêng (5901-5903) + DB tạm riêng,
-  cô lập hoàn toàn với nhau và với `data/ccdc.db` thật.
+- Mỗi file test (`auth`/`equipments`/`personnel`/`users`) chạy port riêng (5901-5904) +
+  DB tạm riêng, cô lập hoàn toàn với nhau và với `data/ccdc.db` thật. `tests/hrm.test.js`
+  (port 5903) đã xoá cùng route HRM cũ, thay bằng `tests/personnel.test.js` (giữ nguyên
+  port 5903).
