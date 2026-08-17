@@ -1,25 +1,29 @@
 import React, { useEffect, useState } from 'react';
-import { 
-  Monitor, 
-  Printer, 
-  QrCode, 
-  Wifi, 
-  Zap, 
-  Camera, 
+import {
+  Monitor,
+  Printer,
+  QrCode,
+  Wifi,
+  Zap,
+  Camera,
   Scale,
-  Search, 
-  Filter, 
-  MapPin, 
-  Building2, 
-  User, 
-  Eye, 
-  Edit3, 
-  ChevronLeft, 
+  Search,
+  Filter,
+  MapPin,
+  Building2,
+  User,
+  Eye,
+  Edit3,
+  ChevronLeft,
   ChevronRight,
   Sparkles,
   RefreshCw,
-  Plus
+  Plus,
+  Download,
+  Upload
 } from 'lucide-react';
+import ExportEquipmentModal from './ExportEquipmentModal';
+import ImportEquipmentModal from './ImportEquipmentModal';
 
 export default function InventoryView({
   search,
@@ -43,17 +47,41 @@ export default function InventoryView({
   const [categoryRawOptions, setCategoryRawOptions] = useState([]);
   const [selectedCategoryRaw, setSelectedCategoryRaw] = useState('');
 
-  // Load Communes & Device Types on Mount
-  useEffect(() => {
+  // Export/Import Excel modal
+  const [showExportModal, setShowExportModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+
+  // Tách riêng để có thể gọi lại sau khi Import tạo mới bưu cục/danh mục
+  // (danh sách BĐX/Bưu cục/Loại thiết bị cần cập nhật để dropdown lọc thấy ngay).
+  const fetchCommunes = () => {
     fetch('/api/organization/communes')
       .then(res => res.json())
       .then(data => setCommunes(data))
       .catch(err => console.error(err));
+  };
 
+  const fetchDeviceTypes = () => {
     fetch('/api/device-types')
       .then(res => res.json())
       .then(data => setDeviceTypes(data))
       .catch(err => console.error(err));
+  };
+
+  const fetchPostOffices = () => {
+    let url = '/api/organization/post-offices';
+    if (selectedCommuneId) {
+      url += `?communeId=${selectedCommuneId}`;
+    }
+    fetch(url)
+      .then(res => res.json())
+      .then(data => setPostOffices(data))
+      .catch(err => console.error(err));
+  };
+
+  // Load Communes & Device Types on Mount
+  useEffect(() => {
+    fetchCommunes();
+    fetchDeviceTypes();
   }, []);
 
   // Update selectedDeviceTypeId when initialDeviceTypeId changes
@@ -139,6 +167,44 @@ export default function InventoryView({
     }
   };
 
+  // Bộ lọc ĐANG ÁP DỤNG trên danh sách — dùng chung cho Export (đúng tập
+  // đang xem, không phải luôn luôn toàn bộ thiết bị).
+  const currentFilters = {
+    search,
+    communeId: selectedCommuneId,
+    postOfficeId: selectedPostOfficeId,
+    deviceTypeId: selectedDeviceTypeId,
+    categoryRaw: selectedCategoryRaw,
+    status: selectedStatus
+  };
+
+  const filterSummaryParts = [];
+  if (search) filterSummaryParts.push(`tìm "${search}"`);
+  if (selectedCommuneId) {
+    const c = communes.find((x) => x.id === selectedCommuneId);
+    filterSummaryParts.push(`BĐX: ${c ? c.name : selectedCommuneId}`);
+  }
+  if (selectedPostOfficeId) {
+    const p = postOffices.find((x) => x.id === selectedPostOfficeId);
+    filterSummaryParts.push(`Bưu cục: ${p ? p.name : selectedPostOfficeId}`);
+  }
+  if (selectedDeviceTypeId) {
+    const dt = deviceTypes.find((x) => x.id === selectedDeviceTypeId);
+    filterSummaryParts.push(`Loại thiết bị: ${dt ? dt.name : selectedDeviceTypeId}`);
+  }
+  if (selectedCategoryRaw) filterSummaryParts.push(`Phân loại: ${selectedCategoryRaw}`);
+  if (selectedStatus) filterSummaryParts.push(`Trạng thái: ${selectedStatus}`);
+  const filterSummary = filterSummaryParts.length > 0
+    ? filterSummaryParts.join(' · ')
+    : `toàn bộ ${pagination.total} thiết bị (không lọc)`;
+
+  const handleImportSuccess = () => {
+    fetchEquipments();
+    fetchCommunes();
+    fetchDeviceTypes();
+    fetchPostOffices();
+  };
+
   // Helper status badge renderer
   const getStatusBadge = (status) => {
     switch (status) {
@@ -168,13 +234,29 @@ export default function InventoryView({
             <p className="text-xs text-slate-400 mt-1">Tìm kiếm & lọc CCDC theo Bưu điện Xã (BĐX), Bưu cục, Loại thiết bị, Trạng thái</p>
           </div>
 
-          <button
-            onClick={onOpenAddModal}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Thêm Thiết Bị CCDC</span>
-          </button>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setShowExportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-input hover:border-cyan-500/40 hover:text-cyan-300 transition-all"
+            >
+              <Download className="w-4 h-4" />
+              <span>Export Excel</span>
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-input hover:border-purple-500/40 hover:text-purple-300 transition-all"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Import Excel</span>
+            </button>
+            <button
+              onClick={onOpenAddModal}
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Thêm Thiết Bị CCDC</span>
+            </button>
+          </div>
         </div>
 
         {/* Cascading Filter Controls */}
@@ -449,6 +531,21 @@ export default function InventoryView({
           </div>
         </div>
       </div>
+
+      {showExportModal && (
+        <ExportEquipmentModal
+          onClose={() => setShowExportModal(false)}
+          filters={currentFilters}
+          filterSummary={filterSummary}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportEquipmentModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={handleImportSuccess}
+        />
+      )}
     </div>
   );
 }

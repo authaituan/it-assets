@@ -313,6 +313,72 @@
   ràng; thiếu `maMbc` kèm 1 dòng hợp lệ đứng trước → 400 fail-fast, không
   ghi dòng nào (verify lại tổng số thiết bị không đổi).
 
+## Frontend Import/Export Excel CCDC (mới, `feat/equipment-import-export-frontend`)
+- `src/components/InventoryView.jsx`: thêm 2 nút "Export Excel" (glass-input,
+  icon `Download`) và "Import Excel" (glass-input, icon `Upload`) cạnh nút
+  "+ Thêm Thiết Bị CCDC" trong header. State modal (`showExportModal`/
+  `showImportModal`) quản lý ngay trong component, không đụng `App.jsx`.
+  Thêm 3 hàm `fetchCommunes`/`fetchDeviceTypes`/`fetchPostOffices` tách ra
+  từ effect mount để gọi lại sau khi Import thành công (tạo mới bưu cục/
+  danh mục cần cập nhật ngay các dropdown lọc).
+- `src/components/ExportEquipmentModal.jsx` (mới): modal 2 phương án —
+  "Đầy đủ" (31 cột đúng thứ tự chuẩn A-X + 7 cột mới) và "Theo từng trường
+  cần thiết" (checkbox 31 cột tên tiếng Việt có dấu, cột "Mã CCDC" luôn
+  tick + disable, kèm ghi chú "(bắt buộc — dùng để cập nhật khi import
+  lại)"). Cả 2 phương án dùng ĐÚNG bộ lọc đang áp dụng trên `InventoryView`
+  (search/BĐX/Bưu cục/Loại thiết bị/Phân loại chi tiết/Trạng thái) khi gọi
+  `GET /api/equipments/export-data`. Dựng file `.xlsx` bằng `exceljs`
+  (sheet "Dữ Liệu", dòng 1 header tiếng Việt có dấu) → tải xuống qua
+  `Blob` + `<a download>`, hoàn toàn client-side.
+- `src/components/ImportEquipmentModal.jsx` (mới): nút "Tải Template Mẫu"
+  tự dựng `.xlsx` bằng `exceljs` ngay lúc bấm (không phải file tĩnh) — sheet
+  "Dữ Liệu" (31 cột chuẩn + 2 dòng ví dụ minh hoạ TẠO MỚI/CẬP NHẬT) + sheet
+  "Hướng Dẫn" (giải thích từng cột: tên, bắt buộc hay không, ý nghĩa, ví
+  dụ). Input chọn file `.xlsx` → đọc bằng `exceljs`, map cột theo TÊN
+  HEADER (không theo vị trí cột cố định) — hỗ trợ đọc lại cả file export
+  dạng "rút gọn" (ít cột hơn 31, chỉ có cột đã tick + Mã CCDC) mà vẫn map
+  đúng field. Hiện bảng xem trước tối đa 20 dòng (kèm tổng số dòng) trước
+  khi cho Import thật. Gọi `POST /api/equipments/import` → hiện đủ 7 số
+  liệu báo cáo (tỉnh/BĐX/bưu cục/hãng/danh mục mới tạo, thiết bị tạo mới/
+  cập nhật) và liệt kê rõ từng dòng lỗi (`errors: [{row, message}]`) nếu
+  validate fail-fast chặn cả file.
+- Field JSON export ⇄ import dùng CHUNG key với backend
+  (`GET /api/equipments/export-data` / `POST /api/equipments/import`,
+  `feat/equipment-import-export-backend`) — copy chính xác từ báo cáo
+  backend, không tự đặt tên khác. Bảng field đầy đủ: `03_ARCHITECTURE_MAP.md`.
+- Đã test qua UI thật (Vite dev server thật port **3001** — port 3000 lúc
+  này đang bị chiếm bởi `vite preview` phục vụ bản production build cũ,
+  KHÔNG phải `vite dev`; backend thật port 5000). **Phát hiện quan trọng**:
+  tiến trình backend production (`node server/index.js`, PID cũ 39260)
+  tại thời điểm bắt đầu hạng mục này là bản CŨ khởi động TRƯỚC khi
+  `feat/equipment-import-export-backend` merge vào main — dù file
+  `server/index.js` trên đĩa đã có route mới, tiến trình Node đang chạy
+  không tự nạp lại code (không có watch/nodemon) nên `GET
+  /api/equipments/export-data` trả 404 trên server "thật". Đã xin phép PO
+  qua `AskUserQuestion` trước khi restart (được đồng ý) — dừng PID cũ,
+  chạy lại `node server/index.js` (cùng code, không đổi gì), xác nhận route
+  hoạt động (200) trước khi tiếp tục test. **PO cần lưu ý**: server production
+  cần được restart mỗi khi có code mới merge vào main (chưa có
+  auto-deploy/watch).
+  Test cụ thể: Tải Template Mẫu → capture Blob qua `URL.createObjectURL`
+  hook + đọc lại bằng `exceljs` (Node) → xác nhận đúng 2 sheet, đúng 31 cột
+  theo thứ tự chuẩn, sheet Hướng Dẫn có đủ nội dung. Export phương án Đầy
+  Đủ (không lọc) → file tải về (60401 bytes, 354 dòng = header + 353 thiết
+  bị thật) → đối chiếu 1 dòng thật (`CCDC-531130-6670`) khớp đúng dữ liệu
+  DB. Export phương án Theo Trường (chỉ tick Tên Máy/Model/Trạng Thái) →
+  file chỉ có đúng 4 cột (3 cột tick + Mã CCDC bắt buộc). Import 1 dòng bưu
+  cục HOÀN TOÀN MỚI (`TESTPOIE01`/`TESTBDXIE01`, không có Mã CCDC) → tạo
+  đúng 1 BĐX mới + 1 bưu cục mới + 1 hãng mới + 1 thiết bị mới (asset_tag
+  tự sinh `PC-24-002`), xuất hiện ngay trong dropdown lọc (44→45 BĐX).
+  Export lại chính thiết bị đó rồi Import lại CHỈ với 3 cột (Mã MBC/Mã
+  CCDC/Model đổi giá trị) → CẬP NHẬT đúng 1 thiết bị (không tạo trùng),
+  `asset_tag` không đổi, các field KHÔNG có trong dòng import
+  (`hostname/serial_number/specs/notes/purchase_year`) giữ nguyên y hệt.
+  Xoá sạch dữ liệu test (thiết bị + bưu cục + BĐX + hãng + tài khoản admin
+  tạm) khỏi `data/ccdc.db` thật sau khi xong, verify lại đúng 353 thiết
+  bị/44 BĐX/206 bưu cục/3 tài khoản gốc như trước khi bắt đầu.
+- `npm test`: 93/93 pass (không đổi backend).
+
 ## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
 - `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và
   `src/components/AddEquipmentModal.jsx`: ô nhập text tự do "Người Sử Dụng"

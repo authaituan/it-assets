@@ -4,6 +4,19 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-17] - Frontend Import/Export Excel CCDC (feat/equipment-import-export-frontend)
+
+### Changes
+- **src/components/InventoryView.jsx**: thêm 2 nút "Export Excel"/"Import Excel" cạnh "+ Thêm Thiết Bị CCDC"; mở `ExportEquipmentModal`/`ImportEquipmentModal`; refetch communes/device-types/post-offices sau khi Import thành công.
+- **src/components/ExportEquipmentModal.jsx** (mới): 2 phương án Export (Đầy đủ 31 cột / Theo trường tự chọn, cột Mã CCDC luôn bắt buộc), dùng đúng bộ lọc đang áp dụng trên InventoryView, dựng `.xlsx` bằng `exceljs` client-side, tải qua Blob + `<a download>`.
+- **src/components/ImportEquipmentModal.jsx** (mới): nút "Tải Template Mẫu" tự dựng file `.xlsx` 2 sheet (Dữ Liệu + Hướng Dẫn) bằng `exceljs`; đọc file `.xlsx` map cột theo TÊN HEADER (hỗ trợ cả file export rút gọn); xem trước tối đa 20 dòng; gọi `POST /api/equipments/import`, hiện đủ số liệu báo cáo + liệt kê lỗi từng dòng.
+- Field JSON export/import dùng CHUNG key với backend (`feat/equipment-import-export-backend`), copy chính xác — bảng đầy đủ trong `03_ARCHITECTURE_MAP.md`.
+- **Phát hiện quan trọng khi test**: server production (`node server/index.js`) đang chạy là tiến trình CŨ khởi động trước khi backend feature merge vào main — dù code trên đĩa đã có route mới, tiến trình không tự nạp lại (không watch/nodemon) nên 404. Đã xin phép PO qua `AskUserQuestion` trước khi restart tiến trình (đồng ý), xác nhận route hoạt động rồi mới tiếp tục test. Xem chi tiết + khuyến nghị PO trong `00_SNAPSHOT.md`.
+- **Tested**: `npm test` 93/93 pass (không đổi backend). Test qua UI thật (Vite dev port 3001 vì port 3000 đang bị `vite preview` bản production build cũ chiếm + backend thật port 5000, sau khi restart): tải Template Mẫu → đọc lại bằng exceljs xác nhận đúng 2 sheet/31 cột; export Đầy Đủ đối chiếu đúng dữ liệu thật (353 thiết bị); export Theo Trường (tick 3 cột) → đúng 4 cột (3 tick + Mã CCDC); import 1 dòng bưu cục hoàn toàn mới → tạo đúng BĐX/bưu cục/hãng/thiết bị mới; export lại rồi sửa Model, import lại (file rút gọn 3 cột) → cập nhật đúng, các field khác không mất. Đã xoá sạch dữ liệu test khỏi `data/ccdc.db` thật, verify lại đúng baseline (353 thiết bị/44 BĐX/206 bưu cục/3 tài khoản gốc).
+- Phạm vi: `src/components/InventoryView.jsx` (sửa) + 2 file mới `ExportEquipmentModal.jsx`/`ImportEquipmentModal.jsx`. Không sửa `server/*.js`, không đụng `PersonnelView.jsx`/`AddPersonnelModal.jsx`/`ImportPersonnelModal.jsx`.
+
+---
+
 ## [2026-08-17] - Backend Export/Import CCDC (feat/equipment-import-export-backend)
 
 ### Changes
