@@ -45,6 +45,53 @@
   `POST /api/hrm/upload-and-map` (đã xoá, `feat/personnel-backend`)
 - `GET /api/equipments/export-data`, `POST /api/equipments/import`  ← mới
   (`feat/equipment-import-export-backend`), xem bảng field bên dưới.
+  ⚠️ `POST /api/equipments/import` từ `feat/network-management-backend` (2026-08-17)
+  KHÔNG còn tự tạo tổ chức — gọi `requireExistingPostOffice()`, chặn 400 nếu mã
+  bưu cục chưa có; `provincesCreated/communesCreated/postOfficesCreated` luôn = 0.
+- `GET /api/network`, `POST /api/network/import`, `GET /api/network/export-data`,
+  `PUT /api/network/post-offices/:id`, `DELETE /api/network/post-offices/:id`  ← mới
+  (`feat/network-management-backend`), CHỈ các route này (qua `resolveOrCreateOrgChain`)
+  được tạo mới Tỉnh/BĐX/Bưu cục. Xem bảng 20 field bên dưới.
+
+## Helper tổ chức dùng chung (`server/index.js`, `feat/network-management-backend`)
+- `resolveOrCreateOrgChain(row, report, rowNum)`: resolve/tạo Tỉnh→BĐX→Bưu cục theo
+  `code` (logic tách nguyên vẹn từ Equipment Import cũ), lưu thêm 9 cột mới của
+  `post_offices`. Mutate `report` (provincesCreated/communesCreated/postOfficesCreated/
+  postOfficesUpdated). Phải gọi trong `db.transaction()`. CHỈ dùng cho route mạng lưới.
+- `requireExistingPostOffice(maMbc)`: chỉ SELECT theo `code`, KHÔNG tạo mới; throw
+  lỗi rõ ràng nếu không thấy. Dùng cho Equipment Import (Phương án B).
+- `parseFloatOrNull(v)`: parse latitude/longitude (rỗng/không hợp lệ → null).
+
+## Quản Lý Mạng Lưới — bảng 20 field JSON (import ⇄ export dùng CHUNG key)
+Nguồn: file Excel mạng lưới PO cung cấp. Dùng cho `POST /api/network/import`
+(request `rows[]`) và `GET /api/network/export-data` (response `items[]`).
+
+| Nhóm | Key JSON | Cột DB (`post_offices`/tổ chức) | Ghi chú |
+|---|---|---|---|
+| Tỉnh | `maBdtTp` | `province_post_offices.code` | resolve/tạo mới tỉnh |
+| Tỉnh | `tenBdtTp` | `province_post_offices.name` | |
+| BĐX | `maBdx` | `commune_post_offices.code` | resolve/tạo mới BĐX |
+| BĐX | `tenBuuDienXa` | `commune_post_offices.name` | |
+| BĐX | `buuDienXaTrungTam` | `commune_post_offices.central_commune_code` | |
+| Bưu cục | `maMbc` | `post_offices.code` | **bắt buộc mọi dòng** |
+| Bưu cục | `tenBuuCuc` | `post_offices.name` | |
+| Bưu cục | `loai` | `post_offices.type` | mặc định `GD3` khi tạo |
+| Bưu cục | `diaChiChiTiet` | `post_offices.address` | |
+| Bưu cục | `maBdkv` | `post_offices.bdkv_code` | |
+| Bưu cục | `tenBdkv` | `post_offices.bdkv_name` | |
+| (mới) | `maPhuongXaCu` | `post_offices.old_ward_code` | Mã Phường/Xã CŨ |
+| (mới) | `tenPhuongXaCu` | `post_offices.old_ward_name` | Tên Phường/Xã CŨ |
+| (mới) | `tenQuanHuyen` | `post_offices.district_name` | Tên Quận/Huyện |
+| (mới) | `maPhuongXaMoi` | `post_offices.new_ward_code` | Mã Phường/Xã MỚI |
+| (mới) | `tenPhuongXaMoi` | `post_offices.new_ward_name` | Tên Phường/Xã MỚI |
+| (mới) | `soDienThoai` | `post_offices.phone` | |
+| (mới) | `tinhTrangHoatDong` | `post_offices.operational_status` | mặc định `ACTIVE` khi tạo |
+| (mới) | `viDo` | `post_offices.latitude` (REAL) | |
+| (mới) | `kinhDo` | `post_offices.longitude` (REAL) | |
+
+Import UPDATE (mã bưu cục đã có): chỉ ghi đè field có giá trị KHÔNG RỖNG, giữ nguyên
+field vắng mặt (như Equipment Import). `DELETE` bưu cục = XOÁ CỨNG, bắt lỗi FK nếu còn
+`equipments`/`users` tham chiếu (không soft-delete).
 
 ## Equipment Import/Export — bảng field JSON (export ⇄ import dùng CHUNG key)
 Nguồn: `dulieu.xlsx` gốc (cột A-X) + 7 field mới xây dựng sau này. Dùng cho
@@ -107,8 +154,9 @@ nguyên giá trị cũ. `asset_tag` không bao giờ đổi.
      → dùng chung 1 kết nối DB, tránh SQLite lock đa tiến trình.
 - `tests/helpers/fixtures.js`: seed tối thiểu (1 tỉnh/1 BĐX/1 bưu cục/1 device_type + user)
   qua chính `db` handle, dùng `hashPassword` thật từ `server/auth.js`.
-- Mỗi file test (`auth`/`equipments`/`personnel`/`users`/`equipment-import-export`) chạy
-  port riêng (5901-5905) + DB tạm riêng, cô lập hoàn toàn với nhau và với `data/ccdc.db`
-  thật. `tests/hrm.test.js` (port 5903) đã xoá cùng route HRM cũ, thay bằng
-  `tests/personnel.test.js` (giữ nguyên port 5903). `tests/equipment-import-export.test.js`
-  (mới, port 5905) phủ `GET /api/equipments/export-data` + `POST /api/equipments/import`.
+- Mỗi file test (`auth`/`equipments`/`personnel`/`users`/`equipment-import-export`/
+  `network`) chạy port riêng (5901-5906) + DB tạm riêng, cô lập hoàn toàn với nhau và
+  với `data/ccdc.db` thật. `tests/hrm.test.js` (port 5903) đã xoá cùng route HRM cũ, thay
+  bằng `tests/personnel.test.js` (giữ nguyên port 5903). `tests/equipment-import-export.test.js`
+  (port 5905) phủ `GET /api/equipments/export-data` + `POST /api/equipments/import`.
+  `tests/network.test.js` (mới, port 5906) phủ 5 route Quản Lý Mạng Lưới. Tổng **111 test**.

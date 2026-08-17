@@ -299,6 +299,36 @@ nhiều phút), `main` có thể tiến thêm do PR khác merge song song — De
 + `git branch --show-current` kiểm tra lại trước khi commit cuối cùng, không chỉ tin vào
 câu lệnh `git checkout -b` chạy ở đầu phiên.
 
+### 14. Phương án B: "Quản Lý Mạng Lưới" là danh mục chuẩn bắt buộc — Equipment Import hết quyền tự tạo tổ chức (`feat/network-management-backend`)
+**Quyết định (PO chốt 2026-08-17)**: "Quản Lý Mạng Lưới" (đổi tên từ "Sơ Đồ BĐX & Bưu
+Cục") trở thành **danh mục chuẩn BẮT BUỘC** cho toàn hệ thống. Danh sách Tỉnh/BĐX/Bưu cục
+là "nguồn sự thật" (source of truth) duy nhất, được quản lý tập trung tại đây.
+
+**Lý do đổi hành vi Equipment Import**: trước đây `POST /api/equipments/import` TỰ tạo mới
+`province_post_offices`/`commune_post_offices`/`post_offices` khi gặp mã chưa có — tiện lúc
+đầu nhưng dẫn tới rủi ro dữ liệu bẩn: gõ sai mã bưu cục trong file CCDC sẽ âm thầm sinh ra
+bưu cục "ma" (sai chính tả, trùng lặp, thiếu 9 field mạng lưới). Phương án B chấm dứt điều
+này: chỉ 1 cửa (Quản Lý Mạng Lưới) được tạo tổ chức; mọi import khác PHẢI tham chiếu tổ
+chức đã có.
+
+**Thay đổi kỹ thuật**:
+- Tách logic tự tạo Tỉnh→BĐX→Bưu cục (cũ nằm trong route Equipment Import) thành hàm dùng
+  chung `resolveOrCreateOrgChain()` — mở rộng lưu thêm 9 cột mới của `post_offices`. CHỈ
+  route mạng lưới gọi hàm này.
+- Equipment Import chuyển sang gọi `requireExistingPostOffice(maMbc)` — chặn 400 nếu mã bưu
+  cục chưa tồn tại. Field report `provincesCreated/communesCreated/postOfficesCreated` GIỮ
+  NGUYÊN trong response (để không phá frontend Import CCDC đã có) nhưng LUÔN = 0.
+- Test cũ "import bưu cục hoàn toàn mới → tạo mới cả province/commune/post_office" trong
+  `tests/equipment-import-export.test.js` bị SAI với hành vi mới → viết lại thành "mã bưu
+  cục chưa tồn tại → 400, không tự tạo tổ chức, không ghi dòng nào" (fail-fast) + thêm test
+  xác nhận mã bưu cục ĐÃ có vẫn tạo thiết bị bình thường với 3 field org = 0.
+
+**Ảnh hưởng frontend (chưa xử lý, ngoài phạm vi hạng mục backend này)**: `UnitTreeView.jsx`
+hiện READ-ONLY, cần nâng cấp thành "Quản Lý Mạng Lưới" có CRUD/Import/Export ở hạng mục sau.
+Frontend Import CCDC hiện tại vẫn hoạt động (field report vẫn còn, chỉ = 0) — nhưng nếu file
+CCDC chứa mã bưu cục mới sẽ nhận lỗi 400 thay vì tự tạo; đây là hành vi MONG MUỐN theo
+Phương án B.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.
