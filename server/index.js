@@ -360,6 +360,134 @@ app.get('/api/equipments/category-raw-options', (req, res) => {
   }
 });
 
+// ==========================================
+// Export toàn bộ dữ liệu CCDC khớp filter (KHÔNG phân trang — export cần lấy
+// TẤT CẢ dòng cùng lúc). Tái sử dụng NGUYÊN VẸN logic WHERE clause của
+// GET /api/equipments (copy từ đó, xem trên) để filter luôn đồng bộ.
+// Đặt TRƯỚC GET /api/equipments/:id để route tĩnh "export-data" không bị
+// route :id nuốt nhầm (Express match theo thứ tự khai báo).
+// Mỗi dòng trả đủ 24 field khớp cột Excel gốc (A-X, key tiếng Việt không
+// dấu) CỘNG 7 field mới (maCcdc, danhMucCcdc, tienToDanhMucMoi luôn "",
+// namMua, maHrmNguoiSuDung, trangThai, ghiChu) — xem bảng field đầy đủ ở
+// docs/ai/03_ARCHITECTURE_MAP.md.
+// ==========================================
+app.get('/api/equipments/export-data', authRequired, requireManager, (req, res) => {
+  try {
+    const { search, communeId, postOfficeId, deviceTypeId, categoryRaw, status } = req.query;
+
+    let whereClause = ["1=1", "e.deleted_at IS NULL"];
+    let params = [];
+
+    if (search) {
+      whereClause.push(`(
+        e.hostname LIKE ? OR
+        e.ip_address LIKE ? OR
+        e.mac_address LIKE ? OR
+        e.serial_number LIKE ? OR
+        e.asset_tag LIKE ? OR
+        e.raw_user_name LIKE ? OR
+        u.full_name LIKE ? OR
+        p.name LIKE ? OR
+        c.name LIKE ?
+      )`);
+      const term = `%${search.trim()}%`;
+      params.push(term, term, term, term, term, term, term, term, term);
+    }
+
+    if (communeId) {
+      whereClause.push("p.commune_id = ?");
+      params.push(communeId);
+    }
+
+    if (postOfficeId) {
+      whereClause.push("e.post_office_id = ?");
+      params.push(postOfficeId);
+    }
+
+    if (deviceTypeId) {
+      whereClause.push("e.device_type_id = ?");
+      params.push(deviceTypeId);
+    }
+
+    if (status) {
+      whereClause.push("e.status = ?");
+      params.push(status);
+    }
+
+    if (categoryRaw) {
+      whereClause.push("json_extract(e.specs, '$.category_raw') = ?");
+      params.push(categoryRaw);
+    }
+
+    const dataSql = `
+      SELECT
+        e.*,
+        pv.code as province_code, pv.name as province_name,
+        p.code as post_office_code, p.name as post_office_name, p.type as post_office_type,
+        p.address as post_office_address, p.bdkv_code as post_office_bdkv_code, p.bdkv_name as post_office_bdkv_name,
+        c.code as commune_code, c.name as commune_name, c.central_commune_code as commune_central_code,
+        dt.name as device_type_name,
+        b.name as brand_name,
+        u.hrm_code as assigned_user_hrm
+      FROM equipments e
+      JOIN post_offices p ON e.post_office_id = p.id
+      JOIN commune_post_offices c ON p.commune_id = c.id
+      JOIN province_post_offices pv ON c.province_id = pv.id
+      JOIN device_types dt ON e.device_type_id = dt.id
+      LEFT JOIN brands b ON e.brand_id = b.id
+      LEFT JOIN users u ON e.assigned_user_id = u.id
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY e.created_at DESC
+    `;
+
+    const rows = db.prepare(dataSql).all(...params);
+
+    const items = rows.map((r) => {
+      const specs = parseSpecs(r.specs);
+      return {
+        // A-X: khớp thứ tự cột Excel gốc
+        maBdtTp: r.province_code,
+        tenBdtTp: r.province_name,
+        maMbc: r.post_office_code,
+        tenBuuCuc: r.post_office_name,
+        maBdx: r.commune_code,
+        tenBuuDienXa: r.commune_name,
+        loai: r.post_office_type || '',
+        ip: r.ip_address || '',
+        ngayCap: r.assigned_date || '',
+        tenMay: r.hostname || '',
+        diaChiMac: r.mac_address || '',
+        loaiMay: specs.category_raw || '',
+        hang: r.brand_name || '',
+        model: r.model || '',
+        serialNumber: r.serial_number || '',
+        heDieuHanh: specs.os || '',
+        cpu: specs.cpu || '',
+        ram: specs.ram || '',
+        oCung: specs.storage || '',
+        nguoiSuDung: r.raw_user_name || '',
+        maBdkv: r.post_office_bdkv_code || '',
+        tenBdkv: r.post_office_bdkv_name || '',
+        buuDienXaTrungTam: r.commune_central_code || '',
+        diaChiChiTiet: r.post_office_address || '',
+        // Field mới (không có trong Excel gốc)
+        maCcdc: r.asset_tag || '',
+        danhMucCcdc: r.device_type_name || '',
+        tienToDanhMucMoi: '', // chỉ có ý nghĩa lúc Import, luôn rỗng lúc Export
+        namMua: r.purchase_year || '',
+        maHrmNguoiSuDung: r.assigned_user_hrm || '',
+        trangThai: r.status || '',
+        ghiChu: r.notes || ''
+      };
+    });
+
+    res.json({ items, total: items.length });
+  } catch (error) {
+    console.error("Export equipments error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Single equipment detail with audit logs
 app.get('/api/equipments/:id', (req, res) => {
   try {
@@ -717,6 +845,324 @@ app.delete('/api/equipments/:id', authRequired, requireManager, (req, res) => {
 
     res.json({ message: 'Đã xoá thiết bị CCDC (có thể khôi phục từ lịch sử nếu cần)' });
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// Import hàng loạt CCDC từ file Excel (đã parse sẵn phía frontend thành
+// mảng `rows`, mỗi phần tử dùng đúng key JSON của GET /api/equipments/export-data
+// ở trên — 24 field gốc A-X + 7 field mới). Bọc TOÀN BỘ đợt trong 1
+// db.transaction(): 1 dòng lỗi -> throw -> better-sqlite3 tự rollback toàn
+// bộ transaction -> trả 400 (fail-fast, giống POST /api/personnel/import).
+// KHÔNG có route nào khác cho phép tạo mới province_post_offices /
+// commune_post_offices / post_offices (chỉ scripts/seed.py lúc đầu dự án) —
+// route này TỰ resolve/tạo mới cả 3 cấp tổ chức theo code.
+// ==========================================
+app.post('/api/equipments/import', authRequired, requireManager, (req, res) => {
+  try {
+    const { rows } = req.body || {};
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: 'Danh sách dữ liệu import không hợp lệ hoặc rỗng' });
+    }
+
+    // Validate tối thiểu fail-fast TRƯỚC khi mở transaction: mỗi dòng phải có
+    // maMbc VÀ (tenMay HOẶC maCcdc). Liệt kê TẤT CẢ dòng lỗi (không chỉ dòng đầu).
+    const validationErrors = [];
+    rows.forEach((r, idx) => {
+      const rowNum = idx + 1;
+      if (!r || typeof r.maMbc !== 'string' || !r.maMbc.trim()) {
+        validationErrors.push({ row: rowNum, message: 'Thiếu maMbc (mã bưu cục)' });
+        return;
+      }
+      const hasHostname = typeof r.tenMay === 'string' && r.tenMay.trim();
+      const hasAssetTag = typeof r.maCcdc === 'string' && r.maCcdc.trim();
+      if (!hasHostname && !hasAssetTag) {
+        validationErrors.push({ row: rowNum, message: 'Phải có tenMay (tên máy) hoặc maCcdc (mã CCDC)' });
+      }
+    });
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ error: 'Dữ liệu import có dòng không hợp lệ', errors: validationErrors });
+    }
+
+    const VALID_STATUSES = ['IN_USE', 'IN_STOCK', 'MAINTENANCE', 'BROKEN', 'LIQUIDATED'];
+
+    const report = {
+      provincesCreated: 0,
+      communesCreated: 0,
+      postOfficesCreated: 0,
+      brandsCreated: 0,
+      deviceTypesCreated: 0,
+      equipmentsCreated: 0,
+      equipmentsUpdated: 0,
+      errors: []
+    };
+
+    const importTxn = db.transaction((items) => {
+      items.forEach((r, idx) => {
+        const rowNum = idx + 1;
+
+        // b. Resolve/tạo mới chuỗi tổ chức theo đúng cấp: province -> commune -> post_office.
+        const maBdtTp = (r.maBdtTp || '').trim();
+        const tenBdtTp = (r.tenBdtTp || '').trim();
+        let province = null;
+        if (maBdtTp) {
+          province = db.prepare("SELECT * FROM province_post_offices WHERE code = ?").get(maBdtTp);
+          if (!province) {
+            const pid = uuidv4();
+            db.prepare("INSERT INTO province_post_offices (id, code, name) VALUES (?, ?, ?)")
+              .run(pid, maBdtTp, tenBdtTp || maBdtTp);
+            province = { id: pid, code: maBdtTp, name: tenBdtTp || maBdtTp };
+            report.provincesCreated++;
+          } else if (tenBdtTp && province.name !== tenBdtTp) {
+            db.prepare("UPDATE province_post_offices SET name = ? WHERE id = ?").run(tenBdtTp, province.id);
+            province.name = tenBdtTp;
+          }
+        }
+
+        const maBdx = (r.maBdx || '').trim();
+        const tenBuuDienXa = (r.tenBuuDienXa || '').trim();
+        const buuDienXaTrungTam = (r.buuDienXaTrungTam || '').trim() || null;
+        let commune = null;
+        if (maBdx) {
+          commune = db.prepare("SELECT * FROM commune_post_offices WHERE code = ?").get(maBdx);
+          if (!commune) {
+            if (!province) {
+              throw new Error(`Dòng ${rowNum}: BĐX "${maBdx}" chưa tồn tại và thiếu maBdtTp để tạo mới`);
+            }
+            const cid = uuidv4();
+            db.prepare("INSERT INTO commune_post_offices (id, code, name, central_commune_code, province_id) VALUES (?, ?, ?, ?, ?)")
+              .run(cid, maBdx, tenBuuDienXa || maBdx, buuDienXaTrungTam, province.id);
+            commune = { id: cid, code: maBdx, name: tenBuuDienXa || maBdx };
+            report.communesCreated++;
+          } else if (tenBuuDienXa && commune.name !== tenBuuDienXa) {
+            db.prepare("UPDATE commune_post_offices SET name = ? WHERE id = ?").run(tenBuuDienXa, commune.id);
+            commune.name = tenBuuDienXa;
+          }
+        }
+
+        const maMbc = r.maMbc.trim();
+        const tenBuuCuc = (r.tenBuuCuc || '').trim();
+        let postOffice = db.prepare("SELECT * FROM post_offices WHERE code = ?").get(maMbc);
+        if (!postOffice) {
+          if (!commune) {
+            throw new Error(`Dòng ${rowNum}: bưu cục "${maMbc}" chưa tồn tại và thiếu maBdx để tạo mới`);
+          }
+          const poid = uuidv4();
+          db.prepare(`
+            INSERT INTO post_offices (id, code, name, type, address, commune_id, bdkv_code, bdkv_name)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            poid, maMbc, tenBuuCuc || maMbc, (r.loai || '').trim() || 'GD3',
+            (r.diaChiChiTiet || '').trim() || null, commune.id,
+            (r.maBdkv || '').trim() || null, (r.tenBdkv || '').trim() || null
+          );
+          postOffice = { id: poid, code: maMbc, name: tenBuuCuc || maMbc };
+          report.postOfficesCreated++;
+        } else if (tenBuuCuc && postOffice.name !== tenBuuCuc) {
+          db.prepare("UPDATE post_offices SET name = ? WHERE id = ?").run(tenBuuCuc, postOffice.id);
+          postOffice.name = tenBuuCuc;
+        }
+
+        // c. Resolve/tạo mới brand theo tên (upsert theo name).
+        const hang = (r.hang || '').trim();
+        let brandId = null;
+        if (hang) {
+          const existingBrand = db.prepare("SELECT id FROM brands WHERE name = ?").get(hang);
+          if (existingBrand) {
+            brandId = existingBrand.id;
+          } else {
+            brandId = uuidv4();
+            db.prepare("INSERT INTO brands (id, name) VALUES (?, ?)").run(brandId, hang);
+            report.brandsCreated++;
+          }
+        }
+
+        // d. Resolve/tạo mới device_type theo tên THẬT (danhMucCcdc, khác cột L/loaiMay).
+        const danhMucCcdc = (r.danhMucCcdc || '').trim();
+        const maCcdc = (r.maCcdc || '').trim();
+        let deviceType = null;
+        if (danhMucCcdc) {
+          deviceType = db.prepare("SELECT * FROM device_types WHERE name = ?").get(danhMucCcdc);
+          if (!deviceType) {
+            const tienTo = (r.tienToDanhMucMoi || '').trim().toUpperCase();
+            // Danh mục mới cần tiền tố hợp lệ để CÓ THỂ tạo thiết bị mới. Nếu dòng này
+            // đang CẬP NHẬT thiết bị đã có (maCcdc có giá trị) -> không bắt buộc tiền tố
+            // (không cần sinh mã mới), chỉ bắt buộc khi đang TẠO MỚI (không có maCcdc).
+            if (!maCcdc && !ASSET_PREFIX_REGEX.test(tienTo)) {
+              throw new Error(`Dòng ${rowNum}: danh mục "${danhMucCcdc}" chưa có, cần tienToDanhMucMoi hợp lệ (2-5 ký tự A-Z/0-9) để tạo danh mục mới`);
+            }
+            const dtId = uuidv4();
+            const dtCode = danhMucCcdc.toUpperCase().replace(/[^A-Z0-9]/g, '_') + '_' + dtId.slice(0, 4);
+            db.prepare("INSERT INTO device_types (id, code, name, asset_prefix) VALUES (?, ?, ?, ?)")
+              .run(dtId, dtCode, danhMucCcdc, ASSET_PREFIX_REGEX.test(tienTo) ? tienTo : null);
+            deviceType = { id: dtId, code: dtCode, name: danhMucCcdc, asset_prefix: ASSET_PREFIX_REGEX.test(tienTo) ? tienTo : null };
+            report.deviceTypesCreated++;
+          }
+        }
+
+        // Resolve người sử dụng theo mã HRM (nếu có gửi).
+        const maHrm = (r.maHrmNguoiSuDung || '').trim();
+        let resolvedAssignedUserId; // undefined = không đụng tới field này
+        if (maHrm) {
+          const u = db.prepare("SELECT id FROM users WHERE hrm_code = ?").get(maHrm);
+          if (!u) throw new Error(`Dòng ${rowNum}: maHrmNguoiSuDung "${maHrm}" không tồn tại trong hệ thống`);
+          resolvedAssignedUserId = u.id;
+        }
+
+        // e/f. Resolve thiết bị theo maCcdc (asset_tag).
+        let equipment = null;
+        if (maCcdc) {
+          equipment = db.prepare("SELECT * FROM equipments WHERE asset_tag = ? AND deleted_at IS NULL").get(maCcdc);
+          if (!equipment) {
+            throw new Error(`Dòng ${rowNum}: maCcdc "${maCcdc}" không tồn tại trong hệ thống, không thể cập nhật`);
+          }
+        }
+
+        if (equipment) {
+          // e. CẬP NHẬT — CHỈ ghi đè field có giá trị KHÔNG RỖNG trong dòng import.
+          // KHÔNG đổi lại asset_tag dù đổi danh mục.
+          const currentSpecs = parseSpecs(equipment.specs);
+          const mergedSpecs = { ...currentSpecs };
+          if ((r.loaiMay || '').trim()) mergedSpecs.category_raw = r.loaiMay.trim();
+          if ((r.heDieuHanh || '').trim()) mergedSpecs.os = r.heDieuHanh.trim();
+          if ((r.cpu || '').trim()) mergedSpecs.cpu = r.cpu.trim();
+          if ((r.ram || '').trim()) mergedSpecs.ram = r.ram.trim();
+          if ((r.oCung || '').trim()) mergedSpecs.storage = r.oCung.trim();
+
+          let finalStatus = equipment.status;
+          if ((r.trangThai || '').trim()) {
+            const st = r.trangThai.trim();
+            if (!VALID_STATUSES.includes(st)) throw new Error(`Dòng ${rowNum}: trangThai "${st}" không hợp lệ`);
+            finalStatus = st;
+          }
+
+          let finalPurchaseYear = equipment.purchase_year;
+          if (r.namMua !== undefined && r.namMua !== null && String(r.namMua).trim() !== '') {
+            const py = parseInt(r.namMua, 10);
+            if (Number.isNaN(py) || py < 1990 || py > 2100) throw new Error(`Dòng ${rowNum}: namMua "${r.namMua}" không hợp lệ`);
+            finalPurchaseYear = py;
+          }
+
+          db.prepare(`
+            UPDATE equipments
+            SET hostname = ?, ip_address = ?, mac_address = ?, serial_number = ?, model = ?, status = ?,
+                raw_user_name = ?, assigned_user_id = ?, notes = ?, specs = ?, device_type_id = ?, brand_id = ?,
+                post_office_id = ?, purchase_year = ?, assigned_date = ?
+            WHERE id = ?
+          `).run(
+            (r.tenMay || '').trim() || equipment.hostname,
+            (r.ip || '').trim() || equipment.ip_address,
+            (r.diaChiMac || '').trim() || equipment.mac_address,
+            (r.serialNumber || '').trim() || equipment.serial_number,
+            (r.model || '').trim() || equipment.model,
+            finalStatus,
+            (r.nguoiSuDung || '').trim() || equipment.raw_user_name,
+            resolvedAssignedUserId !== undefined ? resolvedAssignedUserId : equipment.assigned_user_id,
+            (r.ghiChu || '').trim() || equipment.notes,
+            JSON.stringify(mergedSpecs),
+            deviceType ? deviceType.id : equipment.device_type_id,
+            brandId || equipment.brand_id,
+            postOffice.id,
+            finalPurchaseYear ?? null,
+            (r.ngayCap || '').trim() || equipment.assigned_date,
+            equipment.id
+          );
+
+          db.prepare(`
+            INSERT INTO asset_transfer_logs (id, equipment_id, action, reason)
+            VALUES (?, ?, 'UPDATE', 'Cập nhật qua Import Excel')
+          `).run(uuidv4(), equipment.id);
+
+          report.equipmentsUpdated++;
+        } else {
+          // f. TẠO MỚI — sinh asset_tag theo đúng cơ chế đã có ở POST /api/equipments.
+          if (!deviceType) {
+            throw new Error(`Dòng ${rowNum}: thiếu danhMucCcdc (danh mục CCDC) để tạo thiết bị mới`);
+          }
+          const assetPrefix = (deviceType.asset_prefix || '').trim();
+          if (!assetPrefix) {
+            throw new Error(`Dòng ${rowNum}: danh mục "${deviceType.name}" chưa có tiền tố mã CCDC, vui lòng cấu hình tienToDanhMucMoi trước khi tạo thiết bị mới`);
+          }
+
+          let finalPurchaseYear = new Date().getFullYear();
+          if (r.namMua !== undefined && r.namMua !== null && String(r.namMua).trim() !== '') {
+            finalPurchaseYear = parseInt(r.namMua, 10);
+            if (Number.isNaN(finalPurchaseYear) || finalPurchaseYear < 1990 || finalPurchaseYear > 2100) {
+              throw new Error(`Dòng ${rowNum}: namMua "${r.namMua}" không hợp lệ`);
+            }
+          }
+          const yy = String(finalPurchaseYear).slice(-2);
+          const likePattern = `${assetPrefix}-${yy}-%`;
+          const seqRows = db.prepare("SELECT asset_tag FROM equipments WHERE asset_tag LIKE ?").all(likePattern);
+          let maxSeq = 0;
+          for (const sr of seqRows) {
+            const m = /-(\d+)$/.exec(sr.asset_tag || '');
+            if (m) {
+              const n = parseInt(m[1], 10);
+              if (n > maxSeq) maxSeq = n;
+            }
+          }
+          const seq = String(maxSeq + 1).padStart(3, '0');
+          const newAssetTag = `${assetPrefix}-${yy}-${seq}`;
+
+          const specs = {};
+          if ((r.loaiMay || '').trim()) specs.category_raw = r.loaiMay.trim();
+          if ((r.heDieuHanh || '').trim()) specs.os = r.heDieuHanh.trim();
+          if ((r.cpu || '').trim()) specs.cpu = r.cpu.trim();
+          if ((r.ram || '').trim()) specs.ram = r.ram.trim();
+          if ((r.oCung || '').trim()) specs.storage = r.oCung.trim();
+
+          let status = 'IN_USE';
+          if ((r.trangThai || '').trim()) {
+            if (!VALID_STATUSES.includes(r.trangThai.trim())) throw new Error(`Dòng ${rowNum}: trangThai "${r.trangThai}" không hợp lệ`);
+            status = r.trangThai.trim();
+          }
+
+          const newId = uuidv4();
+          db.prepare(`
+            INSERT INTO equipments
+            (id, asset_tag, hostname, ip_address, mac_address, serial_number, device_type_id, brand_id, model, specs, status, assigned_date, post_office_id, raw_user_name, assigned_user_id, notes, purchase_year)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          `).run(
+            newId,
+            newAssetTag,
+            (r.tenMay || '').trim() || null,
+            (r.ip || '').trim() || null,
+            (r.diaChiMac || '').trim() || null,
+            (r.serialNumber || '').trim() || null,
+            deviceType.id,
+            brandId,
+            (r.model || '').trim() || null,
+            JSON.stringify(specs),
+            status,
+            (r.ngayCap || '').trim() || null,
+            postOffice.id,
+            (r.nguoiSuDung || '').trim() || null,
+            resolvedAssignedUserId || null,
+            (r.ghiChu || '').trim() || null,
+            finalPurchaseYear
+          );
+
+          db.prepare(`
+            INSERT INTO asset_transfer_logs (id, equipment_id, action, to_post_office_id, reason)
+            VALUES (?, ?, 'CREATE', ?, 'Tạo mới qua Import Excel')
+          `).run(uuidv4(), newId, postOffice.id);
+
+          report.equipmentsCreated++;
+        }
+      });
+    });
+
+    try {
+      importTxn(rows);
+    } catch (txnError) {
+      return res.status(400).json({ error: txnError.message });
+    }
+
+    res.json(report);
+  } catch (error) {
+    console.error("Import equipments error:", error);
     res.status(500).json({ error: error.message });
   }
 });
