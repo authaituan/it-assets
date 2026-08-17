@@ -44,6 +44,15 @@ db.exec(`
     bdkv_code TEXT,
     bdkv_name TEXT,
     has_computer INTEGER DEFAULT 1,
+    old_ward_code TEXT,          -- Mã Phường/Xã CŨ (trước sáp nhập)
+    old_ward_name TEXT,          -- Tên Phường/Xã CŨ
+    district_name TEXT,          -- Tên Quận/Huyện
+    new_ward_code TEXT,          -- Mã Phường/Xã MỚI (sau sáp nhập)
+    new_ward_name TEXT,          -- Tên Phường/Xã MỚI
+    phone TEXT,                  -- Số điện thoại bưu cục
+    operational_status TEXT DEFAULT 'ACTIVE', -- Tình trạng hoạt động
+    latitude REAL,               -- Vĩ độ (toạ độ bản đồ)
+    longitude REAL,              -- Kinh độ
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(commune_id) REFERENCES commune_post_offices(id)
   );
@@ -224,6 +233,42 @@ try {
   }
 } catch (err) {
   console.error('[db] Lỗi migration purchase_year:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại (idempotent, cùng pattern các migration
+// ở trên): thêm 9 cột mới vào bảng post_offices phục vụ module "Quản Lý Mạng
+// Lưới" (feat/network-management-backend). Các cột này ánh xạ 1-1 với file
+// Excel mạng lưới PO cung cấp. Bưu cục cũ (353 bưu cục seed ban đầu) sẽ có
+// giá trị NULL ở các cột mới — chấp nhận được, PO cập nhật dần qua Import
+// Mạng Lưới hoặc sửa từng bưu cục. Cột operational_status mặc định 'ACTIVE'.
+// ==========================================
+try {
+  const poCols = db.prepare("PRAGMA table_info(post_offices)").all();
+  const poColSet = new Set(poCols.map((col) => col.name));
+  const newPoColumns = [
+    ['old_ward_code', 'TEXT'],
+    ['old_ward_name', 'TEXT'],
+    ['district_name', 'TEXT'],
+    ['new_ward_code', 'TEXT'],
+    ['new_ward_name', 'TEXT'],
+    ['phone', 'TEXT'],
+    ['operational_status', "TEXT DEFAULT 'ACTIVE'"],
+    ['latitude', 'REAL'],
+    ['longitude', 'REAL']
+  ];
+  const added = [];
+  for (const [colName, colType] of newPoColumns) {
+    if (!poColSet.has(colName)) {
+      db.exec(`ALTER TABLE post_offices ADD COLUMN ${colName} ${colType}`);
+      added.push(colName);
+    }
+  }
+  if (added.length > 0) {
+    console.log(`[db] Migration: đã thêm ${added.length} cột mới vào post_offices (Quản Lý Mạng Lưới): ${added.join(', ')}`);
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration post_offices network columns:', err.message);
 }
 
 module.exports = db;

@@ -4,6 +4,19 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-17] - Backend Quản Lý Mạng Lưới + Equipment Import hết quyền tự tạo tổ chức (feat/network-management-backend)
+
+### Changes
+- **server/db.js**: migration idempotent thêm 9 cột vào `post_offices` (`old_ward_code`, `old_ward_name`, `district_name`, `new_ward_code`, `new_ward_name`, `phone`, `operational_status` mặc định `'ACTIVE'`, `latitude` REAL, `longitude` REAL) — cả trong CREATE TABLE lẫn ALTER TABLE riêng.
+- **server/index.js**: tách helper dùng chung `resolveOrCreateOrgChain()` (tự tạo Tỉnh→BĐX→Bưu cục + 9 cột mới, CHỈ cho Quản Lý Mạng Lưới) và `requireExistingPostOffice()` (chỉ tra, không tạo). **Phương án B (PO chốt)**: `POST /api/equipments/import` KHÔNG còn tự tạo tổ chức — chặn 400 nếu mã bưu cục chưa có; `provincesCreated/communesCreated/postOfficesCreated` luôn = 0. Thêm 5 route mới: `GET /api/network`, `POST /api/network/import`, `GET /api/network/export-data`, `PUT /api/network/post-offices/:id`, `DELETE /api/network/post-offices/:id` (xoá cứng, bắt lỗi FK `SQLITE_CONSTRAINT_FOREIGNKEY` → 400 nếu còn thiết bị/nhân sự liên kết).
+- **tests/equipment-import-export.test.js**: viết lại test "tạo mới toàn bộ chuỗi tổ chức" cũ → "mã bưu cục chưa tồn tại → 400, không tự tạo, không ghi dòng nào" + thêm test mã bưu cục đã có vẫn tạo thiết bị (3 field org = 0).
+- **tests/network.test.js** (mới, port 5906): 17 test phủ 5 route mạng lưới (import tạo mới/update, fail-fast, sửa, xoá chặn-FK vs xoá-được, export, RBAC).
+- **Tested**: `npm test` **111/111 pass**. Test thêm bằng curl trên DB tạm (port 5920, monkey-patch, KHÔNG chạm `data/ccdc.db` — verify MD5 trước/sau giống hệt, có server production đang chạy): import mạng lưới mới từ đầu (9 cột mới lưu đúng gồm lat/long), import CCDC mã bưu cục không có → 400 chặn + không tự tạo, mã bưu cục có sẵn → tạo được (org=0), xoá bưu cục có thiết bị → 400 chặn, xoá bưu cục trống → 200.
+- **docs**: cập nhật `00_SNAPSHOT.md` (section Quản Lý Mạng Lưới + note đổi hành vi Equipment Import), `03_ARCHITECTURE_MAP.md` (5 route + bảng 20 field + helper + test), `04_DECISIONS.md` mục 14 (quyết định Phương án B + lý do).
+- Phạm vi: `server/db.js` (chỉ thêm migration), `server/index.js`, `tests/equipment-import-export.test.js` (sửa 1 test), `tests/network.test.js` (mới), `package.json` (thêm test file). KHÔNG sửa `server/auth.js`, KHÔNG sửa file `.jsx` nào.
+
+---
+
 ## [2026-08-17] - Frontend Import/Export Excel CCDC (feat/equipment-import-export-frontend)
 
 ### Changes

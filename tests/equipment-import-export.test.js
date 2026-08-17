@@ -192,65 +192,55 @@ test('POST /api/equipments/import role STAFF -> 403', async () => {
 });
 
 // ==========================================
-// POST /api/equipments/import — tạo mới toàn bộ chuỗi tổ chức từ đầu
+// POST /api/equipments/import — PHƯƠNG ÁN B: KHÔNG còn tự tạo tổ chức mới.
+// Mã bưu cục chưa tồn tại -> CHẶN 400, không ghi dòng nào (fail-fast).
+// (Test này thay thế test "tạo mới toàn bộ chuỗi tổ chức từ đầu" cũ — hành vi
+// tự tạo tổ chức đã chuyển hẳn sang route Quản Lý Mạng Lưới.)
 // ==========================================
 
-test('POST /api/equipments/import bưu cục hoàn toàn mới -> tạo mới cả province/commune/post_office', async () => {
+test('POST /api/equipments/import mã bưu cục CHƯA tồn tại -> 400, KHÔNG tự tạo tổ chức, không ghi dòng nào', async () => {
+  const beforeEq = equipmentCount();
+  const beforeProvince = ctx.db.prepare('SELECT COUNT(*) c FROM province_post_offices').get().c;
+  const beforeCommune = ctx.db.prepare('SELECT COUNT(*) c FROM commune_post_offices').get().c;
+  const beforePo = ctx.db.prepare('SELECT COUNT(*) c FROM post_offices').get().c;
+
   const rows = [{
     maBdtTp: 'NEWP', tenBdtTp: 'Tỉnh Mới',
     maBdx: 'NEWC', tenBuuDienXa: 'BĐX Mới', buuDienXaTrungTam: 'NEWC-TT',
-    maMbc: 'NEWPO', tenBuuCuc: 'Bưu Cục Mới', loai: 'GD1',
-    maBdkv: 'KV1', tenBdkv: 'Khu Vực 1', diaChiChiTiet: '123 Đường Test',
+    maMbc: 'MBC-KHONG-TON-TAI', tenBuuCuc: 'Bưu Cục Mới', loai: 'GD1',
     tenMay: 'PC-NEW-ORG-01',
     danhMucCcdc: 'Máy Test'
   }];
 
   const { status, body } = await call('POST', '/api/equipments/import', { token: mgrToken, body: { rows } });
-  assert.equal(status, 200);
-  assert.equal(body.provincesCreated, 1);
-  assert.equal(body.communesCreated, 1);
-  assert.equal(body.postOfficesCreated, 1);
-  assert.equal(body.equipmentsCreated, 1);
-  assert.equal(body.errors.length, 0);
+  assert.equal(status, 400);
+  assert.match(body.error, /Quản Lý Mạng Lưới/, 'thông báo phải chỉ dẫn thêm bưu cục qua Quản Lý Mạng Lưới');
 
-  const province = ctx.db.prepare("SELECT * FROM province_post_offices WHERE code = 'NEWP'").get();
-  assert.ok(province);
-  assert.equal(province.name, 'Tỉnh Mới');
+  // Rollback toàn bộ: KHÔNG tạo tổ chức mới, KHÔNG ghi thiết bị nào.
+  assert.equal(equipmentCount(), beforeEq, 'không được tạo thiết bị');
+  assert.equal(ctx.db.prepare('SELECT COUNT(*) c FROM province_post_offices').get().c, beforeProvince, 'không được tự tạo tỉnh');
+  assert.equal(ctx.db.prepare('SELECT COUNT(*) c FROM commune_post_offices').get().c, beforeCommune, 'không được tự tạo BĐX');
+  assert.equal(ctx.db.prepare('SELECT COUNT(*) c FROM post_offices').get().c, beforePo, 'không được tự tạo bưu cục');
+  assert.equal(ctx.db.prepare("SELECT COUNT(*) c FROM province_post_offices WHERE code = 'NEWP'").get().c, 0);
+});
 
-  const commune = ctx.db.prepare("SELECT * FROM commune_post_offices WHERE code = 'NEWC'").get();
-  assert.ok(commune);
-  assert.equal(commune.province_id, province.id);
-  assert.equal(commune.central_commune_code, 'NEWC-TT');
-
-  const po = ctx.db.prepare("SELECT * FROM post_offices WHERE code = 'NEWPO'").get();
-  assert.ok(po);
-  assert.equal(po.commune_id, commune.id);
-  assert.equal(po.type, 'GD1');
-  assert.equal(po.bdkv_code, 'KV1');
-
-  const eq = ctx.db.prepare("SELECT * FROM equipments WHERE hostname = 'PC-NEW-ORG-01'").get();
-  assert.ok(eq);
-  assert.equal(eq.post_office_id, po.id);
-  assert.ok(eq.asset_tag, 'phải tự sinh asset_tag vì không có maCcdc');
-
-  // Chạy lại LẦN 2 với đúng dữ liệu tổ chức (khác thiết bị) -> KHÔNG tạo trùng
-  // province/commune/post_office (idempotent theo code).
-  const rows2 = [{
-    maBdtTp: 'NEWP', tenBdtTp: 'Tỉnh Mới',
-    maBdx: 'NEWC', tenBuuDienXa: 'BĐX Mới',
-    maMbc: 'NEWPO', tenBuuCuc: 'Bưu Cục Mới',
-    tenMay: 'PC-NEW-ORG-02',
+test('POST /api/equipments/import mã bưu cục ĐÃ tồn tại (seed) -> tạo thiết bị bình thường, provincesCreated/communesCreated/postOfficesCreated luôn = 0', async () => {
+  const rows = [{
+    maMbc: fixtures.postOfficeCode, // bưu cục seed sẵn (TESTPO)
+    tenMay: 'PC-EXISTING-PO-01',
     danhMucCcdc: 'Máy Test'
   }];
-  const { status: status2, body: body2 } = await call('POST', '/api/equipments/import', { token: mgrToken, body: { rows: rows2 } });
-  assert.equal(status2, 200);
-  assert.equal(body2.provincesCreated, 0);
-  assert.equal(body2.communesCreated, 0);
-  assert.equal(body2.postOfficesCreated, 0);
-  assert.equal(body2.equipmentsCreated, 1);
 
-  const provinceCountAfter = ctx.db.prepare("SELECT COUNT(*) c FROM province_post_offices WHERE code = 'NEWP'").get().c;
-  assert.equal(provinceCountAfter, 1, 'không được tạo trùng province');
+  const { status, body } = await call('POST', '/api/equipments/import', { token: mgrToken, body: { rows } });
+  assert.equal(status, 200);
+  assert.equal(body.equipmentsCreated, 1);
+  assert.equal(body.provincesCreated, 0, 'route Equipment Import không còn tạo tỉnh');
+  assert.equal(body.communesCreated, 0, 'route Equipment Import không còn tạo BĐX');
+  assert.equal(body.postOfficesCreated, 0, 'route Equipment Import không còn tạo bưu cục');
+
+  const eq = ctx.db.prepare("SELECT * FROM equipments WHERE hostname = 'PC-EXISTING-PO-01'").get();
+  assert.ok(eq);
+  assert.equal(eq.post_office_id, fixtures.postOfficeId);
 });
 
 // ==========================================

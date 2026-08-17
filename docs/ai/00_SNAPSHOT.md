@@ -257,6 +257,12 @@
   autocomplete đang chạy — xác nhận không phải do hạng mục này xử lý.
 
 ## Equipment Import/Export API (mới, `feat/equipment-import-export-backend`, CHỈ BACKEND)
+> ⚠️ **HÀNH VI ĐÃ ĐỔI (2026-08-17, `feat/network-management-backend`, Phương án B):**
+> `POST /api/equipments/import` **KHÔNG còn tự tạo mới Tỉnh/BĐX/Bưu cục**. Nếu
+> `maMbc` chưa tồn tại → **chặn 400** ("Bưu cục {maMbc} chưa có trong hệ thống
+> Quản Lý Mạng Lưới..."). Các field `provincesCreated/communesCreated/
+> postOfficesCreated` vẫn có trong response nhưng **LUÔN = 0**. Chỉ "Quản Lý
+> Mạng Lưới" mới được tạo tổ chức mới — xem section riêng bên dưới.
 - `GET /api/equipments/export-data` — cần token + role quản lý: **TÁI SỬ DỤNG
   nguyên vẹn** logic WHERE clause của `GET /api/equipments` (`search`,
   `communeId`, `postOfficeId`, `deviceTypeId`, `categoryRaw`, `status`),
@@ -378,6 +384,60 @@
   tạm) khỏi `data/ccdc.db` thật sau khi xong, verify lại đúng 353 thiết
   bị/44 BĐX/206 bưu cục/3 tài khoản gốc như trước khi bắt đầu.
 - `npm test`: 93/93 pass (không đổi backend).
+
+## Quản Lý Mạng Lưới API (mới, `feat/network-management-backend`, CHỈ BACKEND)
+- **Quyết định Phương án B (PO chốt 2026-08-17)**: "Quản Lý Mạng Lưới" (đổi tên
+  từ "Sơ Đồ BĐX & Bưu Cục") là danh mục chuẩn BẮT BUỘC. CHỈ các route mạng lưới
+  (qua `resolveOrCreateOrgChain()`) mới được tạo mới Tỉnh/BĐX/Bưu cục. Equipment
+  Import đổi sang CHẶN — xem `04_DECISIONS.md` mục 14.
+- **Migration schema** (`server/db.js`): thêm **9 cột** vào `post_offices`
+  (idempotent, cùng pattern các migration cũ): `old_ward_code`, `old_ward_name`,
+  `district_name`, `new_ward_code`, `new_ward_name`, `phone`, `operational_status`
+  (TEXT mặc định `'ACTIVE'`), `latitude` (REAL), `longitude` (REAL). Bưu cục cũ
+  (353 bưu cục seed) có giá trị NULL ở cột mới — PO cập nhật dần qua Import.
+- **Helper dùng chung** (`server/index.js`): `resolveOrCreateOrgChain(row, report,
+  rowNum)` chứa NGUYÊN VẸN logic tự tạo Tỉnh→BĐX→Bưu cục (tách từ Equipment Import
+  cũ), mở rộng lưu 9 cột mới khi tạo/cập nhật `post_offices` (update chỉ ghi đè
+  field không rỗng). `requireExistingPostOffice(maMbc)` chỉ SELECT, KHÔNG tạo mới,
+  throw lỗi rõ ràng nếu không thấy — dùng cho Equipment Import.
+- `GET /api/network` — cần token + role quản lý: danh sách bưu cục (join
+  commune/province lấy tên + `equipment_count`), hỗ trợ `search` (mã HOẶC tên),
+  lọc `communeId`, phân trang (pattern `GET /api/equipments`).
+- `POST /api/network/import` — cần token + role quản lý: nhận `{ rows: [...20 field] }`,
+  validate fail-fast (thiếu `maMbc` → 400, không ghi gì), gọi `resolveOrCreateOrgChain`
+  bọc `db.transaction()`. Trả `{ provincesCreated, communesCreated, postOfficesCreated,
+  postOfficesUpdated, errors }`. ĐƯỢC PHÉP tạo mới tổ chức.
+- `GET /api/network/export-data` — cần token + role quản lý: xuất toàn bộ bưu cục
+  theo 20 field (cùng key với import), không phân trang. Bảng field: `03_ARCHITECTURE_MAP.md`.
+- `PUT /api/network/post-offices/:id` — cần token + role quản lý: sửa 1 bưu cục
+  (gồm 9 cột mới). Chỉ ghi đè field CÓ GỬI (undefined = giữ nguyên; '' = null,
+  trừ `name` không cho rỗng, `communeId` validate tồn tại nếu đổi).
+- `DELETE /api/network/post-offices/:id` — cần token + role quản lý: thử XOÁ CỨNG.
+  FK enforcement bật sẵn (better-sqlite3 mặc định `foreign_keys=ON`) → nếu còn
+  `equipments`/`users` tham chiếu → bắt `SQLITE_CONSTRAINT_FOREIGNKEY` → 400 "Bưu
+  cục này đang có thiết bị/nhân sự liên kết, không thể xoá." KHÔNG thêm cột
+  soft-delete mới cho `post_offices`.
+- **20 field JSON** (import ⇄ export dùng CHUNG key): `maBdtTp/tenBdtTp` (tỉnh),
+  `maBdx/tenBuuDienXa/buuDienXaTrungTam` (BĐX), `maMbc` (bắt buộc) `/tenBuuCuc/loai/
+  diaChiChiTiet/maBdkv/tenBdkv` + 9 field mới `maPhuongXaCu/tenPhuongXaCu/tenQuanHuyen/
+  maPhuongXaMoi/tenPhuongXaMoi/soDienThoai/tinhTrangHoatDong/viDo/kinhDo`.
+- Test: `tests/network.test.js` (mới, port 5906, 17 test) + sửa 1 test trong
+  `tests/equipment-import-export.test.js` (test "tạo mới toàn bộ chuỗi tổ chức" cũ →
+  đổi thành "mã bưu cục chưa tồn tại → 400, không tự tạo, không ghi dòng nào").
+  `npm test`: **111/111 pass**.
+- Đã test thêm bằng curl trên DB tạm riêng (`os.tmpdir()`, port 5920, monkey-patch
+  `better-sqlite3` giống test harness) — xác nhận CÓ server production đang chạy
+  sống (cổng 5000/3000) trước khi test nên KHÔNG chạm `data/ccdc.db` (verify MD5
+  trước/sau giống hệt): import mạng lưới mới từ đầu (2 bưu cục + 1 tỉnh + 1 BĐX, 9
+  cột mới lưu đúng gồm latitude/longitude REAL); import CCDC với mã bưu cục KHÔNG
+  có sẵn → 400 chặn rõ ràng + xác nhận KHÔNG tự tạo bưu cục; import CCDC với mã bưu
+  cục CÓ sẵn → tạo được, provincesCreated/postOfficesCreated = 0; xoá bưu cục đang
+  có thiết bị → 400 chặn, bưu cục vẫn còn; xoá bưu cục không tham chiếu gì → 200 xoá
+  được; export 20 field đúng key.
+- ⚠️ **Drift đã biết**: `src/components/UnitTreeView.jsx` (frontend, ~200 dòng) hiện
+  vẫn READ-ONLY (chỉ hiển thị cây tổ chức), CHƯA có CRUD/Import/Export — hạng mục
+  này CHỈ backend theo đúng phạm vi giao; frontend "Quản Lý Mạng Lưới" sẽ do hạng
+  mục sau xử lý.
 
 ## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
 - `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và

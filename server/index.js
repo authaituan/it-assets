@@ -850,14 +850,165 @@ app.delete('/api/equipments/:id', authRequired, requireManager, (req, res) => {
 });
 
 // ==========================================
+// HELPER TỔ CHỨC DÙNG CHUNG (province -> commune -> post_office)
+// ------------------------------------------------------------------
+// QUYẾT ĐỊNH NGHIỆP VỤ (Phương án B, PO chốt 2026-08-17, xem 04_DECISIONS.md):
+// "Quản Lý Mạng Lưới" là danh mục chuẩn BẮT BUỘC. CHỈ route Quản Lý Mạng Lưới
+// (POST /api/network/import, PUT /api/network/post-offices/:id) mới được tạo
+// mới Tỉnh/BĐX/Bưu cục. Route Equipment Import KHÔNG còn tự tạo tổ chức nữa —
+// gọi requireExistingPostOffice() và CHẶN (400) nếu mã bưu cục chưa tồn tại.
+// ==========================================
+
+// Parse chuỗi -> số thực, rỗng/không hợp lệ -> null (dùng cho latitude/longitude).
+function parseFloatOrNull(v) {
+  if (v === undefined || v === null || String(v).trim() === '') return null;
+  const n = parseFloat(v);
+  return Number.isNaN(n) ? null : n;
+}
+
+// resolveOrCreateOrgChain: chứa NGUYÊN VẸN logic tự tạo Tỉnh->BĐX->Bưu cục
+// (tách ra từ route Equipment Import cũ), MỞ RỘNG lưu thêm 9 cột mới của
+// post_offices (old_ward_*, district_name, new_ward_*, phone,
+// operational_status, latitude, longitude). CHỈ dùng cho "Quản Lý Mạng Lưới".
+// Mutate `report` (tăng provincesCreated/communesCreated/postOfficesCreated/
+// postOfficesUpdated nếu report có các field đó). Trả về { province, commune, postOffice }.
+// PHẢI gọi bên trong 1 db.transaction() để rollback nếu 1 dòng lỗi.
+function resolveOrCreateOrgChain(row, report, rowNum) {
+  // --- Tỉnh/Thành phố ---
+  const maBdtTp = (row.maBdtTp || '').trim();
+  const tenBdtTp = (row.tenBdtTp || '').trim();
+  let province = null;
+  if (maBdtTp) {
+    province = db.prepare("SELECT * FROM province_post_offices WHERE code = ?").get(maBdtTp);
+    if (!province) {
+      const pid = uuidv4();
+      db.prepare("INSERT INTO province_post_offices (id, code, name) VALUES (?, ?, ?)")
+        .run(pid, maBdtTp, tenBdtTp || maBdtTp);
+      province = { id: pid, code: maBdtTp, name: tenBdtTp || maBdtTp };
+      if (typeof report.provincesCreated === 'number') report.provincesCreated++;
+    } else if (tenBdtTp && province.name !== tenBdtTp) {
+      db.prepare("UPDATE province_post_offices SET name = ? WHERE id = ?").run(tenBdtTp, province.id);
+      province.name = tenBdtTp;
+    }
+  }
+
+  // --- Bưu điện Xã (BĐX / commune) ---
+  const maBdx = (row.maBdx || '').trim();
+  const tenBuuDienXa = (row.tenBuuDienXa || '').trim();
+  const buuDienXaTrungTam = (row.buuDienXaTrungTam || '').trim() || null;
+  let commune = null;
+  if (maBdx) {
+    commune = db.prepare("SELECT * FROM commune_post_offices WHERE code = ?").get(maBdx);
+    if (!commune) {
+      if (!province) {
+        throw new Error(`Dòng ${rowNum}: BĐX "${maBdx}" chưa tồn tại và thiếu maBdtTp để tạo mới`);
+      }
+      const cid = uuidv4();
+      db.prepare("INSERT INTO commune_post_offices (id, code, name, central_commune_code, province_id) VALUES (?, ?, ?, ?, ?)")
+        .run(cid, maBdx, tenBuuDienXa || maBdx, buuDienXaTrungTam, province.id);
+      commune = { id: cid, code: maBdx, name: tenBuuDienXa || maBdx };
+      if (typeof report.communesCreated === 'number') report.communesCreated++;
+    } else if (tenBuuDienXa && commune.name !== tenBuuDienXa) {
+      db.prepare("UPDATE commune_post_offices SET name = ? WHERE id = ?").run(tenBuuDienXa, commune.id);
+      commune.name = tenBuuDienXa;
+    }
+  }
+
+  // --- Bưu cục (MBC / post_office) + 9 cột mới ---
+  const maMbc = (row.maMbc || '').trim();
+  const tenBuuCuc = (row.tenBuuCuc || '').trim();
+  // Giá trị các field (rỗng -> null), dùng chung cho INSERT (create) và UPDATE.
+  const nf = {
+    type: (row.loai || '').trim() || null,
+    address: (row.diaChiChiTiet || '').trim() || null,
+    bdkv_code: (row.maBdkv || '').trim() || null,
+    bdkv_name: (row.tenBdkv || '').trim() || null,
+    old_ward_code: (row.maPhuongXaCu || '').trim() || null,
+    old_ward_name: (row.tenPhuongXaCu || '').trim() || null,
+    district_name: (row.tenQuanHuyen || '').trim() || null,
+    new_ward_code: (row.maPhuongXaMoi || '').trim() || null,
+    new_ward_name: (row.tenPhuongXaMoi || '').trim() || null,
+    phone: (row.soDienThoai || '').trim() || null,
+    operational_status: (row.tinhTrangHoatDong || '').trim() || null,
+    latitude: parseFloatOrNull(row.viDo),
+    longitude: parseFloatOrNull(row.kinhDo)
+  };
+  let postOffice = db.prepare("SELECT * FROM post_offices WHERE code = ?").get(maMbc);
+  if (!postOffice) {
+    if (!commune) {
+      throw new Error(`Dòng ${rowNum}: bưu cục "${maMbc}" chưa tồn tại và thiếu maBdx để tạo mới`);
+    }
+    const poid = uuidv4();
+    db.prepare(`
+      INSERT INTO post_offices
+        (id, code, name, type, address, commune_id, bdkv_code, bdkv_name,
+         old_ward_code, old_ward_name, district_name, new_ward_code, new_ward_name,
+         phone, operational_status, latitude, longitude)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).run(
+      poid, maMbc, tenBuuCuc || maMbc, nf.type || 'GD3', nf.address, commune.id,
+      nf.bdkv_code, nf.bdkv_name, nf.old_ward_code, nf.old_ward_name, nf.district_name,
+      nf.new_ward_code, nf.new_ward_name, nf.phone, nf.operational_status || 'ACTIVE',
+      nf.latitude, nf.longitude
+    );
+    postOffice = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(poid);
+    if (typeof report.postOfficesCreated === 'number') report.postOfficesCreated++;
+  } else {
+    // CẬP NHẬT: chỉ ghi đè field có giá trị KHÔNG RỖNG trong dòng import (giữ
+    // nguyên field vắng mặt) — cùng nguyên tắc "import theo trường cần thiết"
+    // như Equipment Import.
+    db.prepare(`
+      UPDATE post_offices SET
+        name = ?, type = ?, address = ?, bdkv_code = ?, bdkv_name = ?,
+        old_ward_code = ?, old_ward_name = ?, district_name = ?, new_ward_code = ?,
+        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?
+      WHERE id = ?
+    `).run(
+      tenBuuCuc || postOffice.name,
+      nf.type || postOffice.type,
+      nf.address || postOffice.address,
+      nf.bdkv_code || postOffice.bdkv_code,
+      nf.bdkv_name || postOffice.bdkv_name,
+      nf.old_ward_code || postOffice.old_ward_code,
+      nf.old_ward_name || postOffice.old_ward_name,
+      nf.district_name || postOffice.district_name,
+      nf.new_ward_code || postOffice.new_ward_code,
+      nf.new_ward_name || postOffice.new_ward_name,
+      nf.phone || postOffice.phone,
+      nf.operational_status || postOffice.operational_status,
+      nf.latitude !== null ? nf.latitude : postOffice.latitude,
+      nf.longitude !== null ? nf.longitude : postOffice.longitude,
+      postOffice.id
+    );
+    postOffice = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(postOffice.id);
+    if (typeof report.postOfficesUpdated === 'number') report.postOfficesUpdated++;
+  }
+
+  return { province, commune, postOffice };
+}
+
+// requireExistingPostOffice: CHỈ tra bưu cục theo code, KHÔNG tạo mới. Dùng cho
+// Equipment Import (Phương án B: không được tự tạo tổ chức). Throw lỗi rõ ràng
+// nếu không tìm thấy.
+function requireExistingPostOffice(maMbc) {
+  const po = db.prepare("SELECT * FROM post_offices WHERE code = ?").get(maMbc);
+  if (!po) {
+    throw new Error(`Bưu cục ${maMbc} chưa có trong hệ thống Quản Lý Mạng Lưới, vui lòng thêm bưu cục này trước hoặc kiểm tra lại mã.`);
+  }
+  return po;
+}
+
+// ==========================================
 // Import hàng loạt CCDC từ file Excel (đã parse sẵn phía frontend thành
 // mảng `rows`, mỗi phần tử dùng đúng key JSON của GET /api/equipments/export-data
 // ở trên — 24 field gốc A-X + 7 field mới). Bọc TOÀN BỘ đợt trong 1
 // db.transaction(): 1 dòng lỗi -> throw -> better-sqlite3 tự rollback toàn
 // bộ transaction -> trả 400 (fail-fast, giống POST /api/personnel/import).
-// KHÔNG có route nào khác cho phép tạo mới province_post_offices /
-// commune_post_offices / post_offices (chỉ scripts/seed.py lúc đầu dự án) —
-// route này TỰ resolve/tạo mới cả 3 cấp tổ chức theo code.
+// PHƯƠNG ÁN B (PO chốt 2026-08-17): route này KHÔNG còn tự tạo tổ chức mới —
+// gọi requireExistingPostOffice() và CHẶN (400) nếu mã bưu cục chưa có trong
+// hệ thống Quản Lý Mạng Lưới. Các field report provincesCreated/communesCreated/
+// postOfficesCreated GIỮ NGUYÊN trong response (để không phá frontend) nhưng
+// LUÔN = 0.
 // ==========================================
 app.post('/api/equipments/import', authRequired, requireManager, (req, res) => {
   try {
@@ -902,66 +1053,16 @@ app.post('/api/equipments/import', authRequired, requireManager, (req, res) => {
       items.forEach((r, idx) => {
         const rowNum = idx + 1;
 
-        // b. Resolve/tạo mới chuỗi tổ chức theo đúng cấp: province -> commune -> post_office.
-        const maBdtTp = (r.maBdtTp || '').trim();
-        const tenBdtTp = (r.tenBdtTp || '').trim();
-        let province = null;
-        if (maBdtTp) {
-          province = db.prepare("SELECT * FROM province_post_offices WHERE code = ?").get(maBdtTp);
-          if (!province) {
-            const pid = uuidv4();
-            db.prepare("INSERT INTO province_post_offices (id, code, name) VALUES (?, ?, ?)")
-              .run(pid, maBdtTp, tenBdtTp || maBdtTp);
-            province = { id: pid, code: maBdtTp, name: tenBdtTp || maBdtTp };
-            report.provincesCreated++;
-          } else if (tenBdtTp && province.name !== tenBdtTp) {
-            db.prepare("UPDATE province_post_offices SET name = ? WHERE id = ?").run(tenBdtTp, province.id);
-            province.name = tenBdtTp;
-          }
-        }
-
-        const maBdx = (r.maBdx || '').trim();
-        const tenBuuDienXa = (r.tenBuuDienXa || '').trim();
-        const buuDienXaTrungTam = (r.buuDienXaTrungTam || '').trim() || null;
-        let commune = null;
-        if (maBdx) {
-          commune = db.prepare("SELECT * FROM commune_post_offices WHERE code = ?").get(maBdx);
-          if (!commune) {
-            if (!province) {
-              throw new Error(`Dòng ${rowNum}: BĐX "${maBdx}" chưa tồn tại và thiếu maBdtTp để tạo mới`);
-            }
-            const cid = uuidv4();
-            db.prepare("INSERT INTO commune_post_offices (id, code, name, central_commune_code, province_id) VALUES (?, ?, ?, ?, ?)")
-              .run(cid, maBdx, tenBuuDienXa || maBdx, buuDienXaTrungTam, province.id);
-            commune = { id: cid, code: maBdx, name: tenBuuDienXa || maBdx };
-            report.communesCreated++;
-          } else if (tenBuuDienXa && commune.name !== tenBuuDienXa) {
-            db.prepare("UPDATE commune_post_offices SET name = ? WHERE id = ?").run(tenBuuDienXa, commune.id);
-            commune.name = tenBuuDienXa;
-          }
-        }
-
-        const maMbc = r.maMbc.trim();
-        const tenBuuCuc = (r.tenBuuCuc || '').trim();
-        let postOffice = db.prepare("SELECT * FROM post_offices WHERE code = ?").get(maMbc);
-        if (!postOffice) {
-          if (!commune) {
-            throw new Error(`Dòng ${rowNum}: bưu cục "${maMbc}" chưa tồn tại và thiếu maBdx để tạo mới`);
-          }
-          const poid = uuidv4();
-          db.prepare(`
-            INSERT INTO post_offices (id, code, name, type, address, commune_id, bdkv_code, bdkv_name)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-          `).run(
-            poid, maMbc, tenBuuCuc || maMbc, (r.loai || '').trim() || 'GD3',
-            (r.diaChiChiTiet || '').trim() || null, commune.id,
-            (r.maBdkv || '').trim() || null, (r.tenBdkv || '').trim() || null
-          );
-          postOffice = { id: poid, code: maMbc, name: tenBuuCuc || maMbc };
-          report.postOfficesCreated++;
-        } else if (tenBuuCuc && postOffice.name !== tenBuuCuc) {
-          db.prepare("UPDATE post_offices SET name = ? WHERE id = ?").run(tenBuuCuc, postOffice.id);
-          postOffice.name = tenBuuCuc;
+        // b. PHƯƠNG ÁN B: bưu cục PHẢI đã tồn tại trong hệ thống Quản Lý Mạng
+        // Lưới. Route này KHÔNG tự tạo Tỉnh/BĐX/Bưu cục nữa — chặn 400 nếu mã
+        // bưu cục chưa có (report.provincesCreated/communesCreated/
+        // postOfficesCreated giữ nguyên = 0). Các field org khác trong dòng
+        // (maBdtTp/maBdx/tenBuuCuc...) bị bỏ qua ở route này.
+        let postOffice;
+        try {
+          postOffice = requireExistingPostOffice(r.maMbc.trim());
+        } catch (e) {
+          throw new Error(`Dòng ${rowNum}: ${e.message}`);
         }
 
         // c. Resolve/tạo mới brand theo tên (upsert theo name).
@@ -1163,6 +1264,263 @@ app.post('/api/equipments/import', authRequired, requireManager, (req, res) => {
     res.json(report);
   } catch (error) {
     console.error("Import equipments error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ==========================================
+// QUẢN LÝ MẠNG LƯỚI (Network Management) — feat/network-management-backend
+// ------------------------------------------------------------------
+// Danh mục chuẩn BẮT BUỘC (Phương án B, PO chốt 2026-08-17). CHỈ các route dưới
+// đây (cùng resolveOrCreateOrgChain) mới được tạo/sửa/xoá Tỉnh/BĐX/Bưu cục.
+// post_offices có thêm 9 cột mới (old_ward_*, district_name, new_ward_*, phone,
+// operational_status, latitude, longitude).
+// Bảng 20 field JSON (import ⇄ export dùng CHUNG key): xem 03_ARCHITECTURE_MAP.md.
+// ==========================================
+
+// GET /api/network — danh sách bưu cục đầy đủ (join commune/province), hỗ trợ
+// search (mã HOẶC tên bưu cục), lọc communeId, phân trang. Theo pattern
+// GET /api/equipments / GET /api/personnel.
+app.get('/api/network', authRequired, requireManager, (req, res) => {
+  try {
+    const { search, communeId, page = 1, limit = 20 } = req.query;
+
+    let whereClause = ["1=1"];
+    let params = [];
+
+    if (search && search.trim()) {
+      whereClause.push("(p.code LIKE ? OR p.name LIKE ?)");
+      const term = `%${search.trim()}%`;
+      params.push(term, term);
+    }
+    if (communeId) {
+      whereClause.push("p.commune_id = ?");
+      params.push(communeId);
+    }
+
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+    const offset = (pageNum - 1) * limitNum;
+
+    const countSql = `SELECT COUNT(*) as total FROM post_offices p WHERE ${whereClause.join(' AND ')}`;
+    const total = db.prepare(countSql).get(...params).total;
+
+    const items = db.prepare(`
+      SELECT
+        p.*,
+        c.code as commune_code, c.name as commune_name,
+        pv.code as province_code, pv.name as province_name,
+        (SELECT COUNT(*) FROM equipments e WHERE e.post_office_id = p.id AND e.deleted_at IS NULL) as equipment_count
+      FROM post_offices p
+      JOIN commune_post_offices c ON p.commune_id = c.id
+      JOIN province_post_offices pv ON c.province_id = pv.id
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY p.code ASC
+      LIMIT ? OFFSET ?
+    `).all(...params, limitNum, offset);
+
+    res.json({
+      items,
+      pagination: { total, page: pageNum, limit: limitNum, totalPages: Math.ceil(total / limitNum) }
+    });
+  } catch (error) {
+    console.error("Get network error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// POST /api/network/import — import mạng lưới từ Excel (20 cột). Được phép tạo
+// mới Tỉnh/BĐX/Bưu cục qua resolveOrCreateOrgChain(). Validate fail-fast (thiếu
+// maMbc -> lỗi ngay, không ghi gì). Bọc db.transaction().
+app.post('/api/network/import', authRequired, requireManager, (req, res) => {
+  try {
+    const { rows } = req.body || {};
+    if (!Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: 'Danh sách dữ liệu import không hợp lệ hoặc rỗng' });
+    }
+
+    // Validate fail-fast TRƯỚC khi mở transaction: mỗi dòng phải có maMbc.
+    const validationErrors = [];
+    rows.forEach((r, idx) => {
+      if (!r || typeof r.maMbc !== 'string' || !r.maMbc.trim()) {
+        validationErrors.push({ row: idx + 1, message: 'Thiếu maMbc (mã bưu cục)' });
+      }
+    });
+    if (validationErrors.length > 0) {
+      return res.status(400).json({ error: 'Dữ liệu import có dòng không hợp lệ', errors: validationErrors });
+    }
+
+    const report = {
+      provincesCreated: 0,
+      communesCreated: 0,
+      postOfficesCreated: 0,
+      postOfficesUpdated: 0,
+      errors: []
+    };
+
+    const importTxn = db.transaction((items) => {
+      items.forEach((r, idx) => {
+        resolveOrCreateOrgChain(r, report, idx + 1);
+      });
+    });
+
+    try {
+      importTxn(rows);
+    } catch (txnError) {
+      return res.status(400).json({ error: txnError.message });
+    }
+
+    res.json(report);
+  } catch (error) {
+    console.error("Import network error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/network/export-data — xuất toàn bộ bưu cục theo 20 field (cùng key
+// với import), không phân trang. Theo pattern GET /api/equipments/export-data.
+app.get('/api/network/export-data', authRequired, requireManager, (req, res) => {
+  try {
+    const { search, communeId } = req.query;
+    let whereClause = ["1=1"];
+    let params = [];
+    if (search && search.trim()) {
+      whereClause.push("(p.code LIKE ? OR p.name LIKE ?)");
+      const term = `%${search.trim()}%`;
+      params.push(term, term);
+    }
+    if (communeId) {
+      whereClause.push("p.commune_id = ?");
+      params.push(communeId);
+    }
+
+    const rows = db.prepare(`
+      SELECT
+        p.*,
+        c.code as commune_code, c.name as commune_name, c.central_commune_code as commune_central_code,
+        pv.code as province_code, pv.name as province_name
+      FROM post_offices p
+      JOIN commune_post_offices c ON p.commune_id = c.id
+      JOIN province_post_offices pv ON c.province_id = pv.id
+      WHERE ${whereClause.join(' AND ')}
+      ORDER BY p.code ASC
+    `).all(...params);
+
+    const items = rows.map((r) => ({
+      maBdtTp: r.province_code,
+      tenBdtTp: r.province_name,
+      maBdx: r.commune_code,
+      tenBuuDienXa: r.commune_name,
+      buuDienXaTrungTam: r.commune_central_code || '',
+      maMbc: r.code,
+      tenBuuCuc: r.name,
+      loai: r.type || '',
+      diaChiChiTiet: r.address || '',
+      maBdkv: r.bdkv_code || '',
+      tenBdkv: r.bdkv_name || '',
+      maPhuongXaCu: r.old_ward_code || '',
+      tenPhuongXaCu: r.old_ward_name || '',
+      tenQuanHuyen: r.district_name || '',
+      maPhuongXaMoi: r.new_ward_code || '',
+      tenPhuongXaMoi: r.new_ward_name || '',
+      soDienThoai: r.phone || '',
+      tinhTrangHoatDong: r.operational_status || '',
+      viDo: (r.latitude !== null && r.latitude !== undefined) ? r.latitude : '',
+      kinhDo: (r.longitude !== null && r.longitude !== undefined) ? r.longitude : ''
+    }));
+
+    res.json({ items, total: items.length });
+  } catch (error) {
+    console.error("Export network error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// PUT /api/network/post-offices/:id — sửa 1 bưu cục (gồm 9 cột mới). Chỉ ghi đè
+// field CÓ GỬI trong body (undefined = giữ nguyên; '' = set null, trừ name/
+// communeId có validate riêng).
+app.put('/api/network/post-offices/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const existing = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy bưu cục' });
+
+    const b = req.body || {};
+    // undefined -> giữ nguyên; '' -> null; giá trị khác -> dùng.
+    const pick = (key, cur) => (b[key] !== undefined ? (String(b[key]).trim() === '' ? null : b[key]) : cur);
+
+    // name: nếu gửi, không được rỗng.
+    let finalName = existing.name;
+    if (b.name !== undefined) {
+      if (typeof b.name !== 'string' || !b.name.trim()) {
+        return res.status(400).json({ error: 'Tên bưu cục không được để trống' });
+      }
+      finalName = b.name.trim();
+    }
+
+    // communeId: nếu gửi (khác rỗng), validate tồn tại.
+    let finalCommuneId = existing.commune_id;
+    if (b.communeId !== undefined && b.communeId !== null && b.communeId !== '') {
+      const c = db.prepare("SELECT id FROM commune_post_offices WHERE id = ?").get(b.communeId);
+      if (!c) return res.status(400).json({ error: 'BĐX (communeId) không tồn tại trong hệ thống' });
+      finalCommuneId = b.communeId;
+    }
+
+    const finalLat = b.latitude !== undefined ? parseFloatOrNull(b.latitude) : existing.latitude;
+    const finalLong = b.longitude !== undefined ? parseFloatOrNull(b.longitude) : existing.longitude;
+
+    db.prepare(`
+      UPDATE post_offices SET
+        name = ?, type = ?, address = ?, commune_id = ?, bdkv_code = ?, bdkv_name = ?,
+        old_ward_code = ?, old_ward_name = ?, district_name = ?, new_ward_code = ?,
+        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?
+      WHERE id = ?
+    `).run(
+      finalName,
+      pick('type', existing.type),
+      pick('address', existing.address),
+      finalCommuneId,
+      pick('bdkv_code', existing.bdkv_code),
+      pick('bdkv_name', existing.bdkv_name),
+      pick('old_ward_code', existing.old_ward_code),
+      pick('old_ward_name', existing.old_ward_name),
+      pick('district_name', existing.district_name),
+      pick('new_ward_code', existing.new_ward_code),
+      pick('new_ward_name', existing.new_ward_name),
+      pick('phone', existing.phone),
+      pick('operational_status', existing.operational_status),
+      finalLat,
+      finalLong,
+      req.params.id
+    );
+
+    res.json({ message: 'Cập nhật bưu cục thành công' });
+  } catch (error) {
+    console.error("Update post office error:", error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DELETE /api/network/post-offices/:id — thử XOÁ CỨNG. FK enforcement bật sẵn
+// (better-sqlite3 mặc định foreign_keys = ON): nếu còn equipments/users tham
+// chiếu -> SQLITE_CONSTRAINT_FOREIGNKEY -> bắt lỗi, trả 400 rõ ràng. KHÔNG thêm
+// cột soft-delete mới cho post_offices.
+app.delete('/api/network/post-offices/:id', authRequired, requireManager, (req, res) => {
+  try {
+    const existing = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(req.params.id);
+    if (!existing) return res.status(404).json({ error: 'Không tìm thấy bưu cục' });
+
+    try {
+      db.prepare("DELETE FROM post_offices WHERE id = ?").run(req.params.id);
+    } catch (fkErr) {
+      if (fkErr.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' || /FOREIGN KEY/i.test(fkErr.message || '')) {
+        return res.status(400).json({ error: 'Bưu cục này đang có thiết bị/nhân sự liên kết, không thể xoá.' });
+      }
+      throw fkErr;
+    }
+
+    res.json({ message: 'Đã xoá bưu cục thành công' });
+  } catch (error) {
+    console.error("Delete post office error:", error);
     res.status(500).json({ error: error.message });
   }
 });
