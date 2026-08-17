@@ -4,6 +4,19 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-17] - Backend Export/Import CCDC (feat/equipment-import-export-backend)
+
+### Changes
+- **server/index.js**:
+  - `GET /api/equipments/export-data` (mới, authRequired + requireManager): tái sử dụng nguyên vẹn WHERE clause của `GET /api/equipments` (search/communeId/postOfficeId/deviceTypeId/categoryRaw/status), KHÔNG phân trang. Trả 24 field khớp cột Excel gốc A-X + 7 field mới (`maCcdc`, `danhMucCcdc`, `tienToDanhMucMoi` luôn rỗng, `namMua`, `maHrmNguoiSuDung`, `trangThai`, `ghiChu`) — key JSON tiếng Việt không dấu.
+  - `POST /api/equipments/import` (mới, authRequired + requireManager): nhận `{ rows: [...] }` dùng CHUNG key với export. Validate fail-fast (bắt buộc `maMbc` + `tenMay`/`maCcdc`) trước khi mở transaction. Tự resolve/tạo mới `province_post_offices`/`commune_post_offices`/`post_offices` theo code (không route nào khác làm được việc này), `brands` theo tên, `device_types` theo tên thật (bắt buộc `tienToDanhMucMoi` khi tạo danh mục mới + tạo thiết bị mới). Có `maCcdc` khớp → UPDATE chỉ ghi đè field không rỗng (không mất dữ liệu field vắng mặt); không có `maCcdc` → CREATE, tự sinh `asset_tag` theo đúng cơ chế `<prefix>-<YY>-<seq>`. Bọc 1 `db.transaction()`, lỗi bất kỳ dòng nào → rollback toàn bộ, 400.
+- **package.json**: thêm `tests/equipment-import-export.test.js` vào script `test`.
+- **tests/equipment-import-export.test.js** (mới): 14 test case, tổng `npm test` 93/93 pass.
+- **Tested**: `npm test` 93/93 pass. Đã test thêm bằng curl trên DB tạm (`os.tmpdir()`, port 5910, kỹ thuật monkey-patch `better-sqlite3` giống test harness) — xác nhận có server production đang chạy sống (cổng 5000/3000) trước khi bắt đầu, KHÔNG chạm `data/ccdc.db` thật (verify MD5 trước/sau giống hệt nhau): import bưu cục hoàn toàn mới, export đúng field, import lại nguyên vẹn dữ liệu vừa export → idempotent (0 tạo mới, toàn bộ thành cập nhật), danh mục mới thiếu tiền tố → 400 rõ ràng, thiếu `maMbc` → fail-fast không ghi dòng nào.
+- Phạm vi: CHỈ `server/index.js` — không sửa `server/auth.js`/`server/db.js` (không cần đổi schema), không đụng file `.jsx` nào (CHỈ BACKEND theo đúng phạm vi giao).
+
+---
+
 ## [2026-08-14] - Thêm chức năng Sửa/Xoá cho Người Sử Dụng (feat/personnel-edit-delete)
 
 ### Changes

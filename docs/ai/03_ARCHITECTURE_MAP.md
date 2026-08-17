@@ -43,6 +43,52 @@
 - `POST /api/personnel`, `PUT /api/personnel/:id`, `POST /api/personnel/import`,
   `GET /api/personnel`, `GET /api/personnel/search`  ← thay thế
   `POST /api/hrm/upload-and-map` (đã xoá, `feat/personnel-backend`)
+- `GET /api/equipments/export-data`, `POST /api/equipments/import`  ← mới
+  (`feat/equipment-import-export-backend`), xem bảng field bên dưới.
+
+## Equipment Import/Export — bảng field JSON (export ⇄ import dùng CHUNG key)
+Nguồn: `dulieu.xlsx` gốc (cột A-X) + 7 field mới xây dựng sau này. Dùng cho
+`GET /api/equipments/export-data` (response `items[]`) và
+`POST /api/equipments/import` (request `rows[]`) — CÙNG 1 bộ key, export ra
+rồi import thẳng lại không cần map lại field ở frontend.
+
+| Cột Excel gốc | Key JSON | Nguồn DB (export) | Ghi chú (import) |
+|---|---|---|---|
+| A | `maBdtTp` | `province_post_offices.code` | resolve/tạo mới `province_post_offices` |
+| B | `tenBdtTp` | `province_post_offices.name` | |
+| C | `maMbc` | `post_offices.code` | **bắt buộc mọi dòng** |
+| D | `tenBuuCuc` | `post_offices.name` | |
+| E | `maBdx` | `commune_post_offices.code` | resolve/tạo mới `commune_post_offices` |
+| F | `tenBuuDienXa` | `commune_post_offices.name` | |
+| G | `loai` | `post_offices.type` | dùng khi tạo mới bưu cục |
+| H | `ip` | `equipments.ip_address` | |
+| I | `ngayCap` | `equipments.assigned_date` | |
+| J | `tenMay` | `equipments.hostname` | bắt buộc nếu không có `maCcdc` |
+| K | `diaChiMac` | `equipments.mac_address` | |
+| L | `loaiMay` | `specs.category_raw` (raw, KHÔNG phải phân loại thật) | → `specs.category_raw` |
+| M | `hang` | `brands.name` | resolve/tạo mới `brands` (upsert theo tên) |
+| N | `model` | `equipments.model` | |
+| O | `serialNumber` | `equipments.serial_number` | |
+| P | `heDieuHanh` | `specs.os` | |
+| Q | `cpu` | `specs.cpu` | |
+| R | `ram` | `specs.ram` | |
+| S | `oCung` | `specs.storage` | |
+| T | `nguoiSuDung` | `equipments.raw_user_name` (text tự do) | |
+| U | `maBdkv` | `post_offices.bdkv_code` | dùng khi tạo mới bưu cục |
+| V | `tenBdkv` | `post_offices.bdkv_name` | dùng khi tạo mới bưu cục |
+| W | `buuDienXaTrungTam` | `commune_post_offices.central_commune_code` | dùng khi tạo mới BĐX |
+| X | `diaChiChiTiet` | `post_offices.address` | dùng khi tạo mới bưu cục |
+| (mới) | `maCcdc` | `equipments.asset_tag` | có giá trị + khớp → UPDATE; không có → CREATE (tự sinh mã) |
+| (mới) | `danhMucCcdc` | `device_types.name` (tên THẬT, khác cột L) | resolve/tạo mới `device_types` |
+| (mới) | `tienToDanhMucMoi` | luôn `""` lúc export | bắt buộc khi tạo danh mục MỚI **và** đang tạo thiết bị mới (không `maCcdc`) |
+| (mới) | `namMua` | `equipments.purchase_year` | |
+| (mới) | `maHrmNguoiSuDung` | `users.hrm_code` qua `assigned_user_id` | resolve `assigned_user_id` theo `hrm_code` |
+| (mới) | `trangThai` | `equipments.status` | enum `IN_USE/IN_STOCK/MAINTENANCE/BROKEN/LIQUIDATED` |
+| (mới) | `ghiChu` | `equipments.notes` | |
+
+Quy tắc UPDATE qua `maCcdc`: chỉ ghi đè field có giá trị KHÔNG RỖNG trong
+dòng import (kể cả sub-field trong `specs`); field rỗng/vắng mặt = giữ
+nguyên giá trị cũ. `asset_tag` không bao giờ đổi.
 
 ## Ghi chú kỹ thuật
 - Không dùng ORM; truy vấn SQL trực tiếp qua `db.prepare(...)`.
@@ -61,7 +107,8 @@
      → dùng chung 1 kết nối DB, tránh SQLite lock đa tiến trình.
 - `tests/helpers/fixtures.js`: seed tối thiểu (1 tỉnh/1 BĐX/1 bưu cục/1 device_type + user)
   qua chính `db` handle, dùng `hashPassword` thật từ `server/auth.js`.
-- Mỗi file test (`auth`/`equipments`/`personnel`/`users`) chạy port riêng (5901-5904) +
-  DB tạm riêng, cô lập hoàn toàn với nhau và với `data/ccdc.db` thật. `tests/hrm.test.js`
-  (port 5903) đã xoá cùng route HRM cũ, thay bằng `tests/personnel.test.js` (giữ nguyên
-  port 5903).
+- Mỗi file test (`auth`/`equipments`/`personnel`/`users`/`equipment-import-export`) chạy
+  port riêng (5901-5905) + DB tạm riêng, cô lập hoàn toàn với nhau và với `data/ccdc.db`
+  thật. `tests/hrm.test.js` (port 5903) đã xoá cùng route HRM cũ, thay bằng
+  `tests/personnel.test.js` (giữ nguyên port 5903). `tests/equipment-import-export.test.js`
+  (mới, port 5905) phủ `GET /api/equipments/export-data` + `POST /api/equipments/import`.

@@ -256,6 +256,63 @@
   (`deleted_at` có giá trị) bởi 1 phiên làm việc khác trong lúc hạng mục
   autocomplete đang chạy — xác nhận không phải do hạng mục này xử lý.
 
+## Equipment Import/Export API (mới, `feat/equipment-import-export-backend`, CHỈ BACKEND)
+- `GET /api/equipments/export-data` — cần token + role quản lý: **TÁI SỬ DỤNG
+  nguyên vẹn** logic WHERE clause của `GET /api/equipments` (`search`,
+  `communeId`, `postOfficeId`, `deviceTypeId`, `categoryRaw`, `status`),
+  KHÔNG phân trang (trả `{ items, total }`, toàn bộ dòng khớp filter cùng
+  lúc). Mỗi dòng trả đủ 24 field khớp thứ tự cột Excel gốc A-X (key tiếng
+  Việt không dấu, vd `maBdtTp`, `tenMay`, `maBdx`...) CỘNG 7 field mới:
+  `maCcdc` (asset_tag), `danhMucCcdc` (device_types.name thật, khác cột L
+  `loaiMay` vốn chỉ là `specs.category_raw`), `tienToDanhMucMoi` (LUÔN `""`
+  lúc export — chỉ có ý nghĩa lúc import), `namMua` (purchase_year),
+  `maHrmNguoiSuDung` (users.hrm_code qua assigned_user_id), `trangThai`
+  (status), `ghiChu` (notes). Bảng field đầy đủ: `03_ARCHITECTURE_MAP.md`.
+- `POST /api/equipments/import` — cần token + role quản lý: nhận
+  `{ rows: [{...31 field cùng key với export...}] }`. Validate fail-fast
+  TRƯỚC khi mở transaction: mỗi dòng phải có `maMbc` VÀ (`tenMay` HOẶC
+  `maCcdc`) — thiếu 1 trong 2 → 400 kèm `errors: [{row, message}]` liệt kê
+  TẤT CẢ dòng lỗi, KHÔNG ghi dòng nào (kể cả dòng hợp lệ đứng trước).
+  **KHÔNG có route nào khác cho phép tạo mới `province_post_offices` /
+  `commune_post_offices` / `post_offices`** (chỉ `scripts/seed.py` lúc đầu
+  dự án) — route này TỰ resolve/tạo mới cả 3 cấp theo `code` (nếu đã có,
+  chỉ cập nhật `name` nếu khác, không tạo trùng); tạo mới `brands` theo tên
+  (upsert theo `name`); resolve/tạo mới `device_types` theo `danhMucCcdc`
+  (tên THẬT, khác cột `loaiMay`) — danh mục mới BẮT BUỘC kèm
+  `tienToDanhMucMoi` hợp lệ (regex `^[A-Z0-9]{2,5}$`, dùng chung
+  `ASSET_PREFIX_REGEX` với `PUT /api/device-types/:id`) **CHỈ KHI** dòng đó
+  đang tạo thiết bị MỚI (không có `maCcdc`) — dòng chỉ cập nhật thiết bị
+  đã có thì không bắt buộc. Có `maCcdc` khớp thiết bị tồn tại (theo
+  `asset_tag`, chưa soft-delete) → CẬP NHẬT, CHỈ ghi đè field có giá trị
+  KHÔNG RỖNG trong dòng import (field rỗng/vắng mặt = giữ nguyên giá trị
+  cũ, kể cả sub-field trong `specs`) — hỗ trợ export/import theo từng
+  trường cần thiết mà không mất dữ liệu; KHÔNG đổi lại `asset_tag`. Có
+  `maCcdc` nhưng KHÔNG khớp thiết bị nào → 400 rõ ràng (không tự tạo mới
+  bằng mã đó). KHÔNG có `maCcdc` → TẠO MỚI, sinh `asset_tag` theo đúng cơ
+  chế đã có (`<asset_prefix>-<YY>-<seq>`, dùng `namMua` hoặc năm hiện tại).
+  Toàn bộ đợt bọc trong 1 `db.transaction()` — 1 dòng lỗi ở bất kỳ bước nào
+  (b-f) → `throw` → better-sqlite3 tự rollback toàn bộ → 400. Trả về
+  `{ provincesCreated, communesCreated, postOfficesCreated, brandsCreated,
+  deviceTypesCreated, equipmentsCreated, equipmentsUpdated, errors: [] }`.
+- Test: `tests/equipment-import-export.test.js` (mới, 93/93 test tự động
+  pass tổng cộng `npm test`), phủ export đúng field, import tạo mới toàn bộ
+  chuỗi tổ chức từ bưu cục hoàn toàn mới (kèm chạy lại lần 2 xác nhận không
+  tạo trùng), import cập nhật qua `maCcdc` không mất field vắng mặt (kể cả
+  sub-field `specs`), danh mục mới thiếu tiền tố → 400 rõ ràng + rollback
+  không tạo device_type rác, thiếu `maMbc` → fail-fast không ghi dòng nào,
+  và 1 test export rồi import lại chính dữ liệu đó → idempotent (0 created,
+  toàn bộ thành updated, không tăng số lượng bản ghi tổ chức).
+- Đã test thêm bằng curl trên DB tạm riêng (`os.tmpdir()`, kỹ thuật
+  monkey-patch `better-sqlite3` giống `tests/helpers/serverHarness.js`) —
+  xác nhận CÓ server production đang chạy sống (cổng 5000/3000) trước khi
+  bắt đầu nên dùng port 5910 + DB tạm riêng, KHÔNG chạm `data/ccdc.db`
+  (verify MD5 trước/sau giống hệt nhau): import bưu cục hoàn toàn mới →
+  đúng số liệu tạo mới; export → đúng field; import lại NGUYÊN VẸN dữ liệu
+  vừa export → 0 tạo mới, toàn bộ thành cập nhật, số lượng tỉnh/BĐX/bưu
+  cục/thiết bị không đổi (idempotent); danh mục mới thiếu tiền tố → 400 rõ
+  ràng; thiếu `maMbc` kèm 1 dòng hợp lệ đứng trước → 400 fail-fast, không
+  ghi dòng nào (verify lại tổng số thiết bị không đổi).
+
 ## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
 - `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và
   `src/components/AddEquipmentModal.jsx`: ô nhập text tự do "Người Sử Dụng"
