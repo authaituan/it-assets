@@ -434,10 +434,60 @@
   cục CÓ sẵn → tạo được, provincesCreated/postOfficesCreated = 0; xoá bưu cục đang
   có thiết bị → 400 chặn, bưu cục vẫn còn; xoá bưu cục không tham chiếu gì → 200 xoá
   được; export 20 field đúng key.
-- ⚠️ **Drift đã biết**: `src/components/UnitTreeView.jsx` (frontend, ~200 dòng) hiện
-  vẫn READ-ONLY (chỉ hiển thị cây tổ chức), CHƯA có CRUD/Import/Export — hạng mục
-  này CHỈ backend theo đúng phạm vi giao; frontend "Quản Lý Mạng Lưới" sẽ do hạng
-  mục sau xử lý.
+- ✅ Drift READ-ONLY của `UnitTreeView.jsx` đã được xử lý ở `feat/network-management-frontend`
+  (xem section "Frontend Quản Lý Mạng Lưới" ngay bên dưới).
+
+## Frontend Quản Lý Mạng Lưới (mới, `feat/network-management-frontend`)
+- `src/components/Sidebar.jsx`: đổi nhãn menu "Sơ Đồ BĐX & Bưu Cục" → "Quản Lý Mạng
+  Lưới" (giữ nguyên `id: 'unittree'` + icon `Network`, không đổi gì khác trong
+  `App.jsx` — component vẫn import từ đúng path cũ).
+- `src/components/UnitTreeView.jsx`: **viết lại hoàn toàn** (giữ nguyên tên file/path
+  để không phải sửa `App.jsx`) — từ cây tổ chức READ-ONLY thành bảng quản lý đầy đủ
+  CRUD, theo đúng pattern `PersonnelView.jsx`/`InventoryView.jsx` (search + lọc BĐX +
+  phân trang + nút Sửa/Xoá trên mỗi dòng). GỘP toàn bộ logic (list + 3 modal: Thêm/Sửa,
+  Export, Import) vào 1 file để giữ đúng phạm vi giao (chỉ 2 file: Sidebar.jsx +
+  UnitTreeView.jsx).
+  - **"+ Thêm Bưu Cục"**: KHÔNG có route `POST /api/network/post-offices` riêng —
+    dùng lại `POST /api/network/import` với `rows: [1 dòng]` (đúng 20 key Excel,
+    `resolveOrCreateOrgChain()` tự tạo Tỉnh/BĐX nếu cần).
+  - **"Sửa"**: `PUT /api/network/post-offices/:id` dùng bộ key KHÁC hẳn (tên cột DB
+    thật: `name/type/address/communeId/bdkv_code/bdkv_name/old_ward_code/.../
+    latitude/longitude`) — KHÔNG đổi được `code` (Mã MBC), KHÔNG tự tạo/đổi tên
+    Tỉnh/BĐX, chỉ gán lại BĐX đã có sẵn qua dropdown `communeId`.
+  - **"Xoá"**: `DELETE /api/network/post-offices/:id` — nếu backend trả 400 (còn
+    thiết bị/nhân sự liên kết), hiện đúng message đó qua `alert()`, không phải lỗi
+    JSON thô.
+  - **Export/Import Excel**: theo đúng phong cách `ExportEquipmentModal.jsx`/
+    `ImportEquipmentModal.jsx` — dùng `exceljs` client-side, map cột theo TÊN HEADER
+    (không theo vị trí). "Tải Template Mẫu" tự dựng `.xlsx` 2 sheet ("Dữ Liệu" 20
+    cột chuẩn + 2 dòng ví dụ TẠO MỚI/CẬP NHẬT, "Hướng Dẫn" giải thích từng cột).
+  - Sau Sửa/Xoá/Import thành công: refetch danh sách + refetch `/api/organization/communes`
+    (Import có thể tạo BĐX mới cần cập nhật ngay dropdown lọc).
+- Field JSON Export/Import dùng CHUNG key với backend (`feat/network-management-backend`)
+  — copy chính xác từ `03_ARCHITECTURE_MAP.md`, không tự đặt tên khác.
+- Đã test qua UI thật (Vite dev port 3000 + backend thật port 5000). **Phát hiện quan
+  trọng (lặp lại tình huống đã gặp ở `feat/equipment-import-export-frontend`)**: server
+  production đang chạy lúc bắt đầu hạng mục là tiến trình CŨ, khởi động TRƯỚC khi
+  `feat/network-management-backend` merge vào main — `GET /api/network` trả về HTML
+  fallback (SPA catch-all) thay vì JSON dù route đã có trên đĩa. Đã xin phép PO qua
+  `AskUserQuestion` trước khi restart (đồng ý), xác nhận route hoạt động (200 + JSON
+  đúng) rồi mới tiếp tục test. **PO cần lưu ý (nhắc lại)**: server production cần
+  restart thủ công mỗi khi có code mới merge vào main.
+  Test cụ thể: Tải Template Mẫu → capture Blob + đọc lại bằng `exceljs` (Node) → đúng
+  2 sheet, đúng 20 cột, sheet Hướng Dẫn đủ nội dung (23 dòng). Import 1 bưu cục hoàn
+  toàn mới (`TESTBDXNETFE01`/`TESTPONETFE01`, đủ 9 field mới: phường/xã cũ-mới, quận/
+  huyện, SĐT, trạng thái, toạ độ) → tạo đúng 1 BĐX mới + 1 bưu cục mới, hiện đúng
+  trong danh sách (SĐT `0234555666`, toạ độ `16.5, 107.6`). Sửa bưu cục đó (đổi SĐT
+  → `0234000111`, toạ độ → `16.777, 107.888`) → verify DB lưu đúng, field không sửa
+  (`old_ward_code`...) giữ nguyên. Xoá bưu cục đó (chưa có thiết bị) → verify đã xoá
+  cứng khỏi DB. Kiểm tra ngược sang "Quản Lý CCDC" → Import 1 thiết bị với mã bưu cục
+  KHÔNG tồn tại (`MBC_KHONG_TON_TAI_FE`) → hiện đúng message *"Bưu cục
+  MBC_KHONG_TON_TAI_FE chưa có trong hệ thống Quản Lý Mạng Lưới..."* ngay trong bảng
+  xem trước, verify DB không tạo bưu cục "ma" lẫn thiết bị nào — xác nhận đúng thay
+  đổi hành vi từ `feat/network-management-backend`. Xoá sạch dữ liệu test (trừ bưu
+  cục đã xoá ở bước test Xoá) khỏi `data/ccdc.db` thật sau khi xong, verify lại đúng
+  baseline (353 thiết bị/44 BĐX/206 bưu cục/3 tài khoản gốc).
+- `npm test`: 111/111 pass (không đổi backend).
 
 ## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
 - `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và

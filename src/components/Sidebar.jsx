@@ -44,7 +44,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
   const navItems = [
     { id: 'dashboard', label: 'Tổng Quan KPI', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản Lý CCDC', icon: Monitor },
-    { id: 'unittree', label: 'Sơ Đồ BĐX & Bưu Cục', icon: Network },
+    { id: 'unittree', label: 'Quản Lý Mạng Lưới', icon: Network },
     { id: 'personnel', label: 'Người Sử Dụng', icon: Users },
   ];
 
