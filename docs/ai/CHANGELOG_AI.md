@@ -4,6 +4,18 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-17] - Frontend Quản Lý Mạng Lưới (feat/network-management-frontend)
+
+### Changes
+- **src/components/Sidebar.jsx**: đổi nhãn menu "Sơ Đồ BĐX & Bưu Cục" → "Quản Lý Mạng Lưới" (giữ nguyên id `unittree`, không đụng App.jsx).
+- **src/components/UnitTreeView.jsx**: viết lại hoàn toàn (giữ nguyên path để không sửa App.jsx) — từ cây READ-ONLY thành bảng CRUD đầy đủ (search + lọc BĐX + phân trang, nút Sửa/Xoá) + 3 modal nội bộ trong cùng file: Thêm/Sửa bưu cục (Thêm dùng `POST /api/network/import` 1 dòng vì không có route tạo đơn lẻ; Sửa dùng `PUT /api/network/post-offices/:id` với bộ key khác — tên cột DB thật + `communeId`), Export Excel, Import Excel (kèm "Tải Template Mẫu" tự dựng 2 sheet bằng exceljs). Xoá hiện đúng message backend (400 khi còn thiết bị/nhân sự liên kết) qua alert, không phải lỗi JSON thô.
+- Field JSON dùng chung key với backend (`feat/network-management-backend`).
+- **Tested**: `npm test` 111/111 pass (không đổi backend). Test qua UI thật (Vite dev :3000 + backend thật :5000): Template Mẫu đúng 2 sheet/20 cột; import 1 bưu cục hoàn toàn mới (đủ 9 field mới) → tạo đúng, hiện trong danh sách; sửa SĐT + toạ độ → lưu đúng, field khác giữ nguyên; xoá bưu cục (chưa có thiết bị) → xoá được; kiểm tra ngược sang Quản Lý CCDC → import thiết bị với mã bưu cục không tồn tại → bị chặn rõ ràng, không tạo bưu cục "ma". Đã xoá sạch dữ liệu test, verify lại baseline (353 thiết bị/44 BĐX/206 bưu cục/3 tài khoản gốc).
+- **Phát hiện lặp lại**: server production đang chạy lúc bắt đầu là tiến trình cũ (trước khi `feat/network-management-backend` merge) — `/api/network` trả HTML fallback. Đã xin phép PO restart trước khi test (xem `00_SNAPSHOT.md`).
+- Phạm vi: CHỈ `src/components/Sidebar.jsx` + `src/components/UnitTreeView.jsx`. Không sửa `server/*.js`, không đụng file khác.
+
+---
+
 ## [2026-08-17] - Backend Quản Lý Mạng Lưới + Equipment Import hết quyền tự tạo tổ chức (feat/network-management-backend)
 
 ### Changes
