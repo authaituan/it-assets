@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import ExcelJS from 'exceljs';
 import {
   Network,
@@ -26,15 +26,18 @@ import {
 import { apiFetchJson } from '../utils/api';
 
 // ==========================================
-// "Quản Lý Mạng Lưới" (đổi tên từ "Sơ Đồ BĐX & Bưu Cục", feat/network-management-frontend).
+// "Danh Sách" — 1 trong 3 submenu con của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure).
+// Đổi tên từ UnitTreeView.jsx (đã bị ghi đè thành bảng CRUD ở feat/network-management-frontend)
+// sang NetworkListView.jsx — GIỮ NGUYÊN toàn bộ logic CRUD/Export/Import, chỉ thiết kế lại
+// phần hiển thị bảng "Danh Sách" (layout PO duyệt: 5 cột gộp cell + 4 dropdown lọc động +
+// autocomplete "Người Phụ Trách") theo hạng mục riêng bên dưới.
 // Backend: GET/POST(import)/PUT/DELETE /api/network* (feat/network-management-backend,
-// đã merge main). File GỘP toàn bộ (list + 3 modal nội bộ: Thêm/Sửa, Export, Import)
-// để giữ đúng phạm vi giao (chỉ Sidebar.jsx + file này).
+// feat/network-responsible-person-backend, đã merge main).
 // ==========================================
 
 // 20 cột theo ĐÚNG file Excel mạng lưới PO cung cấp — key khớp tuyệt đối với
 // GET /api/network/export-data / POST /api/network/import (xem
-// docs/ai/03_ARCHITECTURE_MAP.md mục "Quản Lý Mạng Lưới — bảng 20 field JSON").
+// docs/ai/03_ARCHITECTURE_MAP.md mục "Quản Lý Mạng Lưới — bảng 21 field JSON").
 // `required: true` = Mã MBC, bắt buộc mọi dòng khi import.
 const NETWORK_FIELDS = [
   { key: 'maBdtTp', label: 'Mã BĐT/TP', required: false, note: 'Mã Bưu Điện Tỉnh/Thành Phố. Dùng để tự tạo mới chuỗi tổ chức nếu Mã MBC chưa có.', example: '53' },
@@ -498,15 +501,82 @@ function ImportNetworkModal({ onClose, onSuccess }) {
 }
 
 // ==========================================
+// Autocomplete dùng chung: "Người Phụ Trách" — COPY đúng pattern autocomplete
+// "Người Sử Dụng" của EquipmentDetailModal.jsx/AddEquipmentModal.jsx (gọi
+// GET /api/personnel/search, gợi ý "Mã HRM-Họ Tên-Mã BC-Mã BĐX").
+// ==========================================
+function ResponsiblePersonField({ displayValue, onChangeDisplay, onSelectPerson }) {
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const debounceRef = React.useRef(null);
+
+  const handleChange = (val) => {
+    onChangeDisplay(val);
+    setShowSuggestions(true);
+
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (!val || !val.trim()) {
+      setSuggestions([]);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      const result = await apiFetchJson(`/api/personnel/search?q=${encodeURIComponent(val.trim())}`);
+      if (result.ok) {
+        setSuggestions(Array.isArray(result.data) ? result.data : []);
+      }
+    }, 300);
+  };
+
+  const handleSelect = (p) => {
+    onSelectPerson(p);
+    setSuggestions([]);
+    setShowSuggestions(false);
+  };
+
+  return (
+    <div className="relative col-span-2">
+      <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Người Phụ Trách</label>
+      <input
+        type="text"
+        value={displayValue}
+        onChange={(e) => handleChange(e.target.value)}
+        onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+        onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+        placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
+        autoComplete="off"
+        className="w-full glass-input p-2.5 rounded-xl text-xs"
+      />
+      {showSuggestions && suggestions.length > 0 && (
+        <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl divide-y divide-slate-800">
+          {suggestions.map((p) => (
+            <li
+              key={p.id}
+              onMouseDown={(e) => e.preventDefault()}
+              onClick={() => handleSelect(p)}
+              className="px-3 py-2 text-[11px] text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-300 cursor-pointer"
+            >
+              {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+// ==========================================
 // Modal: Thêm / Sửa Bưu Cục
 // ------------------------------------------------------------------
 // THÊM MỚI: không có route POST /api/network/post-offices riêng — dùng lại
-// POST /api/network/import với rows: [1 dòng] (đúng 20 key Excel), route này
-// tự resolve/tạo Tỉnh->BĐX->Bưu cục qua resolveOrCreateOrgChain().
+// POST /api/network/import với rows: [1 dòng] (đúng 20 key Excel + maHrmNguoiPhuTrach
+// nếu có gán người phụ trách), route này tự resolve/tạo Tỉnh->BĐX->Bưu cục qua
+// resolveOrCreateOrgChain().
 // SỬA: PUT /api/network/post-offices/:id dùng bộ key KHÁC (tên cột DB thật:
 // name/type/address/communeId/bdkv_code/bdkv_name/old_ward_code/.../latitude/
-// longitude) — KHÔNG đổi được code (Mã MBC) và KHÔNG tự tạo/đổi tên Tỉnh/BĐX,
-// chỉ được gán lại BĐX đã có sẵn qua communeId.
+// longitude/responsible_user_id) — KHÔNG đổi được code (Mã MBC), KHÔNG tự tạo/đổi tên
+// Tỉnh/BĐX, chỉ gán lại BĐX đã có sẵn qua dropdown communeId.
 // ==========================================
 function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
   const isEdit = !!editing;
@@ -533,7 +603,28 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Người Phụ Trách (feat/network-submenu-restructure, autocomplete copy từ
+  // EquipmentDetailModal.jsx). responsibleUserId dùng cho PUT (Sửa); responsibleUserHrm
+  // (mã HRM) dùng cho POST /api/network/import (Thêm mới) — route đó chỉ nhận
+  // maHrmNguoiPhuTrach chứ không nhận id thẳng. Gõ tự do (không chọn gợi ý) sẽ tự gỡ
+  // cả 2 về null/rỗng — giống hệt hành vi "Người Sử Dụng" của thiết bị.
+  const [responsibleDisplay, setResponsibleDisplay] = useState(editing ? (editing.responsible_user_name || '') : '');
+  const [responsibleUserId, setResponsibleUserId] = useState(editing ? (editing.responsible_user_id || null) : null);
+  const [responsibleUserHrm, setResponsibleUserHrm] = useState(editing ? (editing.responsible_user_hrm || '') : '');
+
   const setField = (key) => (e) => setForm((prev) => ({ ...prev, [key]: e.target.value }));
+
+  const handleResponsibleChangeDisplay = (val) => {
+    setResponsibleDisplay(val);
+    setResponsibleUserId(null);
+    setResponsibleUserHrm('');
+  };
+
+  const handleResponsibleSelect = (p) => {
+    setResponsibleUserId(p.id);
+    setResponsibleUserHrm(p.hrm_code || '');
+    setResponsibleDisplay(p.full_name);
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -551,6 +642,21 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
 
     let result;
     if (isEdit) {
+      // responsible_user_id: chọn đúng 1 gợi ý -> gửi id đó. Ô để trống (không gõ gì,
+      // hoặc xoá hết) -> nếu bưu cục đang có người phụ trách thì gửi null để gỡ gán,
+      // chưa từng có thì giữ nguyên (undefined, không gửi field). Gõ tự do không chọn
+      // gợi ý (không rỗng) -> coi như chưa xác định được liên kết -> gỡ gán (null),
+      // giống hệt hành vi "Người Sử Dụng" của thiết bị.
+      const hadResponsibleInitially = !!(editing && editing.responsible_user_id);
+      let responsiblePayload;
+      if (responsibleUserId) {
+        responsiblePayload = responsibleUserId;
+      } else if (responsibleDisplay.trim() === '') {
+        responsiblePayload = hadResponsibleInitially ? null : undefined;
+      } else {
+        responsiblePayload = null;
+      }
+
       result = await apiFetchJson(`/api/network/post-offices/${editing.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -569,7 +675,8 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
           phone: form.soDienThoai.trim() || null,
           operational_status: form.tinhTrangHoatDong.trim() || null,
           latitude: form.viDo.trim() || null,
-          longitude: form.kinhDo.trim() || null
+          longitude: form.kinhDo.trim() || null,
+          responsible_user_id: responsiblePayload
         })
       });
     } else {
@@ -597,7 +704,8 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
             soDienThoai: form.soDienThoai.trim(),
             tinhTrangHoatDong: form.tinhTrangHoatDong.trim(),
             viDo: form.viDo.trim(),
-            kinhDo: form.kinhDo.trim()
+            kinhDo: form.kinhDo.trim(),
+            maHrmNguoiPhuTrach: responsibleUserHrm.trim()
           }]
         })
       });
@@ -751,6 +859,12 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
               <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Kinh Độ</label>
               <input type="text" value={form.kinhDo} onChange={setField('kinhDo')} placeholder="107.5909" className="w-full glass-input p-2.5 rounded-xl text-xs" />
             </div>
+
+            <ResponsiblePersonField
+              displayValue={responsibleDisplay}
+              onChangeDisplay={handleResponsibleChangeDisplay}
+              onSelectPerson={handleResponsibleSelect}
+            />
           </div>
 
           <div className="pt-2">
@@ -770,21 +884,115 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
 }
 
 // ==========================================
-// Main View
+// Modal: Xem Chi Tiết Bưu Cục (chỉ đọc)
 // ==========================================
-export default function UnitTreeView({ onSelectUnitFilter }) {
-  const [items, setItems] = useState([]);
+function PostOfficeDetailModal({ po, onClose }) {
+  const hasCoords = po.latitude !== null && po.latitude !== undefined && po.longitude !== null && po.longitude !== undefined;
+  const isActive = po.operational_status === 'ACTIVE' || !po.operational_status;
+
+  return (
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
+          <h3 className="font-bold text-base text-white flex items-center gap-2">
+            <Eye className="w-5 h-5 text-cyan-400" />
+            <span>Chi Tiết Bưu Cục — {po.code}</span>
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        <div className="p-6 space-y-4 text-xs overflow-y-auto">
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Mã & Tên Bưu Cục</div>
+            <div className="text-sm font-bold text-white">{po.code} — {po.name}</div>
+            <div className="text-slate-400 mt-0.5">
+              {po.type && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono border border-slate-700 mr-1.5">{po.type}</span>}
+              {po.commune_name}
+            </div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Địa Chỉ & Liên Hệ</div>
+            <div className="text-slate-200">{po.address || <span className="text-slate-600">Chưa có địa chỉ</span>}{po.new_ward_name ? `, ${po.new_ward_name}` : ''}</div>
+            {po.phone && (
+              <div className="flex items-center gap-1.5 text-slate-300 mt-1">
+                <Phone className="w-3.5 h-3.5 text-slate-500" />
+                <span className="font-mono">{po.phone}</span>
+              </div>
+            )}
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Toạ Độ & Bản Đồ</div>
+            {hasCoords ? (
+              <div>
+                <div className="font-mono text-slate-200">{po.latitude}, {po.longitude}</div>
+                <a
+                  href={`https://www.google.com/maps?q=${po.latitude},${po.longitude}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 mt-1"
+                >
+                  <Compass className="w-3.5 h-3.5" />
+                  <span>Mở Google Maps</span>
+                </a>
+              </div>
+            ) : (
+              <span className="text-slate-600">Chưa có toạ độ</span>
+            )}
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Trạng Thái & CCDC</div>
+            <div className="flex items-center gap-1.5">
+              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
+              <span className={isActive ? 'text-emerald-400' : 'text-slate-400'}>{isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}</span>
+            </div>
+            <div className="text-slate-400 mt-1">{po.equipment_count ?? 0} thiết bị</div>
+          </div>
+
+          <div>
+            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Người Phụ Trách</div>
+            <div className="text-slate-200">
+              {po.responsible_user_name ? `${po.responsible_user_name} (${po.responsible_user_hrm || '—'})` : <span className="text-slate-600">Chưa gán</span>}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ==========================================
+// Main View — "Danh Sách"
+// ------------------------------------------------------------------
+// Thiết kế lại theo layout PO duyệt (feat/network-submenu-restructure): bảng CHỈ còn
+// đúng 5 cột gộp cell (không liệt kê phẳng field riêng lẻ) + 4 dropdown lọc động (suy
+// ra distinct trực tiếp từ dữ liệu đã load, không hardcode). Nạp TOÀN BỘ danh sách 1
+// lần (không phân trang phía server — dữ liệu mạng lưới chỉ ~200 bưu cục, tương tự cách
+// InventoryView nạp cascading dropdown) rồi search/lọc/phân trang phía client để có thể
+// kết hợp cả 5 điều kiện lọc cùng lúc mà không cần thêm route/param backend mới.
+// ==========================================
+export default function NetworkListView({ onSelectUnitFilter }) {
+  const [allItems, setAllItems] = useState([]);
   const [communes, setCommunes] = useState([]);
-  const [pagination, setPagination] = useState({ page: 1, limit: 15, total: 0, totalPages: 1 });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
   const [selectedCommuneId, setSelectedCommuneId] = useState('');
+  const [selectedWard, setSelectedWard] = useState('');
+  const [selectedType, setSelectedType] = useState('');
+  const [selectedStatus, setSelectedStatus] = useState('');
+  const [page, setPage] = useState(1);
+  const limit = 15;
 
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isExportOpen, setIsExportOpen] = useState(false);
   const [isImportOpen, setIsImportOpen] = useState(false);
   const [editingPostOffice, setEditingPostOffice] = useState(null);
+  const [viewingPostOffice, setViewingPostOffice] = useState(null);
 
   useEffect(() => {
     fetch('/api/organization/communes')
@@ -796,25 +1004,21 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
   const fetchNetwork = () => {
     setLoading(true);
     setError('');
-    const params = new URLSearchParams({ page: pagination.page, limit: pagination.limit });
-    if (search) params.append('search', search);
-    if (selectedCommuneId) params.append('communeId', selectedCommuneId);
-
-    apiFetchJson(`/api/network?${params.toString()}`).then((result) => {
+    // limit lớn để nạp toàn bộ (không phân trang server) — phục vụ lọc/tìm kiếm kết hợp
+    // phía client (xem giải thích ở đầu component).
+    apiFetchJson('/api/network?limit=2000').then((result) => {
       setLoading(false);
       if (!result.ok) {
         setError(result.error);
         return;
       }
-      setItems(result.data.items || []);
-      setPagination(result.data.pagination || { page: 1, limit: 15, total: 0, totalPages: 1 });
+      setAllItems(result.data.items || []);
     });
   };
 
   useEffect(() => {
     fetchNetwork();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, selectedCommuneId, pagination.page]);
+  }, []);
 
   // Sau Sửa/Xoá/Import thành công: refresh danh sách + refetch communes (Import
   // có thể tạo mới BĐX cần cập nhật dropdown lọc).
@@ -844,6 +1048,46 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
     handleMutationSuccess();
   };
 
+  // Danh sách giá trị lọc ĐỘNG — distinct trực tiếp từ dữ liệu thật đã nạp, không
+  // hardcode. Sắp xếp cho dễ tìm trong dropdown.
+  const wardOptions = useMemo(() => {
+    const set = new Set(allItems.map((po) => po.new_ward_name).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [allItems]);
+
+  const typeOptions = useMemo(() => {
+    const set = new Set(allItems.map((po) => po.type).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [allItems]);
+
+  const statusOptions = useMemo(() => {
+    const set = new Set(allItems.map((po) => po.operational_status).filter(Boolean));
+    return Array.from(set).sort((a, b) => a.localeCompare(b, 'vi'));
+  }, [allItems]);
+
+  // Lọc kết hợp: search (mã/tên/loại/tình trạng — mở rộng theo hạng mục riêng) + 4
+  // dropdown. Tất cả tính trên toàn bộ dữ liệu đã nạp.
+  const filteredItems = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    return allItems.filter((po) => {
+      if (term) {
+        const haystack = [po.code, po.name, po.type, po.operational_status].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(term)) return false;
+      }
+      if (selectedCommuneId && po.commune_id !== selectedCommuneId) return false;
+      if (selectedWard && po.new_ward_name !== selectedWard) return false;
+      if (selectedType && po.type !== selectedType) return false;
+      if (selectedStatus && po.operational_status !== selectedStatus) return false;
+      return true;
+    });
+  }, [allItems, search, selectedCommuneId, selectedWard, selectedType, selectedStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredItems.length / limit));
+  const currentPage = Math.min(page, totalPages);
+  const pageItems = filteredItems.slice((currentPage - 1) * limit, currentPage * limit);
+
+  const resetToFirstPage = () => setPage(1);
+
   return (
     <div className="p-6 space-y-6">
       {/* Header & Filter Bar */}
@@ -852,7 +1096,7 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
           <div>
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Network className="w-5 h-5 text-cyan-400" />
-              <span>Quản Lý Mạng Lưới</span>
+              <span>Quản Lý Mạng Lưới — Danh Sách</span>
             </h2>
             <p className="text-xs text-slate-400 mt-1">
               Danh mục chuẩn Tỉnh/BĐX/Bưu cục — nguồn tổ chức duy nhất cho toàn hệ thống (BĐT/TP ➔ BĐX ➔ Bưu Cục)
@@ -887,7 +1131,7 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+        <div className="pt-2 border-t border-slate-800 space-y-3">
           <div className="relative">
             <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
             <input
@@ -895,25 +1139,62 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
               value={search}
               onChange={(e) => {
                 setSearch(e.target.value);
-                setPagination((prev) => ({ ...prev, page: 1 }));
+                resetToFirstPage();
               }}
-              placeholder="Tìm theo Mã MBC hoặc Tên Bưu Cục..."
+              placeholder="Tìm theo Mã MBC, Tên Bưu Cục, Loại hình hoặc Tình trạng..."
               className="w-full glass-input pl-9 pr-3 py-2 rounded-xl text-xs"
             />
           </div>
-          <select
-            value={selectedCommuneId}
-            onChange={(e) => {
-              setSelectedCommuneId(e.target.value);
-              setPagination((prev) => ({ ...prev, page: 1 }));
-            }}
-            className="w-full glass-input px-3 py-2 rounded-xl text-xs"
-          >
-            <option value="">-- Tất cả BĐX ({communes.length}) --</option>
-            {communes.map((c) => (
-              <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-            ))}
-          </select>
+
+          {/* 4 dropdown lọc — style nhất quán với InventoryView.jsx */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Phường/Xã Mới</label>
+              <select
+                value={selectedWard}
+                onChange={(e) => { setSelectedWard(e.target.value); resetToFirstPage(); }}
+                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+              >
+                <option value="">-- Tất cả phường/xã ({wardOptions.length}) --</option>
+                {wardOptions.map((w) => <option key={w} value={w}>{w}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu Điện Xã (BĐX)</label>
+              <select
+                value={selectedCommuneId}
+                onChange={(e) => { setSelectedCommuneId(e.target.value); resetToFirstPage(); }}
+                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+              >
+                <option value="">-- Tất cả BĐX ({communes.length}) --</option>
+                {communes.map((c) => (
+                  <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Loại Hình</label>
+              <select
+                value={selectedType}
+                onChange={(e) => { setSelectedType(e.target.value); resetToFirstPage(); }}
+                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+              >
+                <option value="">-- Tất cả loại hình --</option>
+                {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Tình Trạng</label>
+              <select
+                value={selectedStatus}
+                onChange={(e) => { setSelectedStatus(e.target.value); resetToFirstPage(); }}
+                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+              >
+                <option value="">-- Tất cả tình trạng --</option>
+                {statusOptions.map((s) => <option key={s} value={s}>{s === 'ACTIVE' ? 'ACTIVE — Đang hoạt động' : s === 'INACTIVE' ? 'INACTIVE — Ngừng hoạt động' : s}</option>)}
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -923,14 +1204,14 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
         </div>
       )}
 
-      {/* Table */}
+      {/* Table — ĐÚNG 5 cột gộp cell theo layout PO duyệt */}
       <div className="glass-panel rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
             <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
             <p className="text-xs text-slate-400">Đang nạp danh sách mạng lưới...</p>
           </div>
-        ) : items.length === 0 ? (
+        ) : pageItems.length === 0 ? (
           <div className="p-12 text-center text-slate-400">
             <Network className="w-12 h-12 mx-auto text-slate-600 mb-3" />
             <p className="font-semibold text-sm text-slate-300">Không tìm thấy bưu cục phù hợp</p>
@@ -941,90 +1222,103 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-4">Mã MBC / Tên Bưu Cục</th>
-                  <th className="py-3.5 px-4">BĐX / Tỉnh</th>
-                  <th className="py-3.5 px-4">Liên Hệ</th>
-                  <th className="py-3.5 px-4">Toạ Độ</th>
-                  <th className="py-3.5 px-4">Trạng Thái</th>
-                  <th className="py-3.5 px-4">CCDC</th>
+                  <th className="py-3.5 px-4">Mã & Tên Bưu Cục</th>
+                  <th className="py-3.5 px-4">Địa Chỉ & Liên Hệ</th>
+                  <th className="py-3.5 px-4">Toạ Độ & Bản Đồ</th>
+                  <th className="py-3.5 px-4">Trạng Thái & CCDC</th>
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-800/60">
-                {items.map((po) => (
-                  <tr key={po.id} className="hover:bg-slate-800/40 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <div className="font-mono font-bold text-cyan-400">{po.code}</div>
-                      <div className="text-slate-200 font-medium">{po.name}</div>
-                      {po.type && <div className="text-[10px] text-slate-500 mt-0.5">{po.type}</div>}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center gap-1.5 text-slate-300">
-                        <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                        <span className="truncate max-w-[160px]">{po.commune_name}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 text-slate-500 text-[10px] mt-0.5">
-                        <Building2 className="w-3 h-3 shrink-0" />
-                        <span className="truncate max-w-[160px]">{po.province_name}</span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {po.phone ? (
-                        <div className="flex items-center gap-1.5 text-slate-300">
-                          <Phone className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span className="font-mono">{po.phone}</span>
+                {pageItems.map((po) => {
+                  const hasCoords = po.latitude !== null && po.latitude !== undefined && po.longitude !== null && po.longitude !== undefined;
+                  const isActive = po.operational_status === 'ACTIVE' || !po.operational_status;
+                  return (
+                    <tr key={po.id} className="hover:bg-slate-800/40 transition-colors align-top">
+                      {/* Cột 1: Mã & Tên Bưu Cục */}
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-100">{po.code} — {po.name}</div>
+                        <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
+                          {po.type && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">{po.type}</span>}
+                          <span>• {po.commune_name}</span>
                         </div>
-                      ) : <span className="text-slate-600">—</span>}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {(po.latitude !== null && po.latitude !== undefined) ? (
-                        <div className="flex items-center gap-1.5 text-slate-300 font-mono text-[10px]">
-                          <Compass className="w-3.5 h-3.5 text-slate-500 shrink-0" />
-                          <span>{po.latitude}, {po.longitude}</span>
+                      </td>
+
+                      {/* Cột 2: Địa Chỉ & Liên Hệ */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-start gap-1.5 text-slate-300">
+                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
+                          <span className="max-w-[220px]">
+                            {po.address || <span className="text-slate-600">Chưa có địa chỉ</span>}
+                            {po.new_ward_name ? `, ${po.new_ward_name}` : ''}
+                          </span>
                         </div>
-                      ) : <span className="text-slate-600">—</span>}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      {po.operational_status === 'INACTIVE' ? (
-                        <span className="px-2.5 py-1 rounded-full bg-rose-500/10 border border-rose-500/30 text-rose-400 text-[11px] font-semibold">Ngừng hoạt động</span>
-                      ) : (
-                        <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-[11px] font-semibold">Đang hoạt động</span>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-medium border border-slate-700">
-                        {po.equipment_count} thiết bị
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex justify-end gap-2">
-                        {onSelectUnitFilter && (
+                        {po.phone && (
+                          <div className="flex items-center gap-1.5 text-slate-500 text-[10px] mt-1">
+                            <Phone className="w-3 h-3 shrink-0" />
+                            <span className="font-mono">{po.phone}</span>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Cột 3: Toạ Độ & Bản Đồ */}
+                      <td className="py-3.5 px-4">
+                        {hasCoords ? (
+                          <>
+                            <div className="text-slate-300 font-mono text-[10px]">{po.latitude}, {po.longitude}</div>
+                            <a
+                              href={`https://www.google.com/maps?q=${po.latitude},${po.longitude}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-[10px] mt-1"
+                            >
+                              <Compass className="w-3 h-3" />
+                              <span>🔵 Mở Google Maps</span>
+                            </a>
+                          </>
+                        ) : <span className="text-slate-600">Chưa có toạ độ</span>}
+                      </td>
+
+                      {/* Cột 4: Trạng Thái & CCDC */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
+                          <span className={isActive ? 'text-emerald-400 text-[11px] font-semibold' : 'text-slate-400 text-[11px] font-semibold'}>
+                            {isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
+                          </span>
+                        </div>
+                        <div className="text-[10px] text-slate-500 mt-1">{po.equipment_count ?? 0} thiết bị</div>
+                      </td>
+
+                      {/* Cột 5: Thao Tác */}
+                      <td className="py-3.5 px-4">
+                        <div className="flex justify-end gap-2">
                           <button
-                            onClick={() => onSelectUnitFilter(po.commune_id, po.id)}
-                            title="Xem CCDC"
+                            onClick={() => setViewingPostOffice(po)}
+                            title="Xem chi tiết"
                             className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
-                        )}
-                        <button
-                          onClick={() => handleEdit(po)}
-                          title="Sửa"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDelete(po)}
-                          title="Xoá"
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                          <button
+                            onClick={() => handleEdit(po)}
+                            title="Sửa"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(po)}
+                            title="Xoá"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -1033,24 +1327,24 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
         {/* Pagination Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">
           <div className="text-xs text-slate-400">
-            Hiển thị <span className="font-bold text-white">{items.length}</span> / <span className="font-bold text-white">{pagination.total}</span> bưu cục
+            Hiển thị <span className="font-bold text-white">{pageItems.length}</span> / <span className="font-bold text-white">{filteredItems.length}</span> bưu cục
           </div>
 
           <div className="flex items-center gap-2">
             <button
-              disabled={pagination.page <= 1}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page - 1 }))}
+              disabled={currentPage <= 1}
+              onClick={() => setPage((prev) => prev - 1)}
               className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Trang trước</span>
             </button>
             <span className="text-xs text-slate-400 px-2 font-medium">
-              Trang {pagination.page} / {pagination.totalPages}
+              Trang {currentPage} / {totalPages}
             </span>
             <button
-              disabled={pagination.page >= pagination.totalPages}
-              onClick={() => setPagination((prev) => ({ ...prev, page: prev.page + 1 }))}
+              disabled={currentPage >= totalPages}
+              onClick={() => setPage((prev) => prev + 1)}
               className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
             >
               <span>Trang sau</span>
@@ -1084,6 +1378,13 @@ export default function UnitTreeView({ onSelectUnitFilter }) {
         <ImportNetworkModal
           onClose={() => setIsImportOpen(false)}
           onSuccess={handleMutationSuccess}
+        />
+      )}
+
+      {viewingPostOffice && (
+        <PostOfficeDetailModal
+          po={viewingPostOffice}
+          onClose={() => setViewingPostOffice(null)}
         />
       )}
     </div>

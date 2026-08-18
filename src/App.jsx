@@ -4,7 +4,9 @@ import Header from './components/Header';
 import LoginView from './components/LoginView';
 import DashboardView from './components/DashboardView';
 import InventoryView from './components/InventoryView';
-import UnitTreeView from './components/UnitTreeView';
+import NetworkListView from './components/NetworkListView';
+import NetworkTreeView from './components/NetworkTreeView';
+import NetworkMapView from './components/NetworkMapView';
 import PersonnelView from './components/PersonnelView';
 import UserAdminView from './components/UserAdminView';
 import CategoryAdminView from './components/CategoryAdminView';
@@ -35,6 +37,9 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [authUser, setAuthUser] = useState(getInitialAuthUser);
   const [inventoryDeviceTypeId, setInventoryDeviceTypeId] = useState(null);
+  // Submenu TĨNH của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure):
+  // 'list' | 'tree' | 'map', mặc định 'list' nếu chưa chọn gì.
+  const [networkSubView, setNetworkSubView] = useState('list');
 
   // Bất kỳ request ghi nào (qua src/utils/api.js) nhận 401 từ backend sẽ tự
   // xoá token + phát event này -> quay về LoginView, không để lộ lỗi JSON thô.
@@ -89,6 +94,11 @@ export default function App() {
               setActiveTab('inventory');
               setInventoryDeviceTypeId(id);
             }}
+            networkSubView={networkSubView}
+            onSelectNetworkSubView={(subView) => {
+              setActiveTab('unittree');
+              setNetworkSubView(subView);
+            }}
           />
 
           {/* Main Content Area */}
@@ -129,11 +139,22 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'unittree' && (
-                <UnitTreeView
-                  key={`tree-${refreshKey}`}
+              {activeTab === 'unittree' && networkSubView === 'list' && (
+                <NetworkListView
+                  key={`net-list-${refreshKey}`}
                   onSelectUnitFilter={handleSelectUnitFromTree}
                 />
+              )}
+
+              {activeTab === 'unittree' && networkSubView === 'tree' && (
+                <NetworkTreeView
+                  key={`net-tree-${refreshKey}`}
+                  onSelectUnitFilter={handleSelectUnitFromTree}
+                />
+              )}
+
+              {activeTab === 'unittree' && networkSubView === 'map' && (
+                <NetworkMapView key={`net-map-${refreshKey}`} />
               )}
 
               {activeTab === 'personnel' && (

@@ -4,6 +4,20 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-18] - Tái cấu trúc Submenu Quản Lý Mạng Lưới + Redesign Danh Sách (feat/network-submenu-restructure)
+
+### Changes
+- **Đổi tên/tách file**: `UnitTreeView.jsx` (bảng CRUD) → `src/components/NetworkListView.jsx`. Khôi phục NGUYÊN VẸN code cây tổ chức READ-ONLY gốc (từ commit lịch sử `93cc342`, đã bị ghi đè ở `feat/network-management-frontend`) thành file mới `src/components/NetworkTreeView.jsx`. Thêm placeholder rỗng `src/components/NetworkMapView.jsx` ("đang phát triển").
+- **src/components/Sidebar.jsx**: mục "Quản Lý Mạng Lưới" nay có thể mở rộng (pattern giống `isInventoryExpanded` của "Quản Lý CCDC", nhưng đây là submenu TĨNH 3 mục cố định "Danh Sách"/"Cây Thư Mục"/"Bản Đồ Điểm Phục Vụ", không fetch động).
+- **src/App.jsx**: thêm state `networkSubView` ('list'|'tree'|'map', mặc định 'list'), render đúng 1 trong 3 component `NetworkListView`/`NetworkTreeView`/`NetworkMapView` khi `activeTab === 'unittree'`.
+- **NetworkListView.jsx — thiết kế lại bảng "Danh Sách"**: ĐÚNG 5 cột gộp cell ("Mã & Tên Bưu Cục", "Địa Chỉ & Liên Hệ", "Toạ Độ & Bản Đồ" kèm link Google Maps, "Trạng Thái & CCDC", "Thao Tác" — 👁 Xem chi tiết/✏️ Sửa/🗑️ Xoá). Nạp toàn bộ danh sách 1 lần (`GET /api/network?limit=2000`, không phân trang server) rồi search/lọc/phân trang phía client để kết hợp được cả 5 điều kiện (search + 4 dropdown: Phường/Xã Mới, BĐX, Loại Hình, Tình Trạng — tất cả suy distinct động từ dữ liệu thật, không hardcode) mà không cần thêm route/param backend mới. Thêm modal "Xem chi tiết" chỉ đọc mới.
+- **Autocomplete "Người Phụ Trách"**: thêm vào modal Thêm/Sửa bưu cục, copy đúng pattern autocomplete "Người Sử Dụng" của `EquipmentDetailModal.jsx` (`GET /api/personnel/search`, gợi ý "Mã HRM-Họ Tên-Mã BC-Mã BĐX"). Sửa dùng `PUT .../responsible_user_id`; Thêm mới dùng `POST /api/network/import` với field `maHrmNguoiPhuTrach` (mã HRM, khác key PUT).
+- **server/index.js (ngoại lệ được PO cho phép)**: mở rộng WHERE clause `search` của `GET /api/network` khớp thêm `p.type`/`p.operational_status`, không chỉ mã/tên như trước.
+- **Tested**: `npm test` 118/118 pass (không đổi hành vi backend ngoài search). Test qua UI thật (Vite dev :3000 proxy backend thật :5000 — đã xin phép PO restart backend production vì tiến trình cũ chưa nạp code mới + tạo 1 tài khoản ADMIN tạm để đăng nhập, xoá lại sau khi xong): submenu mở rộng đúng 3 mục; "Danh Sách" hiện đúng 5 cột gộp cell, link "Mở Google Maps" mở đúng toạ độ thật trên Google Maps, bưu cục chưa có toạ độ hiện "Chưa có toạ độ" không lỗi; 4 dropdown lọc + search mở rộng theo Loại hình ("PH2" → đúng 6 kết quả) đều lọc đúng; "Cây Thư Mục" hiện đúng cây phân cấp BĐT/TP→BĐX→Bưu cục như trước khi bị ghi đè; "Bản Đồ Điểm Phục Vụ" hiện placeholder không lỗi; Sửa bưu cục → gõ tên vào "Người Phụ Trách" → chọn gợi ý → Lưu → verify `GET /api/network` + modal "Xem chi tiết" trả đúng tên/HRM người phụ trách → đã gỡ gán lại (`responsible_user_id = null`) để trả dữ liệu thật về đúng baseline sau khi test xong.
+- Phạm vi: `src/components/Sidebar.jsx`, `src/App.jsx`, `src/components/NetworkListView.jsx` (mới, thay `UnitTreeView.jsx`), `src/components/NetworkTreeView.jsx` (mới), `src/components/NetworkMapView.jsx` (mới), `server/index.js` (chỉ đúng phần mở rộng search `GET /api/network`, ngoại lệ PO cho phép). Không sửa `InventoryView.jsx`/`PersonnelView.jsx`/`EquipmentDetailModal.jsx`/`AddEquipmentModal.jsx`.
+
+---
+
 ## [2026-08-17] - Backend Người Phụ Trách bưu cục (feat/network-responsible-person-backend)
 
 ### Changes
