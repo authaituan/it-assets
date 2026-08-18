@@ -27,6 +27,9 @@
 | `server/auth.js` | JWT sign/verify, hash/verify password (scrypt), middleware `authRequired`/`requireManager`, helper `isManager`. |
 | `scripts/seed.py` | Nạp dữ liệu từ `dulieu.xlsx` vào SQLite. |
 | `src/` | Frontend React (layout, themes, views, modals). |
+| `src/components/NetworkListView.jsx` | (`feat/network-submenu-restructure`, đổi tên từ `UnitTreeView.jsx`) Submenu "Danh Sách" của "Quản Lý Mạng Lưới" — bảng CRUD 5 cột gộp cell + Export/Import Excel + autocomplete "Người Phụ Trách". |
+| `src/components/NetworkTreeView.jsx` | (mới, `feat/network-submenu-restructure`) Submenu "Cây Thư Mục" — cây tổ chức READ-ONLY (BĐT/TP→BĐX→Bưu cục), khôi phục nguyên vẹn từ commit lịch sử `93cc342`. |
+| `src/components/NetworkMapView.jsx` | (mới, `feat/network-submenu-restructure`) Submenu "Bản Đồ Điểm Phục Vụ" — PLACEHOLDER, hạng mục thật làm sau (chỉ thay nội dung file này). |
 
 ## Luồng phân quyền (RBAC) — hiện tại
 1. Client `POST /api/auth/login` với `{ hrm_code, password }`.
@@ -56,6 +59,9 @@
   thêm `responsible_user_id`/`responsible_user_name`/`responsible_user_hrm`;
   `PUT /api/network/post-offices/:id` nhận thêm `responsible_user_id` (validate tồn tại
   trong `users`); export/import thêm field `maHrmNguoiPhuTrach`.
+  ⚠️ Từ `feat/network-submenu-restructure` (2026-08-18, ngoại lệ phạm vi PO cho phép):
+  `search` của `GET /api/network` mở rộng khớp thêm `p.type`/`p.operational_status`,
+  không chỉ `p.code`/`p.name` như trước.
 
 ## Helper tổ chức dùng chung (`server/index.js`, `feat/network-management-backend`)
 - `resolveOrCreateOrgChain(row, report, rowNum)`: resolve/tạo Tỉnh→BĐX→Bưu cục theo

@@ -1302,9 +1302,11 @@ app.get('/api/network', authRequired, requireManager, (req, res) => {
     let params = [];
 
     if (search && search.trim()) {
-      whereClause.push("(p.code LIKE ? OR p.name LIKE ?)");
+      // Mở rộng (feat/network-submenu-restructure): khớp thêm cả Loại hình (p.type)
+      // và Tình trạng hoạt động (p.operational_status), không chỉ mã/tên như trước.
+      whereClause.push("(p.code LIKE ? OR p.name LIKE ? OR p.type LIKE ? OR p.operational_status LIKE ?)");
       const term = `%${search.trim()}%`;
-      params.push(term, term);
+      params.push(term, term, term, term);
     }
     if (communeId) {
       whereClause.push("p.commune_id = ?");

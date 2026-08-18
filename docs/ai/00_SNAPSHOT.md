@@ -526,6 +526,44 @@
   baseline (353 thiết bị/44 BĐX/206 bưu cục/3 tài khoản gốc).
 - `npm test`: 111/111 pass (không đổi backend).
 
+## Submenu Quản Lý Mạng Lưới + Redesign Danh Sách (mới, `feat/network-submenu-restructure`)
+- **Cấu trúc file mới**: `UnitTreeView.jsx` (bảng CRUD của `feat/network-management-frontend`)
+  đổi tên thành `src/components/NetworkListView.jsx`. Khôi phục NGUYÊN VẸN code cây tổ
+  chức READ-ONLY gốc (commit lịch sử `93cc342`, bị ghi đè ở `feat/network-management-frontend`)
+  thành file mới `src/components/NetworkTreeView.jsx`. Thêm placeholder rỗng
+  `src/components/NetworkMapView.jsx` ("Tính năng Bản Đồ đang được phát triển, sẽ sớm ra
+  mắt" — hạng mục Bản Đồ thật sẽ làm sau, CHỈ cần thay nội dung file này).
+- **`src/components/Sidebar.jsx`**: mục "Quản Lý Mạng Lưới" nay expand/collapse được (copy
+  pattern `isInventoryExpanded` của "Quản Lý CCDC") — nhưng là submenu TĨNH 3 mục cố định
+  "Danh Sách"/"Cây Thư Mục"/"Bản Đồ Điểm Phục Vụ" (KHÔNG fetch động như submenu CCDC).
+- **`src/App.jsx`**: state `networkSubView` ('list'|'tree'|'map', mặc định 'list') quyết
+  định render `NetworkListView`/`NetworkTreeView`/`NetworkMapView` khi `activeTab === 'unittree'`.
+- **`NetworkListView.jsx` — "Danh Sách" thiết kế lại**: bảng ĐÚNG 5 cột gộp cell (không
+  liệt kê phẳng field riêng lẻ): "Mã & Tên Bưu Cục", "Địa Chỉ & Liên Hệ", "Toạ Độ & Bản Đồ"
+  (link `https://www.google.com/maps?q={lat},{lng}` mở tab mới, hoặc "Chưa có toạ độ"),
+  "Trạng Thái & CCDC" (chấm màu + `equipment_count` có sẵn từ `GET /api/network`), "Thao
+  Tác" (👁 Xem chi tiết modal mới chỉ đọc / ✏️ Sửa / 🗑️ Xoá). Nạp TOÀN BỘ danh sách 1 lần
+  (`GET /api/network?limit=2000`, không phân trang server) rồi search/lọc/phân trang phía
+  client — cho phép kết hợp search + 4 dropdown lọc (Phường/Xã Mới, BĐX, Loại Hình, Tình
+  Trạng — tất cả suy distinct ĐỘNG từ dữ liệu thật đã nạp, không hardcode) cùng lúc mà
+  không cần thêm route/param backend mới.
+- **Autocomplete "Người Phụ Trách"**: thêm vào modal Thêm/Sửa bưu cục, copy đúng pattern
+  autocomplete "Người Sử Dụng" của `EquipmentDetailModal.jsx` (debounce gọi
+  `GET /api/personnel/search`, gợi ý "Mã HRM-Họ Tên-Mã BC-Mã BĐX"). Sửa (PUT) dùng key
+  `responsible_user_id`; Thêm mới (qua `POST /api/network/import` 1 dòng) dùng key Excel
+  `maHrmNguoiPhuTrach` (mã HRM, khác key PUT — đúng theo bảng field backend).
+- **`server/index.js`** (ngoại lệ phạm vi PO cho phép riêng hạng mục này): mở rộng WHERE
+  clause `search` của `GET /api/network` khớp thêm `p.type`/`p.operational_status`, không
+  chỉ mã/tên như trước — phục vụ ô tìm kiếm mở rộng ở "Danh Sách".
+- Test qua UI thật (Vite dev :3000 + backend production thật :5000 — đã xin phép PO restart
+  backend vì tiến trình cũ chưa nạp code mới, và tạo 1 tài khoản ADMIN tạm để đăng nhập,
+  xoá lại sau khi xong): submenu đúng 3 mục; "Danh Sách" đúng 5 cột gộp cell, Google Maps
+  mở đúng toạ độ thật, "Chưa có toạ độ" không lỗi; 4 dropdown + search mở rộng Loại hình
+  ("PH2" → đúng 6/6 kết quả) lọc đúng; "Cây Thư Mục" đúng cây phân cấp gốc; "Bản Đồ" hiện
+  placeholder không lỗi; autocomplete "Người Phụ Trách" gán/lưu/hiển thị đúng end-to-end,
+  đã gỡ gán lại về baseline sau khi test. `npm test`: **118/118 pass** (không đổi backend
+  ngoài phần search được cho phép).
+
 ## Autocomplete Gán Người Sử Dụng (mới, `feat/personnel-autocomplete`)
 - `src/components/EquipmentDetailModal.jsx` (chế độ Sửa) và
   `src/components/AddEquipmentModal.jsx`: ô nhập text tự do "Người Sử Dụng"
