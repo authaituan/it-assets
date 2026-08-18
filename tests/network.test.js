@@ -269,6 +269,120 @@ test('PUT /api/network/post-offices/:id name rỗng -> 400', async () => {
 });
 
 // ==========================================
+// Người Phụ Trách bưu cục (responsible_user_id) — feat/network-responsible-person-backend
+// ==========================================
+
+test('PUT /api/network/post-offices/:id gán responsible_user_id hợp lệ -> 200, lưu đúng', async () => {
+  // Seed 1 "nhân sự" trong bảng users (không cần password_hash — cùng bảng dùng
+  // chung với Personnel, giống cách assigned_user_id của equipments đang làm).
+  const personnelId = 'a1b2c3d4-net-resp-0001';
+  ctx.db.prepare("INSERT INTO users (id, hrm_code, full_name) VALUES (?, ?, ?)")
+    .run(personnelId, 'NET_RESP_01', 'Người Phụ Trách Test');
+
+  const po = ctx.db.prepare("SELECT id FROM post_offices WHERE code = 'NETPO'").get();
+  const { status } = await call('PUT', `/api/network/post-offices/${po.id}`, {
+    token: mgrToken,
+    body: { responsible_user_id: personnelId }
+  });
+  assert.equal(status, 200);
+
+  const after_ = ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE id = ?").get(po.id);
+  assert.equal(after_.responsible_user_id, personnelId);
+});
+
+test('PUT /api/network/post-offices/:id gán responsible_user_id KHÔNG tồn tại -> 400', async () => {
+  const po = ctx.db.prepare("SELECT id FROM post_offices WHERE code = 'NETPO'").get();
+  const before_ = ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE id = ?").get(po.id).responsible_user_id;
+
+  const { status, body } = await call('PUT', `/api/network/post-offices/${po.id}`, {
+    token: mgrToken,
+    body: { responsible_user_id: 'khong-ton-tai' }
+  });
+  assert.equal(status, 400);
+  assert.match(body.error, /Người phụ trách/);
+
+  const after_ = ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE id = ?").get(po.id).responsible_user_id;
+  assert.equal(after_, before_, 'không được ghi đè khi validate thất bại');
+});
+
+test('PUT /api/network/post-offices/:id responsible_user_id = null -> gỡ gán', async () => {
+  const po = ctx.db.prepare("SELECT id FROM post_offices WHERE code = 'NETPO'").get();
+  assert.ok(ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE id = ?").get(po.id).responsible_user_id, 'phải đang có gán từ test trước');
+
+  const { status } = await call('PUT', `/api/network/post-offices/${po.id}`, {
+    token: mgrToken,
+    body: { responsible_user_id: null }
+  });
+  assert.equal(status, 200);
+
+  const after_ = ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE id = ?").get(po.id).responsible_user_id;
+  assert.equal(after_, null);
+});
+
+test('GET /api/network trả đúng tên/mã HRM người phụ trách khi có gán', async () => {
+  const personnelId = 'a1b2c3d4-net-resp-0002';
+  ctx.db.prepare("INSERT INTO users (id, hrm_code, full_name) VALUES (?, ?, ?)")
+    .run(personnelId, 'NET_RESP_02', 'Trần Thị Phụ Trách');
+
+  const po = ctx.db.prepare("SELECT id FROM post_offices WHERE code = 'NETPO'").get();
+  const putRes = await call('PUT', `/api/network/post-offices/${po.id}`, {
+    token: mgrToken,
+    body: { responsible_user_id: personnelId }
+  });
+  assert.equal(putRes.status, 200);
+
+  const { status, body } = await call('GET', '/api/network?search=NETPO', { token: mgrToken });
+  assert.equal(status, 200);
+  const row = body.items.find((it) => it.code === 'NETPO');
+  assert.ok(row);
+  assert.equal(row.responsible_user_id, personnelId);
+  assert.equal(row.responsible_user_name, 'Trần Thị Phụ Trách');
+  assert.equal(row.responsible_user_hrm, 'NET_RESP_02');
+});
+
+test('POST /api/network/import resolve maHrmNguoiPhuTrach -> responsible_user_id đúng', async () => {
+  const { status, body } = await call('POST', '/api/network/import', {
+    token: mgrToken,
+    body: {
+      rows: [{
+        maBdtTp: 'NETP', maBdx: 'NETC', maMbc: 'NETPO_RESP_IMPORT', tenBuuCuc: 'Bưu Cục Phụ Trách Import',
+        maHrmNguoiPhuTrach: 'NET_RESP_01'
+      }]
+    }
+  });
+  assert.equal(status, 200);
+  assert.equal(body.errors.length, 0);
+
+  const po = ctx.db.prepare("SELECT responsible_user_id FROM post_offices WHERE code = 'NETPO_RESP_IMPORT'").get();
+  const personnel = ctx.db.prepare("SELECT id FROM users WHERE hrm_code = 'NET_RESP_01'").get();
+  assert.equal(po.responsible_user_id, personnel.id);
+});
+
+test('POST /api/network/import maHrmNguoiPhuTrach KHÔNG tồn tại -> 400, không ghi dòng nào', async () => {
+  const beforePoTotal = poCount();
+  const { status, body } = await call('POST', '/api/network/import', {
+    token: mgrToken,
+    body: {
+      rows: [{
+        maBdtTp: 'NETP', maBdx: 'NETC', maMbc: 'NETPO_RESP_BAD', tenBuuCuc: 'Bưu Cục Phụ Trách Sai',
+        maHrmNguoiPhuTrach: 'HRM_KHONG_TON_TAI_XYZ'
+      }]
+    }
+  });
+  assert.equal(status, 400);
+  assert.match(body.error, /maHrmNguoiPhuTrach/);
+  assert.equal(poCount(), beforePoTotal, 'không được tạo bưu cục khi resolve người phụ trách lỗi');
+});
+
+test('GET /api/network/export-data trả đúng maHrmNguoiPhuTrach', async () => {
+  const { status, body } = await call('GET', '/api/network/export-data', { token: mgrToken });
+  assert.equal(status, 200);
+  const row = body.items.find((it) => it.maMbc === 'NETPO_RESP_IMPORT');
+  assert.ok(row);
+  assert.equal(row.maHrmNguoiPhuTrach, 'NET_RESP_01');
+});
+
+// ==========================================
 // DELETE /api/network/post-offices/:id — chặn khi có FK, xoá được khi không
 // ==========================================
 

@@ -51,20 +51,41 @@
 - `GET /api/network`, `POST /api/network/import`, `GET /api/network/export-data`,
   `PUT /api/network/post-offices/:id`, `DELETE /api/network/post-offices/:id`  ← mới
   (`feat/network-management-backend`), CHỈ các route này (qua `resolveOrCreateOrgChain`)
-  được tạo mới Tỉnh/BĐX/Bưu cục. Xem bảng 20 field bên dưới.
+  được tạo mới Tỉnh/BĐX/Bưu cục. Xem bảng 21 field bên dưới.
+  ⚠️ Từ `feat/network-responsible-person-backend` (2026-08-17): `GET /api/network` trả
+  thêm `responsible_user_id`/`responsible_user_name`/`responsible_user_hrm`;
+  `PUT /api/network/post-offices/:id` nhận thêm `responsible_user_id` (validate tồn tại
+  trong `users`); export/import thêm field `maHrmNguoiPhuTrach`.
 
 ## Helper tổ chức dùng chung (`server/index.js`, `feat/network-management-backend`)
 - `resolveOrCreateOrgChain(row, report, rowNum)`: resolve/tạo Tỉnh→BĐX→Bưu cục theo
   `code` (logic tách nguyên vẹn từ Equipment Import cũ), lưu thêm 9 cột mới của
-  `post_offices`. Mutate `report` (provincesCreated/communesCreated/postOfficesCreated/
-  postOfficesUpdated). Phải gọi trong `db.transaction()`. CHỈ dùng cho route mạng lưới.
+  `post_offices` + (từ `feat/network-responsible-person-backend`) resolve
+  `responsible_user_id` qua `maHrmNguoiPhuTrach` (`users.hrm_code`, throw lỗi rõ ràng
+  nếu không tồn tại). Mutate `report` (provincesCreated/communesCreated/
+  postOfficesCreated/postOfficesUpdated). Phải gọi trong `db.transaction()`. CHỈ dùng
+  cho route mạng lưới.
 - `requireExistingPostOffice(maMbc)`: chỉ SELECT theo `code`, KHÔNG tạo mới; throw
   lỗi rõ ràng nếu không thấy. Dùng cho Equipment Import (Phương án B).
 - `parseFloatOrNull(v)`: parse latitude/longitude (rỗng/không hợp lệ → null).
 
-## Quản Lý Mạng Lưới — bảng 20 field JSON (import ⇄ export dùng CHUNG key)
-Nguồn: file Excel mạng lưới PO cung cấp. Dùng cho `POST /api/network/import`
-(request `rows[]`) và `GET /api/network/export-data` (response `items[]`).
+## Người Phụ Trách bưu cục (`server/db.js`/`server/index.js`, `feat/network-responsible-person-backend`)
+- `post_offices.responsible_user_id TEXT` — **KHÔNG có FOREIGN KEY cứng** (giống
+  `equipments.assigned_user_id`), validate tồn tại trong `users` ở tầng ứng dụng.
+- `GET /api/network` response: `responsible_user_id`, `responsible_user_name`
+  (`users.full_name` qua LEFT JOIN), `responsible_user_hrm` (`users.hrm_code`) — mẫu
+  từ `assigned_user_name`/`assigned_user_hrm` của `GET /api/equipments`.
+- `PUT /api/network/post-offices/:id` body: `responsible_user_id` (key khớp tên cột DB
+  thật, KHÔNG phải kiểu Excel) — `undefined` giữ nguyên, `null`/`''` gỡ gán, giá trị
+  khác validate tồn tại (400 nếu không) — copy `PUT /api/equipments/:id`.
+- Export/Import Excel: field `maHrmNguoiPhuTrach` (mã HRM), resolve qua
+  `resolveOrCreateOrgChain()` — xem hàng cuối bảng 21 field bên dưới.
+
+## Quản Lý Mạng Lưới — bảng 21 field JSON (import ⇄ export dùng CHUNG key)
+Nguồn: file Excel mạng lưới PO cung cấp (20 field gốc) + 1 field mới
+`maHrmNguoiPhuTrach` (`feat/network-responsible-person-backend`). Dùng cho
+`POST /api/network/import` (request `rows[]`) và `GET /api/network/export-data`
+(response `items[]`).
 
 | Nhóm | Key JSON | Cột DB (`post_offices`/tổ chức) | Ghi chú |
 |---|---|---|---|
@@ -88,6 +109,7 @@ Nguồn: file Excel mạng lưới PO cung cấp. Dùng cho `POST /api/network/i
 | (mới) | `tinhTrangHoatDong` | `post_offices.operational_status` | mặc định `ACTIVE` khi tạo |
 | (mới) | `viDo` | `post_offices.latitude` (REAL) | |
 | (mới) | `kinhDo` | `post_offices.longitude` (REAL) | |
+| (mới, `feat/network-responsible-person-backend`) | `maHrmNguoiPhuTrach` | `post_offices.responsible_user_id` qua `users.hrm_code` | resolve theo mã HRM, throw lỗi rõ ràng + chặn cả dòng nếu không tồn tại |
 
 Import UPDATE (mã bưu cục đã có): chỉ ghi đè field có giá trị KHÔNG RỖNG, giữ nguyên
 field vắng mặt (như Equipment Import). `DELETE` bưu cục = XOÁ CỨNG, bắt lỗi FK nếu còn
@@ -159,4 +181,6 @@ nguyên giá trị cũ. `asset_tag` không bao giờ đổi.
   với `data/ccdc.db` thật. `tests/hrm.test.js` (port 5903) đã xoá cùng route HRM cũ, thay
   bằng `tests/personnel.test.js` (giữ nguyên port 5903). `tests/equipment-import-export.test.js`
   (port 5905) phủ `GET /api/equipments/export-data` + `POST /api/equipments/import`.
-  `tests/network.test.js` (mới, port 5906) phủ 5 route Quản Lý Mạng Lưới. Tổng **111 test**.
+  `tests/network.test.js` (port 5906) phủ 5 route Quản Lý Mạng Lưới + Người Phụ Trách
+  (`responsible_user_id`, `feat/network-responsible-person-backend`, 24 test trong file
+  này). Tổng **118 test**.
