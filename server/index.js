@@ -933,6 +933,17 @@ function resolveOrCreateOrgChain(row, report, rowNum) {
     latitude: parseFloatOrNull(row.viDo),
     longitude: parseFloatOrNull(row.kinhDo)
   };
+  // Người Phụ Trách bưu cục (resolve theo mã HRM, giống cách Equipment Import
+  // resolve maHrmNguoiSuDung -> assigned_user_id). undefined = không đụng tới
+  // field này (giữ nguyên khi UPDATE, null khi CREATE).
+  const maHrmPhuTrach = (row.maHrmNguoiPhuTrach || '').trim();
+  let resolvedResponsibleUserId; // undefined = không có trong dòng import
+  if (maHrmPhuTrach) {
+    const ru = db.prepare("SELECT id FROM users WHERE hrm_code = ?").get(maHrmPhuTrach);
+    if (!ru) throw new Error(`Dòng ${rowNum}: maHrmNguoiPhuTrach "${maHrmPhuTrach}" không tồn tại trong hệ thống`);
+    resolvedResponsibleUserId = ru.id;
+  }
+
   let postOffice = db.prepare("SELECT * FROM post_offices WHERE code = ?").get(maMbc);
   if (!postOffice) {
     if (!commune) {
@@ -943,13 +954,13 @@ function resolveOrCreateOrgChain(row, report, rowNum) {
       INSERT INTO post_offices
         (id, code, name, type, address, commune_id, bdkv_code, bdkv_name,
          old_ward_code, old_ward_name, district_name, new_ward_code, new_ward_name,
-         phone, operational_status, latitude, longitude)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+         phone, operational_status, latitude, longitude, responsible_user_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       poid, maMbc, tenBuuCuc || maMbc, nf.type || 'GD3', nf.address, commune.id,
       nf.bdkv_code, nf.bdkv_name, nf.old_ward_code, nf.old_ward_name, nf.district_name,
       nf.new_ward_code, nf.new_ward_name, nf.phone, nf.operational_status || 'ACTIVE',
-      nf.latitude, nf.longitude
+      nf.latitude, nf.longitude, resolvedResponsibleUserId || null
     );
     postOffice = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(poid);
     if (typeof report.postOfficesCreated === 'number') report.postOfficesCreated++;
@@ -961,7 +972,8 @@ function resolveOrCreateOrgChain(row, report, rowNum) {
       UPDATE post_offices SET
         name = ?, type = ?, address = ?, bdkv_code = ?, bdkv_name = ?,
         old_ward_code = ?, old_ward_name = ?, district_name = ?, new_ward_code = ?,
-        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?
+        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?,
+        responsible_user_id = ?
       WHERE id = ?
     `).run(
       tenBuuCuc || postOffice.name,
@@ -978,6 +990,7 @@ function resolveOrCreateOrgChain(row, report, rowNum) {
       nf.operational_status || postOffice.operational_status,
       nf.latitude !== null ? nf.latitude : postOffice.latitude,
       nf.longitude !== null ? nf.longitude : postOffice.longitude,
+      resolvedResponsibleUserId !== undefined ? resolvedResponsibleUserId : postOffice.responsible_user_id,
       postOffice.id
     );
     postOffice = db.prepare("SELECT * FROM post_offices WHERE id = ?").get(postOffice.id);
@@ -1310,10 +1323,12 @@ app.get('/api/network', authRequired, requireManager, (req, res) => {
         p.*,
         c.code as commune_code, c.name as commune_name,
         pv.code as province_code, pv.name as province_name,
-        (SELECT COUNT(*) FROM equipments e WHERE e.post_office_id = p.id AND e.deleted_at IS NULL) as equipment_count
+        (SELECT COUNT(*) FROM equipments e WHERE e.post_office_id = p.id AND e.deleted_at IS NULL) as equipment_count,
+        ur.full_name as responsible_user_name, ur.hrm_code as responsible_user_hrm
       FROM post_offices p
       JOIN commune_post_offices c ON p.commune_id = c.id
       JOIN province_post_offices pv ON c.province_id = pv.id
+      LEFT JOIN users ur ON p.responsible_user_id = ur.id
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.code ASC
       LIMIT ? OFFSET ?
@@ -1398,10 +1413,12 @@ app.get('/api/network/export-data', authRequired, requireManager, (req, res) => 
       SELECT
         p.*,
         c.code as commune_code, c.name as commune_name, c.central_commune_code as commune_central_code,
-        pv.code as province_code, pv.name as province_name
+        pv.code as province_code, pv.name as province_name,
+        ur.hrm_code as responsible_user_hrm
       FROM post_offices p
       JOIN commune_post_offices c ON p.commune_id = c.id
       JOIN province_post_offices pv ON c.province_id = pv.id
+      LEFT JOIN users ur ON p.responsible_user_id = ur.id
       WHERE ${whereClause.join(' AND ')}
       ORDER BY p.code ASC
     `).all(...params);
@@ -1426,7 +1443,8 @@ app.get('/api/network/export-data', authRequired, requireManager, (req, res) => 
       soDienThoai: r.phone || '',
       tinhTrangHoatDong: r.operational_status || '',
       viDo: (r.latitude !== null && r.latitude !== undefined) ? r.latitude : '',
-      kinhDo: (r.longitude !== null && r.longitude !== undefined) ? r.longitude : ''
+      kinhDo: (r.longitude !== null && r.longitude !== undefined) ? r.longitude : '',
+      maHrmNguoiPhuTrach: r.responsible_user_hrm || ''
     }));
 
     res.json({ items, total: items.length });
@@ -1468,11 +1486,26 @@ app.put('/api/network/post-offices/:id', authRequired, requireManager, (req, res
     const finalLat = b.latitude !== undefined ? parseFloatOrNull(b.latitude) : existing.latitude;
     const finalLong = b.longitude !== undefined ? parseFloatOrNull(b.longitude) : existing.longitude;
 
+    // responsible_user_id: nullable — undefined -> giữ nguyên; null/'' -> gỡ
+    // gán (bỏ người phụ trách); giá trị khác -> validate tồn tại trong users.
+    // Copy đúng cách PUT /api/equipments/:id validate assigned_user_id.
+    let finalResponsibleUserId = existing.responsible_user_id;
+    if (b.responsible_user_id !== undefined) {
+      if (b.responsible_user_id === null || b.responsible_user_id === '') {
+        finalResponsibleUserId = null;
+      } else {
+        const userExists = db.prepare("SELECT 1 FROM users WHERE id = ?").get(b.responsible_user_id);
+        if (!userExists) return res.status(400).json({ error: 'Người phụ trách (responsible_user_id) không tồn tại trong hệ thống' });
+        finalResponsibleUserId = b.responsible_user_id;
+      }
+    }
+
     db.prepare(`
       UPDATE post_offices SET
         name = ?, type = ?, address = ?, commune_id = ?, bdkv_code = ?, bdkv_name = ?,
         old_ward_code = ?, old_ward_name = ?, district_name = ?, new_ward_code = ?,
-        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?
+        new_ward_name = ?, phone = ?, operational_status = ?, latitude = ?, longitude = ?,
+        responsible_user_id = ?
       WHERE id = ?
     `).run(
       finalName,
@@ -1490,6 +1523,7 @@ app.put('/api/network/post-offices/:id', authRequired, requireManager, (req, res
       pick('operational_status', existing.operational_status),
       finalLat,
       finalLong,
+      finalResponsibleUserId,
       req.params.id
     );
 

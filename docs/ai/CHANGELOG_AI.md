@@ -4,6 +4,18 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-17] - Backend Người Phụ Trách bưu cục (feat/network-responsible-person-backend)
+
+### Changes
+- **server/db.js**: migration idempotent thêm cột `post_offices.responsible_user_id TEXT` (cả CREATE TABLE gốc lẫn ALTER TABLE). KHÔNG FOREIGN KEY cứng — validate ở tầng ứng dụng, giống `equipments.assigned_user_id`.
+- **server/index.js**: `GET /api/network` JOIN thêm `users` trả `responsible_user_id`/`responsible_user_name`/`responsible_user_hrm` (mẫu từ `assigned_user_name`/`assigned_user_hrm` của `GET /api/equipments`). `PUT /api/network/post-offices/:id` nhận thêm `responsible_user_id` (nullable, validate tồn tại — copy `PUT /api/equipments/:id`). `GET /api/network/export-data`/`POST /api/network/import` thêm field `maHrmNguoiPhuTrach`, resolve qua `resolveOrCreateOrgChain()` mở rộng (tra `users.hrm_code`, throw lỗi rõ ràng nếu không tồn tại, chặn cả dòng).
+- **tests/network.test.js**: thêm 7 test case (gán hợp lệ, gán ID không tồn tại → 400, gỡ gán null, GET trả đúng tên/HRM, import resolve đúng, import resolve lỗi → 400 không ghi gì, export trả đúng field) — 24 test trong file này.
+- **Tested**: `npm test` 118/118 pass. Test thêm bằng curl trên DB tạm (port 5921, monkey-patch, KHÔNG chạm `data/ccdc.db` — verify MD5 trước/sau giống hệt, có server production đang chạy): gán người phụ trách hợp lệ → lưu đúng + GET trả đúng tên/HRM; gán ID không tồn tại → 400; export đúng `maHrmNguoiPhuTrach`; import bưu cục mới kèm mã HRM hợp lệ → resolve đúng; import mã HRM không tồn tại → 400, không tạo bưu cục.
+- **Field JSON mới** (cho 2 hạng mục frontend sau dùng đúng): export/import Excel key `maHrmNguoiPhuTrach`; `GET /api/network` response key `responsible_user_id`/`responsible_user_name`/`responsible_user_hrm`; `PUT /api/network/post-offices/:id` request body key `responsible_user_id` (khác key Excel, khớp tên cột DB).
+- Phạm vi: CHỈ `server/db.js`, `server/index.js`, `tests/network.test.js`. Không sửa `server/auth.js`, không đụng file `.jsx` nào.
+
+---
+
 ## [2026-08-17] - Frontend Quản Lý Mạng Lưới (feat/network-management-frontend)
 
 ### Changes

@@ -53,6 +53,9 @@ db.exec(`
     operational_status TEXT DEFAULT 'ACTIVE', -- Tình trạng hoạt động
     latitude REAL,               -- Vĩ độ (toạ độ bản đồ)
     longitude REAL,              -- Kinh độ
+    responsible_user_id TEXT,    -- Người Phụ Trách bưu cục (users.id). KHÔNG có FOREIGN
+                                  -- KEY cứng (giống equipments.assigned_user_id) — validate ở
+                                  -- tầng ứng dụng, dễ xử lý khi xoá nhân sự sau này.
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(commune_id) REFERENCES commune_post_offices(id)
   );
@@ -269,6 +272,24 @@ try {
   }
 } catch (err) {
   console.error('[db] Lỗi migration post_offices network columns:', err.message);
+}
+
+// ==========================================
+// Migration an toàn cho DB đã tồn tại (idempotent, cùng pattern các migration
+// ở trên): thêm cột post_offices.responsible_user_id (Người Phụ Trách bưu cục,
+// feat/network-responsible-person-backend). KHÔNG có FOREIGN KEY cứng — giống
+// equipments.assigned_user_id, validate tồn tại ở tầng ứng dụng
+// (server/index.js) thay vì ràng buộc DB, để dễ xử lý khi xoá nhân sự sau này.
+// ==========================================
+try {
+  const poCols2 = db.prepare("PRAGMA table_info(post_offices)").all();
+  const hasResponsibleUserId = poCols2.some((col) => col.name === 'responsible_user_id');
+  if (!hasResponsibleUserId) {
+    db.exec("ALTER TABLE post_offices ADD COLUMN responsible_user_id TEXT");
+    console.log('[db] Migration: đã thêm cột post_offices.responsible_user_id (Người Phụ Trách)');
+  }
+} catch (err) {
+  console.error('[db] Lỗi migration responsible_user_id:', err.message);
 }
 
 module.exports = db;

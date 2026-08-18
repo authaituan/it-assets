@@ -437,6 +437,43 @@
 - ✅ Drift READ-ONLY của `UnitTreeView.jsx` đã được xử lý ở `feat/network-management-frontend`
   (xem section "Frontend Quản Lý Mạng Lưới" ngay bên dưới).
 
+## Người Phụ Trách bưu cục (mới, `feat/network-responsible-person-backend`, CHỈ BACKEND)
+- **Migration schema** (`server/db.js`): thêm cột `post_offices.responsible_user_id TEXT`
+  (idempotent, cả CREATE TABLE gốc lẫn ALTER TABLE cho DB cũ). **KHÔNG có FOREIGN KEY
+  cứng** — giống hệt cách `equipments.assigned_user_id` đang làm, validate tồn tại ở
+  tầng ứng dụng (không ở DB) để dễ xử lý khi xoá nhân sự sau này.
+- `GET /api/network` — nay JOIN thêm `users` (LEFT JOIN qua `responsible_user_id`), trả
+  thêm `responsible_user_id`, `responsible_user_name` (`users.full_name`),
+  `responsible_user_hrm` (`users.hrm_code`) — theo đúng mẫu `assigned_user_name`/
+  `assigned_user_hrm` của `GET /api/equipments`.
+- `PUT /api/network/post-offices/:id` — nhận thêm `responsible_user_id` (optional,
+  nullable): `undefined` → giữ nguyên; `null`/`''` → gỡ gán; giá trị khác → validate
+  tồn tại trong `users` (400 rõ ràng nếu không) — copy đúng cách `PUT /api/equipments/:id`
+  validate `assigned_user_id`.
+- `GET /api/network/export-data` / `POST /api/network/import` — thêm field
+  `maHrmNguoiPhuTrach` (mã HRM người phụ trách) vào cả export lẫn import. Import resolve
+  qua `resolveOrCreateOrgChain()` (mở rộng: tra `users.hrm_code`, throw lỗi rõ ràng nếu
+  không tồn tại — CHẶN cả dòng, không tạo bưu cục) — copy đúng cách Equipment Import
+  resolve `maHrmNguoiSuDung` → `assigned_user_id`. `undefined` (field vắng mặt trong
+  dòng import) → giữ nguyên khi UPDATE, `null` khi CREATE mới.
+- **Field JSON mới** (dùng cho 2 hạng mục frontend sau — Quản Lý Mạng Lưới UI +
+  autocomplete): key `maHrmNguoiPhuTrach` (export/import Excel, nối tiếp 20 field cũ
+  → tổng 21 field), và 3 key response của `GET /api/network`:
+  `responsible_user_id`/`responsible_user_name`/`responsible_user_hrm`. PUT body dùng
+  key `responsible_user_id` (khớp param DB thật, giống các field khác của route PUT
+  này — KHÔNG dùng key kiểu Excel `maHrmNguoiPhuTrach` ở route PUT).
+- Test: thêm 7 test case mới vào `tests/network.test.js` (gán hợp lệ, gán ID không tồn
+  tại → 400, gỡ gán bằng null, `GET /api/network` trả đúng tên/HRM, import resolve
+  đúng, import resolve lỗi → 400 không ghi dòng nào, export trả đúng field) — tổng
+  **24 test** trong file này. `npm test`: **118/118 pass** (111 cũ không đổi).
+- Đã test thêm bằng curl trên DB tạm riêng (`os.tmpdir()`, port 5921, monkey-patch
+  `better-sqlite3` giống test harness) — xác nhận CÓ server production đang chạy sống
+  (cổng 5000/3000) trước khi test nên KHÔNG chạm `data/ccdc.db` (verify MD5 trước/sau
+  giống hệt): gán người phụ trách hợp lệ → lưu đúng + `GET /api/network` trả đúng tên/
+  HRM; gán ID không tồn tại → 400 rõ ràng; export trả đúng `maHrmNguoiPhuTrach`; import
+  bưu cục mới kèm `maHrmNguoiPhuTrach` hợp lệ → resolve đúng; import với mã HRM không
+  tồn tại → 400, không tạo bưu cục nào.
+
 ## Frontend Quản Lý Mạng Lưới (mới, `feat/network-management-frontend`)
 - `src/components/Sidebar.jsx`: đổi nhãn menu "Sơ Đồ BĐX & Bưu Cục" → "Quản Lý Mạng
   Lưới" (giữ nguyên `id: 'unittree'` + icon `Network`, không đổi gì khác trong
