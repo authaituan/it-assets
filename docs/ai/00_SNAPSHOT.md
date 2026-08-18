@@ -1,10 +1,12 @@
 # 00 — SNAPSHOT Dự Án (it-assets / Quản lý CCDC Bưu điện Huế)
 
-> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-12** — **Vòng 2 hoàn
-> tất** (commit `666329a`) + **đang chạy thật trên mạng LAN nội bộ** tại
-> `http://10.47.33.33:3000` (xem `06_DEPLOYMENT.md` mục 4) + thêm Submenu động cho Quản
-> Lý CCDC (PR #8) + fix 1 lỗi nghiêm trọng phát sinh (server crash khi có `dist/`, xem
-> `04_DECISIONS.md` mục 8).
+> Ảnh chụp nhanh hiện trạng hệ thống. Cập nhật gần nhất: **2026-08-18** —
+> **⚠️ BASELINE DỮ LIỆU THẬT ĐÃ ĐỔI: 332 thiết bị / 185 bưu cục / 44 BĐX** (trước đó là
+> 353/206/44 — đã dọn 21 bưu cục "ma" + 22 thiết bị rác gán nhầm BĐX mặc định 5300 từ
+> script seed gốc, xem `04_DECISIONS.md` mục 15). MỌI Dev AI đọc file này TỪ NAY dùng
+> đúng con số 332/185, KHÔNG dùng lại "353" nữa dù thấy nhắc ở các mục lịch sử phía dưới.
+> Hệ thống đang chạy thật trên mạng LAN nội bộ tại `http://10.47.33.33:3000` (xem
+> `06_DEPLOYMENT.md` mục 4).
 > Nội dung được dựng từ code thực tế (`server/`, `package.json`, `scripts/`), không suy đoán.
 
 ## Tổng quan

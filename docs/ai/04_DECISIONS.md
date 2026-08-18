@@ -329,6 +329,37 @@ Frontend Import CCDC hiện tại vẫn hoạt động (field report vẫn còn,
 CCDC chứa mã bưu cục mới sẽ nhận lỗi 400 thay vì tự tạo; đây là hành vi MONG MUỐN theo
 Phương án B.
 
+---
+
+### 15. Dọn 21 bưu cục "ma" + 22 thiết bị rác bị gán nhầm mặc định BĐX 5300
+**Vấn đề**: `scripts/seed.py` (script gốc, dùng 1 lần duy nhất lúc khởi tạo dự án) có logic
+tự động gán bưu cục vào BĐX mặc định `"5300"` (Bưu điện phường Thuận An) nếu dòng Excel
+gốc (`dulieu.xlsx`) thiếu Mã BĐX. PO phát hiện qua UI "Quản Lý Mạng Lưới" (submenu Danh
+Sách) thấy nhiều bưu cục có hậu tố "(TD)" bị gán chung vào BĐX 5300 một cách bất thường.
+
+Kiểm tra: 27 bưu cục đang gán vào BĐX 5300, mỗi bưu cục có đúng 1 thiết bị với
+`hostname: null, model: null` (dòng rác không có dữ liệu thật, chỉ có mã CCDC tự sinh
+kiểu cũ `CCDC-<mã bc>-<số>`). PO xác nhận GIỮ LẠI 6 mã (536750, 535370, 536751, 536730,
+536740, 536752 — các bưu cục thật, có địa chỉ/BĐX hợp lý dù tạm thời cũng nằm nhầm 5300),
+XOÁ 21 mã còn lại + 22 thiết bị đi kèm (phát hiện thêm 1 thiết bị "ma" phụ đã soft-delete
+từ trước, `CCDC-531000-0338`, cùng loại rác, PO xác nhận xoá luôn).
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-18 (Claude soạn script, PO tự chạy trên máy sau khi
+backup `data/ccdc.db`) — xoá theo đúng thứ tự tránh vi phạm FOREIGN KEY: `asset_transfer_logs`
+(theo cả `equipment_id` lẫn `to_post_office_id`) → `equipments` → `post_offices`, bọc trong
+1 `db.transaction()` để đảm bảo toàn vẹn (rollback tự động nếu có lỗi giữa chừng — đã thực
+tế xảy ra 1 lần do sót thiết bị "ma" phụ, rollback đúng, không mất dữ liệu, sửa lại chạy
+thành công lần 2).
+
+**Kết quả xác nhận sau khi xoá**: BĐX 5300 chỉ còn đúng 6 bưu cục PO giữ lại. Tổng bưu cục:
+206 → 185. Tổng thiết bị đang hoạt động: 353 → 332 (giảm 21, không phải 22, vì 1 thiết bị
+đã soft-delete từ trước vốn không tính vào con số 353).
+
+**⚠️ QUAN TRỌNG — cập nhật baseline cho các phiên sau**: mọi mốc "353 thiết bị thật" nhắc
+tới trong tài liệu TRƯỚC ngày 2026-08-18 đã LỖI THỜI — baseline chính xác từ nay là
+**332 thiết bị / 185 bưu cục / 44 BĐX**. Dev AI các hạng mục sau PHẢI dùng con số mới này
+khi verify baseline dữ liệu thật, không dùng lại "353" nữa.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.
