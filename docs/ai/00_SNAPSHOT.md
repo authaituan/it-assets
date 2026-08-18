@@ -526,6 +526,40 @@
   baseline (353 thiết bị/44 BĐX/206 bưu cục/3 tài khoản gốc).
 - `npm test`: 111/111 pass (không đổi backend).
 
+## Bản Đồ Điểm Phục Vụ (mới, `feat/network-map-view`)
+- **2 dependency mới** (lần đầu dùng trong dự án, thêm vào `package.json`): `leaflet`
+  (`^1.9.4`) + `react-leaflet` (`^5.0.0`, khớp React 19 đang dùng trong repo — xem
+  `03_ARCHITECTURE_MAP.md`). Nền bản đồ OpenStreetMap (tile URL chuẩn
+  `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`, miễn phí, không cần API key).
+- **`src/components/NetworkMapView.jsx`**: thay thế nội dung placeholder rỗng của
+  `feat/network-submenu-restructure` bằng bản đồ tương tác thật — KHÔNG đụng
+  `Sidebar.jsx`/`App.jsx` (đã render đúng component này từ hạng mục trước).
+  - Gọi `GET /api/network?limit=2000` lấy toàn bộ bưu cục (đã có sẵn
+    `latitude`/`longitude`/`equipment_count`/`responsible_user_name` — không cần gọi
+    thêm API đếm riêng). Lọc bỏ bưu cục không có toạ độ, hiện dòng "X / 206 bưu cục hiện
+    được trên bản đồ" + cảnh báo "Y bưu cục chưa có toạ độ".
+  - Mỗi bưu cục có toạ độ → 1 `CircleMarker` (không dùng icon ảnh mặc định của Leaflet,
+    tránh lỗi đường dẫn icon khi bundle qua Vite). Màu theo `operational_status`
+    (`ACTIVE` = xanh lá `#34d399`, khác/rỗng = xám `#94a3b8`); bán kính theo
+    `sqrt(equipment_count)` (kẹp 6–26px, tránh chênh lệch quá cực đoan giữa bưu cục 1
+    máy và bưu cục 60+ máy).
+  - Click marker → popup: mã/tên, loại + tên BĐX, địa chỉ, SĐT (nếu có), tình trạng hoạt
+    động, số thiết bị, người phụ trách (nếu có gán). KHÔNG có nút "Xem thiết bị tại đây"
+    — `InventoryView.jsx` chưa hỗ trợ nhận `postOfficeId` lọc sẵn từ bên ngoài (chỉ có
+    `initialDeviceTypeId`), và phạm vi hạng mục này không cho sửa `InventoryView.jsx`.
+  - Tâm bản đồ = trung bình toạ độ các điểm có toạ độ; fallback toạ độ trung tâm Huế
+    (16.4637, 107.5909) nếu chưa có điểm nào.
+- Đã test qua UI thật (Vite dev :3000 + backend thật :5000, không cần restart backend vì
+  hạng mục này không đổi code server — đã xin phép PO tạo 1 tài khoản ADMIN tạm để đăng
+  nhập, xoá lại sau khi test xong): bản đồ hiện đúng **15 / 206 bưu cục có toạ độ**
+  (191 bưu cục còn lại chưa nhập toạ độ); click marker xanh (531510 Vỹ Dạ, 536820 Phú Mỹ...)
+  → popup đúng thông tin; click marker xám (536752 Tân An (TD), `operational_status =
+  INACTIVE`) → popup đúng "Ngừng hoạt động"; không lỗi console, trang không giật/lag dù
+  nạp toàn bộ 206 bưu cục.
+- `npm test`: 118/118 pass (không đổi backend/logic ứng dụng). `npm run build`: build
+  thành công với 2 dependency mới (bundle JS tăng lên ~1.86MB do leaflet, cảnh báo chunk
+  size — không chặn build, có thể code-split sau nếu cần).
+
 ## Submenu Quản Lý Mạng Lưới + Redesign Danh Sách (mới, `feat/network-submenu-restructure`)
 - **Cấu trúc file mới**: `UnitTreeView.jsx` (bảng CRUD của `feat/network-management-frontend`)
   đổi tên thành `src/components/NetworkListView.jsx`. Khôi phục NGUYÊN VẸN code cây tổ
