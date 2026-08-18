@@ -4,6 +4,16 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-08-18] - Bản Đồ Điểm Phục Vụ tương tác (feat/network-map-view)
+
+### Changes
+- **package.json**: thêm 2 dependency mới (lần đầu dùng trong dự án) `leaflet@^1.9.4` + `react-leaflet@^5.0.0`, nền OpenStreetMap (miễn phí, không cần API key).
+- **src/components/NetworkMapView.jsx**: thay nội dung placeholder rỗng bằng bản đồ tương tác thật — gọi `GET /api/network?limit=2000`, lọc bỏ bưu cục chưa có toạ độ (hiện dòng cảnh báo "X bưu cục chưa có toạ độ"), mỗi bưu cục có toạ độ là 1 `CircleMarker` (màu theo `operational_status`: ACTIVE=xanh lá/khác=xám; bán kính theo `sqrt(equipment_count)`), click marker hiện popup đầy đủ thông tin + người phụ trách. Không sửa Sidebar.jsx/App.jsx/InventoryView.jsx/server (đúng phạm vi giao).
+- **Tested**: `npm test` 118/118 pass, `npm run build` thành công. Test qua UI thật (Vite dev :3000 + backend thật :5000, tạo/xoá tài khoản ADMIN tạm để đăng nhập): 15/206 bưu cục có toạ độ hiện đúng marker, click marker xanh + marker xám (536752 Tân An, INACTIVE) đều đúng màu/nội dung popup, không lỗi console, không giật lag.
+- Phạm vi: `package.json`, `src/components/NetworkMapView.jsx`. Không sửa `Sidebar.jsx`, `App.jsx`, `InventoryView.jsx`, `server/*.js`.
+
+---
+
 ## [2026-08-18] - Tái cấu trúc Submenu Quản Lý Mạng Lưới + Redesign Danh Sách (feat/network-submenu-restructure)
 
 ### Changes
