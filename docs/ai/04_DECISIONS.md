@@ -360,6 +360,31 @@ tới trong tài liệu TRƯỚC ngày 2026-08-18 đã LỖI THỜI — baseline
 **332 thiết bị / 185 bưu cục / 44 BĐX**. Dev AI các hạng mục sau PHẢI dùng con số mới này
 khi verify baseline dữ liệu thật, không dùng lại "353" nữa.
 
+---
+
+### 16. Nén `00_SNAPSHOT.md` từ 665 dòng xuống 161 dòng — chống phình to token
+**Vấn đề**: `00_SNAPSHOT.md` được thiết kế ban đầu (2026-08-12) làm "ảnh chụp nhanh
+hiện trạng", nhưng qua ~20 PR liên tiếp, mỗi hạng mục đều thêm 1 mục "mới, feat/X" kèm
+tường thuật đầy đủ (bước test UI, số liệu trước/sau...) — trùng lặp gần như 100% nội
+dung đã có sẵn trong `CHANGELOG_AI.md`. Hậu quả: mọi Dev AI phải đọc thêm ~500 dòng
+không cần thiết ở MỌI task (3 file bắt buộc đọc tăng từ ~300 lên ~900 dòng), tốn token
+đáng kể mà PO phản ánh trực tiếp.
+
+**Trạng thái**: ✅ Đã xử lý 2026-08-18 (Claude viết lại toàn bộ) — nén còn 161 dòng,
+GIỮ NGUYÊN mọi route/business rule/cấu trúc frontend hiện tại (tổ chức lại thành bảng/
+danh sách gọn theo module, không theo PR), BỎ toàn bộ tường thuật lịch sử (đã có sẵn y
+hệt trong `CHANGELOG_AI.md`, không mất thông tin gì). Đồng thời tăng cường
+`README_AI.md`: thêm mục "Ngân sách đọc" hướng dẫn CHỈ đọc đúng file cần cho từng loại
+câu hỏi (thay vì đọc tràn lan), và thêm quy tắc 7 CẤM viết lại `00_SNAPSHOT.md` theo
+kiểu tường thuật từng PR — mọi cập nhật từ nay phải SỬA ĐÈ đúng đoạn liên quan, không
+THÊM đoạn mới.
+
+**Bài học quy trình**: đây là lỗi trôi dạt (drift) chậm, không xảy ra 1 lần mà tích luỹ
+qua nhiều PR nhỏ hợp lý riêng lẻ — mỗi Dev AI làm đúng "thêm 1 dòng vào CHANGELOG +
+cập nhật SNAPSHOT" như hướng dẫn, nhưng hướng dẫn cũ không đủ rõ ràng về việc SNAPSHOT
+phải nén/sửa đè, không phải cộng dồn. PO nên định kỳ (vài tuần/lần, hoặc khi thấy
+`00_SNAPSHOT.md` vượt ~250 dòng) nhắc CTO AI kiểm tra lại kích thước và nén nếu cần.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

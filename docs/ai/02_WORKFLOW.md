@@ -61,6 +61,15 @@ PO copy "Prompt tiếp theo" trong báo cáo → dán cho đúng Dev AI được
    Browser tool riêng, tự chạy thử UI thật được như nhau — tiêu chí đúng là độ phức
    tạp/rủi ro của hạng mục, không phải có UI hay không). Quyết định ngày 2026-08-12,
    PO đã xác nhận áp dụng lâu dài, không cần hỏi lại trừ khi PO chủ động đổi ý.
+6. **Prompt giao việc chỉ yêu cầu Dev AI đọc đúng file cần thiết** (áp dụng "Ngân sách
+   đọc" ở `README_AI.md`) — mặc định `README_AI.md` + `00_SNAPSHOT.md` là đủ cho phần
+   lớn task; chỉ thêm `03_ARCHITECTURE_MAP.md` vào danh sách bắt buộc đọc nếu task thật
+   sự cần chi tiết route/field cụ thể chưa có trong `00_SNAPSHOT.md`. KHÔNG mặc định
+   liệt kê cả 3 file cho mọi prompt như thói quen cũ — đây là nguồn tốn token lớn nhất
+   đã được PO phản ánh trực tiếp (xem `04_DECISIONS.md` mục 16).
+7. **Định kỳ kiểm tra kích thước `00_SNAPSHOT.md`** — nếu vượt quá ~250 dòng, đó là dấu
+   hiệu đang bị viết kiểu tường thuật từng PR thay vì trạng thái hiện tại (xem
+   `04_DECISIONS.md` mục 16). Chủ động đề xuất nén lại, không đợi PO nhắc.
 
 ## 4. Quy tắc bắt buộc cho Dev AI (Antigravity / Claude Code)
 1. Đọc `README_AI.md` trước, chỉ đọc thêm file thực sự cần cho đúng hạng mục được giao.
