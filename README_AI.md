@@ -26,10 +26,11 @@ Every AI must:
 
 1. Read [README_AI.md](https://github.com/authaituan/it-assets/blob/main/README_AI.md)
 2. Read [docs/01_GOVERNANCE/DEVELOPER_PROMPT_STANDARD.md](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/DEVELOPER_PROMPT_STANDARD.md) before creating any first `Prompt cho Claude Code` or `Prompt cho Antigravity`
-3. Read [docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md)
-4. Read the Current Manifest referenced by `PROJECT_SNAPSHOT.md`
-5. Read only the Required Reading listed in that manifest
-6. Use only the GitHub Blob URLs embedded in the onboarding chain; do not depend on relative paths for AI onboarding.
+3. Read [docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md) — process/ticket state only (KHÔNG chứa route/schema/tính năng thật)
+4. **Read [docs/ai/00_SNAPSHOT.md](https://github.com/authaituan/it-assets/blob/main/docs/ai/00_SNAPSHOT.md) — BẮT BUỘC, đây là nguồn trạng thái KỸ THUẬT thật của dự án** (API routes, DB schema, business rules, baseline dữ liệu thật, tính năng đã xây — evidence-based, verify qua 118 test tự động + nhiều vòng audit trực tiếp). File `PROJECT_SNAPSHOT.md` ở bước 3 KHÔNG thay thế được bước này.
+5. Read the Current Manifest referenced by `PROJECT_SNAPSHOT.md`, nếu có (hiện tại dự án chưa dùng mô hình ticket `docs/10_TICKETS/`, mọi backlog quản lý qua `docs/ai/05_BACKLOG.md`)
+6. Read only the Required Reading listed in that manifest (nếu có)
+7. Use only the GitHub Blob URLs embedded in the onboarding chain; do not depend on relative paths for AI onboarding.
 
 ## 2.1 First-Prompt Governance Gate
 
@@ -92,8 +93,9 @@ After onboarding and for post-onboarding continuation, implementation-result rev
 
 For fresh AI onboarding:
 1. Always start at `README_AI.md`.
-2. Inspect `PROJECT_SNAPSHOT.md` for live active ticket and current manifest.
-3. Access the active ticket manifest under `docs/10_TICKETS/`.
+2. Inspect `PROJECT_SNAPSHOT.md` for live active ticket and current manifest (process state).
+3. **Inspect `docs/ai/00_SNAPSHOT.md` for actual technical project state — required, not optional.**
+4. Access the active ticket manifest under `docs/10_TICKETS/`, if any.
 
 ## 6. Quick Links
 
@@ -101,7 +103,9 @@ For fresh AI onboarding:
 - [Developer Prompt Standard](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/DEVELOPER_PROMPT_STANDARD.md)
 - [PO UI Acceptance Workflow](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/PO_UI_ACCEPTANCE_WORKFLOW.md)
 - [Codex Documentation Standard](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/CODEX_DOCUMENTATION_STANDARD.md)
-- [Project Snapshot](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md)
+- [Project Snapshot (process/ticket state)](https://github.com/authaituan/it-assets/blob/main/docs/01_GOVERNANCE/PROJECT_SNAPSHOT.md)
+- **[Technical Snapshot — docs/ai/00_SNAPSHOT.md (trạng thái kỹ thuật thật, BẮT BUỘC đọc)](https://github.com/authaituan/it-assets/blob/main/docs/ai/00_SNAPSHOT.md)**
+- [docs/ai/ — toàn bộ hệ thống tài liệu kỹ thuật gốc (README/ROLES/WORKFLOW/ARCHITECTURE_MAP/DECISIONS/BACKLOG/CHANGELOG/DEPLOYMENT/prompts)](https://github.com/authaituan/it-assets/tree/main/docs/ai)
 
 ## 7. Conversation Context Capacity and Fresh-Chat Handoff
 
