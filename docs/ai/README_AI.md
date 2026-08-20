@@ -1,7 +1,15 @@
 # 🚪 CỔNG CHÀO AI — it-assets (Quản lý CCDC Bưu điện Huế)
 
-> File này là **điểm vào duy nhất** cho bất kỳ AI nào (CTO AI, Antigravity, Claude Code...)
+> File này là **điểm vào kỹ thuật** cho bất kỳ AI nào (CTO AI, Antigravity, Claude Code...)
 > khi bắt đầu một phiên làm việc. Đọc đúng thứ tự bên dưới — KHÔNG tự ý đọc toàn bộ repo.
+>
+> **Từ 2026-08-20**: dự án có thêm lớp quy trình **Governance V2** ở gốc repo
+> (`/README_AI.md`, `/CLAUDE.md`, `docs/01_GOVERNANCE/`, `docs/10_TICKETS/`) — quản lý
+> vai trò/quy trình/format báo cáo CTO→PO. Lớp đó **KHÔNG thay thế** hệ thống `docs/ai/`
+> này — 2 lớp phục vụ 2 mục đích khác nhau: Governance V2 = QUY TRÌNH, `docs/ai/` =
+> TRI THỨC KỸ THUẬT (route/schema/business rule thật). Claude Code tự động đọc
+> `/CLAUDE.md` mỗi phiên, file đó đã được cấu hình trỏ đúng sang đây — không cần lo bị
+> bỏ sót.
 
 ## Danh mục đầy đủ (10 file — KHÔNG được xoá/gộp/viết đè bất kỳ file nào dưới đây)
 | File | Nội dung | Ai được sửa |
