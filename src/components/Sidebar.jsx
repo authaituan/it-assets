@@ -55,16 +55,16 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
     }
   };
   const navItems = [
-    { id: 'dashboard', label: 'Tổng Quan KPI', icon: LayoutDashboard },
-    { id: 'inventory', label: 'Quản Lý CCDC', icon: Monitor },
-    { id: 'unittree', label: 'Quản Lý Mạng Lưới', icon: Network },
-    { id: 'personnel', label: 'Người Sử Dụng', icon: Users },
+    { id: 'dashboard', label: 'Tổng quan KPI', icon: LayoutDashboard },
+    { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor },
+    { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network },
+    { id: 'personnel', label: 'Người sử dụng', icon: Users },
   ];
 
   // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Danh Mục + Quản Lý Người Dùng.
   if (authUser?.role !== 'STAFF') {
-    navItems.push({ id: 'categoryadmin', label: 'Quản Lý Danh Mục', icon: Layers });
-    navItems.push({ id: 'useradmin', label: 'Quản Lý Người Dùng', icon: UserCog });
+    navItems.push({ id: 'categoryadmin', label: 'Quản lý danh mục', icon: Layers });
+    navItems.push({ id: 'useradmin', label: 'Quản lý người dùng', icon: UserCog });
   }
 
   return (
