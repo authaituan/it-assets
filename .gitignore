@@ -25,3 +25,7 @@ Thumbs.db
 
 # Editor/IDE tooling configs (không thuộc mã nguồn ứng dụng)
 .claude/
+
+# Script cá nhân chạy/dừng server (khác nhau tuỳ máy mỗi người, không chia sẻ qua Git)
+start-server.bat
+stop-server.bat
