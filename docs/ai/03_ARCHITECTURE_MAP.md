@@ -22,7 +22,11 @@
 ## File map
 | File | Vai trò |
 |------|---------|
-| `server/index.js` | Định nghĩa toàn bộ REST route + gắn middleware auth cho route ghi. |
+| `server/index.js` | Entry: middleware toàn cục (security → json → cổng token), mount router, static, 404, `app.listen`. Còn chứa route equipments/network/organization/device-types/personnel (giai đoạn B, C sẽ tách). |
+| `server/routes/auth.js` | `POST /auth/login` + rate-limit đăng nhập (router mount `/api`; ghi log qua `req.app.locals.security`). |
+| `server/routes/dashboard.js` | `GET /dashboard/stats`. |
+| `server/routes/users.js` | Quản trị tài khoản `/users*` (kể cả `/users/me/password`), giữ nguyên thứ tự. |
+| `server/lib/helpers.js` | `parseSpecs`, `parseFloatOrNull`, `normalizeStr`. |
 | `server/db.js` | Khởi tạo SQLite, schema (CREATE TABLE IF NOT EXISTS), migration `password_hash`. |
 | `server/auth.js` | JWT sign/verify, hash/verify password (scrypt), middleware `authRequired`/`requireManager`, helper `isManager`. |
 | `scripts/seed.py` | Nạp dữ liệu từ `dulieu.xlsx` vào SQLite. |
