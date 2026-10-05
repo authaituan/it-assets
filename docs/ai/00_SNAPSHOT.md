@@ -166,8 +166,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - ⚠️ Chưa có CI (phải tự gõ `npm test`, không tự chạy trên GitHub).
 - ⚠️ Rate-limit đăng nhập lưu trong bộ nhớ tiến trình — không đúng nếu scale nhiều
   instance (cần Redis lúc đó, chưa cần ở quy mô hiện tại).
-- ⚠️ `NetworkMapView.jsx` chưa có nút "Xem thiết bị tại đây" (điều hướng sang CCDC lọc
-  theo bưu cục) — `InventoryView.jsx` chưa hỗ trợ nhận `postOfficeId` lọc sẵn từ ngoài.
+
 
 ## ✅ Đã hoàn tất (không cần làm lại)
 Vòng 1 (Auth/RBAC/soft-delete/transaction/validate/test/frontend-login/dashboard-fix),

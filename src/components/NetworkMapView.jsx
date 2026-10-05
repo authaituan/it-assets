@@ -33,7 +33,7 @@ function markerColor(operationalStatus) {
   return operationalStatus === 'ACTIVE' ? '#34d399' /* emerald-400 */ : '#94a3b8' /* slate-400 */;
 }
 
-export default function NetworkMapView() {
+export default function NetworkMapView({ onSelectUnitFilter }) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -160,6 +160,31 @@ export default function NetworkMapView() {
                       {po.responsible_user_name && (
                         <div style={{ fontSize: '12px', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <User size={12} /> <span>{po.responsible_user_name} ({po.responsible_user_hrm || '—'})</span>
+                        </div>
+                      )}
+                      {(po.equipment_count > 0) && onSelectUnitFilter && (
+                        <div style={{ marginTop: '12px' }}>
+                          <button
+                            onClick={() => onSelectUnitFilter(po.commune_id, po.id)}
+                            style={{
+                              width: '100%',
+                              padding: '6px 12px',
+                              backgroundColor: '#0ea5e9',
+                              color: 'white',
+                              border: 'none',
+                              borderRadius: '6px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              cursor: 'pointer',
+                              display: 'block',
+                              textAlign: 'center',
+                              boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)'
+                            }}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0ea5e9'}
+                          >
+                            Xem thiết bị tại đây
+                          </button>
                         </div>
                       )}
                     </div>

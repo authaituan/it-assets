@@ -31,7 +31,9 @@ export default function InventoryView({
   setSearch,
   onSelectEquipment,
   onOpenAddModal,
-  initialDeviceTypeId
+  initialDeviceTypeId,
+  initialCommuneId,
+  initialPostOfficeId
 }) {
   const [items, setItems] = useState([]);
   const [communes, setCommunes] = useState([]);
@@ -41,8 +43,8 @@ export default function InventoryView({
   const [loading, setLoading] = useState(true);
 
   // Filter States
-  const [selectedCommuneId, setSelectedCommuneId] = useState('');
-  const [selectedPostOfficeId, setSelectedPostOfficeId] = useState('');
+  const [selectedCommuneId, setSelectedCommuneId] = useState(initialCommuneId || '');
+  const [selectedPostOfficeId, setSelectedPostOfficeId] = useState(initialPostOfficeId || '');
   const [selectedDeviceTypeId, setSelectedDeviceTypeId] = useState('');
   const [selectedStatus, setSelectedStatus] = useState('');
   const [categoryRawOptions, setCategoryRawOptions] = useState([]);
@@ -110,9 +112,17 @@ export default function InventoryView({
       .catch(err => console.error(err));
   }, [selectedDeviceTypeId]);
 
+  // Track if this is the first time the cascade load runs
+  const [isFirstCascade, setIsFirstCascade] = useState(true);
+
   // Cascade Load Post Offices when Commune changes
   useEffect(() => {
-    setSelectedPostOfficeId('');
+    if (!isFirstCascade) {
+      setSelectedPostOfficeId('');
+    } else {
+      setIsFirstCascade(false);
+    }
+    
     let url = '/api/organization/post-offices';
     if (selectedCommuneId) {
       url += `?communeId=${selectedCommuneId}`;
