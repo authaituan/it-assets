@@ -15,10 +15,9 @@ bắt buộc `JWT_SECRET`/`.env` · giới hạn body đăng nhập.
 
 | # | Việc | Ai làm | Ghi chú |
 |---|---|---|---|
-| 1 | Nút "Xem thiết bị tại đây" trên Bản đồ → CCDC lọc sẵn theo bưu cục | Antigravity | `InventoryView.jsx` cần nhận `postOfficeId` từ ngoài; không đổi backend (route đã lọc được) |
-| 2 | Bổ sung toạ độ cho bưu cục thiếu (mới 15/206 có vĩ/kinh độ) | PO + dev nhỏ | PO gửi Excel có Vĩ độ/Kinh độ; đưa vào bằng Import mạng lưới (đã có cột), không cần code mới |
-| 3 | CI GitHub Actions tự chạy `npm test` + `npm run build` mỗi PR | Claude Code Sonnet | Rủi ro thấp, nên làm trước việc 4 |
-| 4 | Tách `server/index.js` (~2255 dòng) thành route files | Claude Code Opus | Làm khi đã có CI; không đổi hành vi, test phải giữ pass |
+| 1 | Bổ sung toạ độ cho bưu cục thiếu (mới 15/206 có vĩ/kinh độ) | PO + dev nhỏ | PO gửi Excel có Vĩ độ/Kinh độ; đưa vào bằng Import mạng lưới (đã có cột), không cần code mới |
+| 2 | CI GitHub Actions tự chạy `npm test` + `npm run build` mỗi PR | Claude Code Sonnet | Rủi ro thấp, nên làm trước việc 3 |
+| 3 | Tách `server/index.js` (~2255 dòng) thành route files | Claude Code Opus | Làm khi đã có CI; không đổi hành vi, test phải giữ pass |
 
 ## 🟡 Có thể để sau
 

@@ -4,6 +4,15 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-05] - Nút "Xem thiết bị tại đây" trên bản đồ (feat/map-to-inventory-filter)
+
+- `src/components/NetworkMapView.jsx`: Thêm nút "Xem thiết bị tại đây" trong Popup (chỉ hiện khi equipment_count > 0), gọi `onSelectUnitFilter`.
+- `src/App.jsx`: Lưu `inventoryCommuneId` và `inventoryPostOfficeId` vào state, xoá lọc khi click lại tab từ Sidebar. Sửa `handleSelectUnitFromTree` không còn bỏ qua tham số.
+- `src/components/InventoryView.jsx`: Sửa cascade load post office để nhận `initialPostOfficeId` mà không bị clear ngay lần load đầu.
+- Xoá việc 1 trong `docs/ai/05_BACKLOG.md` và xoá dòng rủi ro trong `docs/ai/00_SNAPSHOT.md`.
+
+---
+
 ## [2026-10-05] - Siết bảo mật đợt 2 (feat/security-hardening-2)
 
 - `server/security.js`: trang 404 chuẩn hoá CRLF→LF trước khi băm CSP và trước khi gửi (hết mất CSS trên Windows); `.gitattributes` ép `server/pages/*.html` LF. `server/auth.js`: thiếu `JWT_SECRET` thì server không khởi động (trừ `ALLOW_INSECURE_DEV=1`). `server/index.js`: tự nạp `.env` bằng `process.loadEnvFile()` (không thêm dependency); `/api/auth/login` giới hạn body 10kb, `express.json(50mb)` chỉ áp sau lớp bắt buộc token. Test harness tự đặt `JWT_SECRET` ngẫu nhiên + `SECURITY_LOG` tạm (không ghi `data/security.log` thật); thêm 3 test (CRLF cùng mã băm, login body >10kb → 413, thiếu JWT_SECRET). `06_DEPLOYMENT.md` mục 1 viết lại. `npm test` 133/133, `npm run build` OK.

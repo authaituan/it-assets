@@ -37,6 +37,8 @@ export default function App() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [authUser, setAuthUser] = useState(getInitialAuthUser);
   const [inventoryDeviceTypeId, setInventoryDeviceTypeId] = useState(null);
+  const [inventoryCommuneId, setInventoryCommuneId] = useState('');
+  const [inventoryPostOfficeId, setInventoryPostOfficeId] = useState('');
   // Submenu TĨNH của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure):
   // 'list' | 'tree' | 'map', mặc định 'list' nếu chưa chọn gì.
   const [networkSubView, setNetworkSubView] = useState('list');
@@ -66,6 +68,8 @@ export default function App() {
   };
 
   const handleSelectUnitFromTree = (communeId, unitId) => {
+    setInventoryCommuneId(communeId);
+    setInventoryPostOfficeId(unitId);
     setActiveTab('inventory');
   };
 
@@ -86,6 +90,8 @@ export default function App() {
               setActiveTab(tab);
               if (tab === 'inventory') {
                 setInventoryDeviceTypeId(null);
+                setInventoryCommuneId('');
+                setInventoryPostOfficeId('');
               }
             }} 
             authUser={authUser} 
@@ -93,6 +99,8 @@ export default function App() {
             onSelectInventoryCategory={(id) => {
               setActiveTab('inventory');
               setInventoryDeviceTypeId(id);
+              setInventoryCommuneId('');
+              setInventoryPostOfficeId('');
             }}
             networkSubView={networkSubView}
             onSelectNetworkSubView={(subView) => {
@@ -136,6 +144,8 @@ export default function App() {
                   onSelectEquipment={(eq) => setSelectedEquipment(eq)}
                   onOpenAddModal={() => setIsAddModalOpen(true)}
                   initialDeviceTypeId={inventoryDeviceTypeId}
+                  initialCommuneId={inventoryCommuneId}
+                  initialPostOfficeId={inventoryPostOfficeId}
                 />
               )}
 
@@ -154,7 +164,10 @@ export default function App() {
               )}
 
               {activeTab === 'unittree' && networkSubView === 'map' && (
-                <NetworkMapView key={`net-map-${refreshKey}`} />
+                <NetworkMapView 
+                  key={`net-map-${refreshKey}`} 
+                  onSelectUnitFilter={handleSelectUnitFromTree}
+                />
               )}
 
               {activeTab === 'personnel' && (
