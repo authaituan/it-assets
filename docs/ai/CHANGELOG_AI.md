@@ -4,6 +4,12 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-05] - CI GitHub Actions (feat/ci-github-actions)
+
+- Thêm `.github/workflows/ci.yml`: chạy `npm ci` → `npm test` → `npm run build` trên ubuntu-latest, Node 22, cache npm, khi PR vào `main` và push lên `main`; `timeout-minutes: 10`, `permissions: contents: read`. Không đổi code/package.json. Cập nhật `05_BACKLOG.md`, `00_SNAPSHOT.md` (bỏ rủi ro "chưa có CI").
+
+---
+
 ## [2026-10-05] - Nút "Xem thiết bị tại đây" trên bản đồ (feat/map-to-inventory-filter)
 
 - `src/components/NetworkMapView.jsx`: Thêm nút "Xem thiết bị tại đây" trong Popup (chỉ hiện khi equipment_count > 0), gọi `onSelectUnitFilter`.
