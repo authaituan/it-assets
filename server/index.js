@@ -1,3 +1,7 @@
+// Nạp file .env (nếu có) TRƯỚC khi require các module đọc process.env (auth, security).
+// Biến môi trường đã có sẵn luôn thắng giá trị trong .env. Không dùng dotenv.
+try { process.loadEnvFile(); } catch (e) { /* không có .env: dùng biến môi trường hệ thống */ }
+
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
@@ -23,11 +27,14 @@ const security = createSecurity();
 app.disable('x-powered-by');
 app.use(security.ipFilter);
 app.use(security.securityHeaders);
-app.use(express.json({ limit: '50mb' }));
+// Đăng nhập là route duy nhất chưa có token -> body chỉ cho 10kb (chống gửi payload khổng lồ
+// khi chưa xác thực). express.json 50mb (import Excel) chỉ áp SAU lớp bắt buộc token.
+app.use('/api/auth/login', express.json({ limit: '10kb' }));
 app.use('/api', (req, res, next) => {
   if (req.path === '/auth/login') return next();
   return authRequired(req, res, next);
 });
+app.use(express.json({ limit: '50mb' }));
 
 // ==========================================
 // Rate limit đăng nhập: chống brute-force đoán mật khẩu.

@@ -6,3 +6,6 @@ dulieu.xlsx binary
 
 # Áp dụng chung cho mọi file .xlsx trong dự án (đề phòng thêm file Excel khác sau này).
 *.xlsx binary
+
+# Trang 404 băm CSP trên nội dung <style>: ép LF để mã băm không lệch giữa các máy.
+server/pages/*.html text eol=lf

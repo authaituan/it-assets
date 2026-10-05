@@ -127,12 +127,13 @@ function securityHeaders(req, res, next) {
 // ------------------------------------------
 const NOT_FOUND_FILE = path.join(__dirname, 'pages', '404.html');
 let notFound = null;
-function loadNotFound() {
-  if (notFound) return notFound;
-  const html = fs.readFileSync(NOT_FOUND_FILE, 'utf8');
+function buildNotFound(raw) {
+  // Chuẩn hoá CRLF -> LF: trình duyệt chuẩn hoá xuống dòng về LF khi tính mã băm CSP,
+  // nên băm và gửi đúng bản LF (git trên Windows có thể đổi file sang CRLF).
+  const html = raw.replace(/\r\n/g, '\n');
   const m = html.match(/<style>([\s\S]*?)<\/style>/);
   const hash = m ? crypto.createHash('sha256').update(m[1], 'utf8').digest('base64') : null;
-  notFound = {
+  return {
     html,
     csp: [
       "default-src 'none'",
@@ -143,6 +144,10 @@ function loadNotFound() {
       "form-action 'none'"
     ].join('; ')
   };
+}
+
+function loadNotFound() {
+  if (!notFound) notFound = buildNotFound(fs.readFileSync(NOT_FOUND_FILE, 'utf8'));
   return notFound;
 }
 
@@ -229,5 +234,6 @@ module.exports = {
   clientIp,
   createSecurity,
   sendNotFound,
+  buildNotFound,
   securityHeaders
 };

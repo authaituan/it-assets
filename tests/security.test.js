@@ -192,3 +192,32 @@ test('Nhật ký bảo mật: ghi IP bị chặn và đăng nhập, không ghi m
   assert.ok(!raw.includes(PASS), 'không ghi mật khẩu');
   assert.ok(!raw.includes(token), 'không ghi token');
 });
+
+test('buildNotFound: file CRLF vẫn cho cùng mã băm CSP như bản LF', () => {
+  const { buildNotFound } = require('../server/security');
+  const lf = fs.readFileSync(path.join(__dirname, '..', 'server', 'pages', '404.html'), 'utf8').replace(/\r\n/g, '\n');
+  const a = buildNotFound(lf);
+  const b = buildNotFound(lf.replace(/\n/g, '\r\n'));
+  assert.match(a.csp, /style-src 'sha256-/);
+  assert.equal(b.csp, a.csp);
+  assert.equal(b.html, a.html, 'trang gửi đi luôn là LF');
+});
+
+test('đăng nhập: body > 10kb bị từ chối (413), chưa token thì không tới được parser 50mb', async () => {
+  const res = await req('/api/auth/login', {
+    ip: '10.0.0.5', method: 'POST', body: { hrm_code: 'x', password: 'y'.repeat(20000) }
+  });
+  assert.equal(res.status, 413);
+});
+
+test('thiếu JWT_SECRET: server/auth.js từ chối nạp, trừ khi ALLOW_INSECURE_DEV=1', () => {
+  const { spawnSync } = require('child_process');
+  const authPath = path.join(__dirname, '..', 'server', 'auth.js');
+  const run = (env) => spawnSync(process.execPath, ['-e', `require(${JSON.stringify(authPath)})`], {
+    env: { ...process.env, JWT_SECRET: '', ALLOW_INSECURE_DEV: '', ...env }, encoding: 'utf8'
+  });
+  const bad = run({});
+  assert.notEqual(bad.status, 0);
+  assert.match(bad.stderr, /Thiếu JWT_SECRET/);
+  assert.equal(run({ ALLOW_INSECURE_DEV: '1' }).status, 0);
+});

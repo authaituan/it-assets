@@ -20,6 +20,16 @@ const crypto = require('crypto');
 const ROOT = path.join(__dirname, '..', '..');
 const SERVER_DIR = path.join(ROOT, 'server');
 
+// Đặt ngay khi nạp module (fixtures.js require server/auth.js ngay sau harness).
+// JWT_SECRET bắt buộc (server từ chối khởi động nếu thiếu): test tự đặt giá trị ngẫu nhiên.
+if (!process.env.JWT_SECRET) process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
+// Nhật ký bảo mật ghi ra file tạm, không đụng data/security.log thật; xoá khi tiến trình test thoát.
+if (!process.env.SECURITY_LOG) {
+  const logFile = path.join(os.tmpdir(), `ccdc-test-security-${process.pid}-${crypto.randomBytes(4).toString('hex')}.log`);
+  process.env.SECURITY_LOG = logFile;
+  process.on('exit', () => { try { fs.unlinkSync(logFile); } catch (e) { /* chưa có file hoặc đã xoá */ } });
+}
+
 // Bắt lấy http.Server thật mà Express tạo ra bên trong app.listen() (Express
 // nội bộ gọi http.createServer(app).listen(...)), để có thể .close() đàng
 // hoàng sau khi test xong. server/index.js không export app/http.Server nên
@@ -87,10 +97,6 @@ function startTestServer({ port, dbFileName }) {
   const getServer = patchHttpCreateServer();
 
   process.env.PORT = String(port);
-  // Không set JWT_SECRET riêng: dùng fallback DEV có sẵn trong server/auth.js.
-  // Ta không tự ký token trong test, luôn lấy token qua POST /api/auth/login
-  // thật -> không phụ thuộc biết trước secret.
-
   // server/index.js nội bộ làm `require('./db')` -> resolve cùng absolute
   // path với dòng require dưới đây (cùng file server/db.js) -> CÙNG 1 cache
   // entry -> CÙNG 1 kết nối DB (an toàn, tránh lock đa tiến trình).

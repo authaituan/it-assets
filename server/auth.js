@@ -8,10 +8,16 @@
 const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 
-// Secret lấy từ ENV; có fallback cho môi trường dev (cảnh báo nếu thiếu).
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-ccdc-buudien-secret-change-me';
-if (!process.env.JWT_SECRET) {
-  console.warn('[auth] CẢNH BÁO: JWT_SECRET chưa được set trong ENV, đang dùng secret mặc định cho DEV. KHÔNG dùng cho production.');
+// Secret BẮT BUỘC lấy từ ENV (hoặc .env). Thiếu -> server không khởi động, trừ khi
+// ALLOW_INSECURE_DEV=1 (chỉ cho máy dev: dùng secret mặc định, ai đọc mã nguồn cũng biết).
+let JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  if (process.env.ALLOW_INSECURE_DEV === '1') {
+    JWT_SECRET = 'dev-ccdc-buudien-secret-change-me';
+    console.warn('[auth] CẢNH BÁO: ALLOW_INSECURE_DEV=1, đang dùng JWT_SECRET mặc định cho DEV. KHÔNG dùng cho production.');
+  } else {
+    throw new Error('[auth] Thiếu JWT_SECRET: đặt biến môi trường hoặc file .env (xem docs/ai/06_DEPLOYMENT.md mục 1). Chỉ khi dev mới dùng ALLOW_INSECURE_DEV=1.');
+  }
 }
 const TOKEN_EXPIRY = process.env.JWT_EXPIRY || '8h';
 
