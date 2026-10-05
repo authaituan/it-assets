@@ -4,6 +4,12 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-05] - Tách server/index.js giai đoạn B (refactor/split-index-B)
+
+- Chỉ di chuyển code: thêm `server/routes/equipments.js` (8 route `/equipments*`), `server/lib/orgImport.js` (`resolveOrCreateOrgChain`, `requireExistingPostOffice`); `ASSET_PREFIX_REGEX` chuyển sang `lib/helpers.js` (dùng chung với device-types). `index.js` 1859 → 798 dòng; 34 route đối chiếu khớp; `npm test` 133/133, `npm run build` OK. Còn giai đoạn C.
+
+---
+
 ## [2026-10-05] - Tách server/index.js giai đoạn A (refactor/split-index-A)
 
 - Chỉ di chuyển code, không đổi hành vi/route: thêm `server/routes/{auth,dashboard,users}.js`, `server/lib/helpers.js`; `index.js` 2255 → 1859 dòng (mount `app.use('/api', router)` đúng vị trí cũ, `app.locals.security` cho log đăng nhập). 34 route đối chiếu khớp; `npm test` 133/133, `npm run build` OK. Còn giai đoạn B, C.
