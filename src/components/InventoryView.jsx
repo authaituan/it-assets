@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import ExportEquipmentModal from './ExportEquipmentModal';
 import ImportEquipmentModal from './ImportEquipmentModal';
+import { apiFetch } from '../utils/api';
 
 export default function InventoryView({
   search,
@@ -54,14 +55,14 @@ export default function InventoryView({
   // Tách riêng để có thể gọi lại sau khi Import tạo mới bưu cục/danh mục
   // (danh sách BĐX/Bưu cục/Loại thiết bị cần cập nhật để dropdown lọc thấy ngay).
   const fetchCommunes = () => {
-    fetch('/api/organization/communes')
+    apiFetch('/api/organization/communes')
       .then(res => res.json())
       .then(data => setCommunes(data))
       .catch(err => console.error(err));
   };
 
   const fetchDeviceTypes = () => {
-    fetch('/api/device-types')
+    apiFetch('/api/device-types')
       .then(res => res.json())
       .then(data => setDeviceTypes(data))
       .catch(err => console.error(err));
@@ -72,7 +73,7 @@ export default function InventoryView({
     if (selectedCommuneId) {
       url += `?communeId=${selectedCommuneId}`;
     }
-    fetch(url)
+    apiFetch(url)
       .then(res => res.json())
       .then(data => setPostOffices(data))
       .catch(err => console.error(err));
@@ -97,7 +98,7 @@ export default function InventoryView({
     if (selectedDeviceTypeId) {
       url += `?deviceTypeId=${selectedDeviceTypeId}`;
     }
-    fetch(url)
+    apiFetch(url)
       .then(res => res.json())
       .then(data => {
         const options = data || [];
@@ -116,7 +117,7 @@ export default function InventoryView({
     if (selectedCommuneId) {
       url += `?communeId=${selectedCommuneId}`;
     }
-    fetch(url)
+    apiFetch(url)
       .then(res => res.json())
       .then(data => setPostOffices(data))
       .catch(err => console.error(err));
@@ -137,7 +138,7 @@ export default function InventoryView({
     if (selectedCategoryRaw) params.append('categoryRaw', selectedCategoryRaw);
     if (selectedStatus) params.append('status', selectedStatus);
 
-    fetch(`/api/equipments?${params.toString()}`)
+    apiFetch(`/api/equipments?${params.toString()}`)
       .then(res => res.json())
       .then(data => {
         setItems(data.items || []);

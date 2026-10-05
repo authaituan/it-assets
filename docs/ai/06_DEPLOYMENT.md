@@ -80,3 +80,51 @@ tác trên router, không phải trong dự án).
 
 **Firewall**: đã mở 2 rule `CCDC Backend` (5000) và `CCDC Frontend` (3000) trong Windows
 Firewall — nếu đổi máy chủ khác, cần mở lại 2 rule này trên máy mới.
+
+## 5. Lọc IP truy cập (từ `feat/ip-allowlist-security`)
+
+**Cơ chế**: chỉ máy có IP nằm trong `CMS_ALLOWED_IPS` mới vào được hệ thống (cả giao
+diện lẫn API). Máy khác thấy trang **404 Không tìm thấy trang** — không biết là có hệ
+thống ở đây. Mỗi lần bị chặn, đăng nhập đúng/sai được ghi vào `data/security.log`.
+
+| Biến | Ý nghĩa | Ví dụ |
+|---|---|---|
+| `CMS_ALLOWED_IPS` | IP đơn hoặc dải CIDR IPv4, cách nhau dấu phẩy. **Để trống = chỉ chính máy chủ** (127.0.0.1, ::1). `*` = mọi IP (chỉ để thử). | `127.0.0.1,::1,10.47.33.33,10.47.33.41` |
+| `TRUSTED_PROXIES` | IP của proxy đứng trước backend. Chỉ khi đặt biến này backend mới đọc IP thật trong header `X-Forwarded-For`. | `127.0.0.1,::1` |
+| `LOGIN_IP_MAX_FAILS` | Số lần đăng nhập sai tối đa / 15 phút từ 1 IP (cộng dồn mọi tài khoản). Mặc định 20. | `20` |
+| `SECURITY_LOG` | File nhật ký bảo mật. Mặc định `data/security.log`. | |
+
+Sai cú pháp trong danh sách IP → server **không khởi động** và báo rõ mục sai (cố ý: thà
+không chạy còn hơn chạy với danh sách bị hiểu sai).
+
+**Cách chạy hiện tại trên máy Windows (2 cổng: Vite preview :3000 + backend :5000)**:
+Vite đã được cấu hình gửi kèm IP thật của máy khách (`xfwd: true` trong
+`vite.config.mjs`), nên phải khai báo Vite (chạy trên chính máy chủ) là proxy tin cậy.
+```
+# BẮT BUỘC sau khi cập nhật bản này: build lại giao diện (giao diện cũ gọi API đọc
+# không kèm token -> bị 401, màn hình trống)
+npm run build
+
+# Terminal 1 — Backend
+$env:JWT_SECRET="<chuỗi bí mật>"
+$env:CMS_ALLOWED_IPS="127.0.0.1,::1,10.47.33.33,<IP máy 1>,<IP máy 2>"
+$env:TRUSTED_PROXIES="127.0.0.1,::1"
+node server/index.js
+
+# Terminal 2 — Frontend (khởi động lại để nhận cấu hình xfwd mới)
+npx vite preview --host 0.0.0.0 --port 3000
+```
+- Giữ `127.0.0.1,::1` trong danh sách để chính máy chủ vẫn dùng được.
+- Máy không có trong danh sách: vào `:5000` thấy trang 404; vào `:3000` vẫn thấy khung
+  trang đăng nhập (Vite phục vụ file tĩnh) nhưng đăng nhập và mọi API đều bị chặn 404.
+  Muốn chặn kín cả giao diện: dùng mô hình 1 cổng bên dưới.
+
+**Mô hình 1 cổng (khuyên dùng, và là mô hình sẽ dùng khi đưa lên NAS/Docker)**:
+`npm run build` rồi chỉ chạy `node server/index.js` — backend tự phục vụ giao diện trong
+`dist/`. Truy cập `http://<IP máy chủ>:5000`, không cần `TRUSTED_PROXIES` (trừ khi có
+reverse proxy phía trước), đóng rule firewall cổng 3000.
+
+**Kiểm tra sau khi bật**:
+1. Từ máy có trong danh sách: đăng nhập, mở Tổng quan / Quản lý CCDC — dữ liệu hiện đủ.
+2. Từ máy KHÔNG có trong danh sách: mở `http://<IP máy chủ>:5000` → trang 404.
+3. Mở `data/security.log` — thấy dòng `"event":"ip_denied"` kèm IP máy ở bước 2.

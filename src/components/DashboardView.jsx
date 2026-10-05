@@ -23,13 +23,14 @@ import {
   Pie, 
   Cell 
 } from 'recharts';
+import { apiFetch } from '../utils/api';
 
 export default function DashboardView({ onSelectCommune }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/dashboard/stats')
+    apiFetch('/api/dashboard/stats')
       .then(res => res.json())
       .then(data => {
         setStats(data);

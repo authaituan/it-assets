@@ -158,7 +158,7 @@ test('vòng đời: create -> PUT status sai enum (400) -> PUT status hợp lệ
   assert.equal(logCountFor(eqId), beforeInvalidPut + 1);
 
   // Xác nhận status đã đổi qua GET detail
-  const detailAfterPut = await (await fetch(`${ctx.baseUrl}/api/equipments/${eqId}`)).json();
+  const detailAfterPut = await (await fetch(`${ctx.baseUrl}/api/equipments/${eqId}`, { headers: authHeaders() })).json();
   assert.equal(detailAfterPut.status, 'MAINTENANCE');
 
   // 4. DELETE (soft-delete) -> 200
@@ -168,12 +168,12 @@ test('vòng đời: create -> PUT status sai enum (400) -> PUT status hợp lệ
   assert.equal(logCountFor(eqId), beforeDeleteLogs + 1, 'delete thành công phải thêm đúng 1 log (DELETE)');
 
   // 5. GET list -> không còn thấy thiết bị đã xoá
-  const listRes = await fetch(`${ctx.baseUrl}/api/equipments?limit=200`);
+  const listRes = await fetch(`${ctx.baseUrl}/api/equipments?limit=200`, { headers: authHeaders() });
   const listBody = await listRes.json();
   assert.equal(listBody.items.some((it) => it.id === eqId), false, 'thiết bị đã soft-delete không được xuất hiện trong list');
 
   // 6. GET detail -> 404
-  const detailRes = await fetch(`${ctx.baseUrl}/api/equipments/${eqId}`);
+  const detailRes = await fetch(`${ctx.baseUrl}/api/equipments/${eqId}`, { headers: authHeaders() });
   assert.equal(detailRes.status, 404);
 
   // 7. DELETE lần 2 -> 404, không phát sinh thêm log DELETE (không có log rác)

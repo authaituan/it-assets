@@ -16,7 +16,7 @@ import {
   RefreshCw,
   Trash2
 } from 'lucide-react';
-import { apiFetchJson } from '../utils/api';
+import { apiFetch, apiFetchJson } from '../utils/api';
 
 export default function EquipmentDetailModal({ equipment, onClose, onUpdated, onDeleted }) {
   const [detail, setDetail] = useState(null);
@@ -65,10 +65,10 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
   const eqId = equipment?.id;
 
   useEffect(() => {
-    fetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
-    fetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
-    fetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
-    fetch('/api/equipments/category-raw-options').then(r => r.json()).then(data => setCategoryRawOptions(data || [])).catch(() => {});
+    apiFetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
+    apiFetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
+    apiFetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
+    apiFetch('/api/equipments/category-raw-options').then(r => r.json()).then(data => setCategoryRawOptions(data || [])).catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
     setLoading(true);
     setCommuneInitialized(false);
 
-    fetch(`/api/equipments/${eqId}`)
+    apiFetch(`/api/equipments/${eqId}`)
       .then(res => res.json())
       .then(data => {
         if (!isMounted) return;

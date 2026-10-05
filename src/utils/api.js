@@ -1,8 +1,8 @@
 // ==========================================
-// Helper dùng chung cho các request GHI (POST/PUT/DELETE) tới backend.
+// Helper dùng chung cho MỌI request tới backend (đọc lẫn ghi), trừ đăng nhập.
 // Tự gắn header Authorization: Bearer <token> nếu đã đăng nhập.
-// Route ĐỌC (GET) không cần dùng file này (backend đang để mở, xem
-// docs/ai/03_ARCHITECTURE_MAP.md mục "Route ghi được bảo vệ").
+// Backend bắt buộc token cho mọi /api/* trừ POST /api/auth/login (xem
+// server/index.js mục "Lớp bảo mật") — gọi fetch() trần sẽ nhận 401.
 //
 // Lưu ý bảo mật: CHỈ lưu token vào localStorage, KHÔNG bao giờ lưu password.
 // Thông tin hiển thị (tên, role) được suy ra trực tiếp từ payload của chính

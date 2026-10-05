@@ -17,7 +17,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - **Backend**: Node.js + Express (`server/index.js`, ~1900 dòng), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
-- **Test**: `node:test` built-in, **118 test case** trong `tests/*.test.js`, chạy
+- **Test**: `node:test` built-in, **130 test case** trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -40,16 +40,28 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 
 ## API hiện có (`server/index.js`) — theo module
 
+**Lớp bảo mật** (`server/security.js`, gắn đầu `server/index.js` — `feat/ip-allowlist-security`)
+- Lọc IP toàn hệ thống theo `CMS_ALLOWED_IPS` (IP/CIDR IPv4, phẩy; trống = chỉ máy chủ
+  127.0.0.1/::1; `*` = mọi IP). IP bị chặn → trang 404 (`server/pages/404.html`, CSS
+  nhúng + CSP mã băm) hoặc 404 JSON cho `/api/*`, không lộ hệ thống (404 thay vì 403).
+- `TRUSTED_PROXIES`: chỉ tin `X-Forwarded-For` khi kết nối đến từ proxy khai báo, đọc từ
+  phải sang trái (không giả được). IP thật ở `req.clientIp`.
+- **Mọi `/api/*` trừ `POST /api/auth/login` bắt buộc token** (middleware toàn cục, mặc
+  định chặn cả route thêm sau này). Không CORS; header nosniff/X-Frame-Options/
+  Referrer-Policy/Permissions-Policy/COOP; `/api` `Cache-Control: no-store`; tắt X-Powered-By.
+- Nhật ký `data/security.log` (`SECURITY_LOG`): `ip_denied` (1 dòng/IP/phút),
+  `login_ok/login_fail/login_limited/login_deactivated` — không ghi mật khẩu/token.
+
 **Auth** (`server/auth.js` middleware: `authRequired`, `requireManager`)
-- `POST /api/auth/login` — trả JWT. Rate-limit 5 lần sai/15 phút theo (IP+hrm_code) →
-  429. Tài khoản `deactivated_at` bị chặn (401, message riêng, check SAU khi verify mật
+- `POST /api/auth/login` — trả JWT. Rate-limit 5 lần sai/15 phút theo (IP+hrm_code), cộng
+  trần theo IP `LOGIN_IP_MAX_FAILS` (mặc định 20 lần sai/15 phút, mọi tài khoản) → 429. Tài khoản `deactivated_at` bị chặn (401, message riêng, check SAU khi verify mật
   khẩu để không lộ trạng thái).
 - `PUT /api/users/me/password` — chỉ cần token (mọi role), yêu cầu mật khẩu cũ đúng.
 
 **Equipments** (CCDC)
-- `GET /api/equipments`, `GET /api/equipments/:id` — mở, không cần token. Loại trừ
+- `GET /api/equipments`, `GET /api/equipments/:id` — cần token (mọi role). Loại trừ
   `deleted_at`. Lọc: `search/communeId/postOfficeId/deviceTypeId/categoryRaw/status`.
-- `GET /api/equipments/category-raw-options` — mở, danh sách `specs.category_raw` khác
+- `GET /api/equipments/category-raw-options` — cần token, danh sách `specs.category_raw` khác
   nhau (tuỳ chọn lọc `deviceTypeId`), dùng cho dropdown "Phân Loại Chi Tiết".
 - `POST /api/equipments`, `PUT /api/equipments/:id` — cần token + quản lý. Sinh
   `asset_tag` mới `<PREFIX>-<YY>-<seq>` (xem mục Business Rules); nhận
@@ -63,7 +75,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   trong Quản Lý Mạng Lưới, xem Business Rules). Bảng field đầy đủ: `03_ARCHITECTURE_MAP.md`.
 
 **Device Types (Danh Mục)**
-- `GET /api/device-types` — mở. `POST`, `PUT /:id` — cần token + quản lý (`asset_prefix`
+- `GET /api/device-types` — cần token. `POST`, `PUT /:id` — cần token + quản lý (`asset_prefix`
   regex `^[A-Z0-9]{2,5}$`).
 
 **Users (Quản Lý Người Dùng — chỉ tài khoản có mật khẩu)**
@@ -91,8 +103,8 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - Bảng 21 field đầy đủ: `03_ARCHITECTURE_MAP.md`.
 
 **Dashboard & Organization**
-- `GET /api/dashboard/stats` — mở. Toàn bộ 9 chỗ đếm/lọc đều có `deleted_at IS NULL`.
-- `GET /api/organization/*` — mở (dùng cho dropdown BĐX/Bưu cục cascading).
+- `GET /api/dashboard/stats` — cần token. Toàn bộ 9 chỗ đếm/lọc đều có `deleted_at IS NULL`.
+- `GET /api/organization/*` — cần token (dùng cho dropdown BĐX/Bưu cục cascading).
 
 ## Business Rules quan trọng (áp dụng xuyên suốt, PHẢI biết trước khi sửa)
 1. **Phân quyền**: nhị phân — `STAFF` = chỉ đọc, mọi role khác = ghi đầy đủ (không tách
@@ -143,6 +155,10 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - ⚠️ Chưa có refresh token — token hết hạn phải đăng nhập lại thủ công.
 - ⚠️ Import HRM/Equipment/Network cả đợt chạy 1 transaction — lỗi 1 dòng rollback toàn
   bộ, phải chạy lại từ đầu (đánh đổi có chủ đích).
+- ⚠️ Chưa có Content-Security-Policy cho ứng dụng chính (Leaflet tải ảnh bản đồ ngoài) —
+  cần ticket riêng, thử trên giao diện thật.
+- ⚠️ Token của tài khoản đã vô hiệu hoá vẫn dùng được tới khi hết hạn (`JWT_EXPIRY`, 8h).
+- ⚠️ `GET /api/organization/tree` trả 500 khi DB chưa có BĐT/TP nào (có từ trước, chưa sửa).
 - ⚠️ Chưa có CI (phải tự gõ `npm test`, không tự chạy trên GitHub).
 - ⚠️ Rate-limit đăng nhập lưu trong bộ nhớ tiến trình — không đúng nếu scale nhiều
   instance (cần Redis lúc đó, chưa cần ở quy mô hiện tại).

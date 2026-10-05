@@ -11,7 +11,7 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
-import { apiFetchJson } from '../utils/api';
+import { apiFetch, apiFetchJson } from '../utils/api';
 import AddPersonnelModal from './AddPersonnelModal';
 import ImportPersonnelModal from './ImportPersonnelModal';
 
@@ -50,7 +50,7 @@ export default function PersonnelView() {
   };
 
   useEffect(() => {
-    fetch('/api/organization/post-offices')
+    apiFetch('/api/organization/post-offices')
       .then((res) => res.json())
       .then((data) => {
         const map = {};
@@ -59,7 +59,7 @@ export default function PersonnelView() {
       })
       .catch((err) => console.error(err));
 
-    fetch('/api/organization/communes')
+    apiFetch('/api/organization/communes')
       .then((res) => res.json())
       .then((data) => {
         const map = {};
