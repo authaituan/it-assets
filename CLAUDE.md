@@ -25,7 +25,7 @@ Do not treat this file as ground truth for current work.
 
 1. **Trạng thái KỸ THUẬT thật của dự án** (API routes, schema, business rules, baseline
    dữ liệu thật, tính năng đã xây) → đọc [`docs/ai/00_SNAPSHOT.md`](docs/ai/00_SNAPSHOT.md).
-   Đây là nguồn evidence-based đã được verify qua 118 test tự động và nhiều vòng audit
+   Đây là nguồn evidence-based đã được verify qua test tự động (hiện 133) và nhiều vòng audit
    trực tiếp trên `git fetch` + code thật — **KHÔNG bỏ qua file này**, nó chứa toàn bộ
    tri thức kỹ thuật tích luỹ của dự án (routes, DB schema, quy tắc nghiệp vụ).
 2. **Trạng thái QUY TRÌNH/TICKET hiện tại** (ticket đang mở, phase, PO status) → đọc

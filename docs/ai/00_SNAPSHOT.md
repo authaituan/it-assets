@@ -168,10 +168,6 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   instance (cần Redis lúc đó, chưa cần ở quy mô hiện tại).
 - ⚠️ `NetworkMapView.jsx` chưa có nút "Xem thiết bị tại đây" (điều hướng sang CCDC lọc
   theo bưu cục) — `InventoryView.jsx` chưa hỗ trợ nhận `postOfficeId` lọc sẵn từ ngoài.
-- ⚠️ Dự án nằm trong thư mục đồng bộ OneDrive (`E:\OneDrive\...`) — có thể gây xung đột
-  khoá file giữa Git (tự dọn `.git/objects/` sau commit) và OneDrive đang đồng bộ cùng
-  lúc. Chưa nghiêm trọng (chưa gây mất dữ liệu), cân nhắc chuyển dự án ra ngoài OneDrive
-  nếu lặp lại nhiều.
 
 ## ✅ Đã hoàn tất (không cần làm lại)
 Vòng 1 (Auth/RBAC/soft-delete/transaction/validate/test/frontend-login/dashboard-fix),
