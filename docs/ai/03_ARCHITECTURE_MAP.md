@@ -34,10 +34,10 @@
 ## Luồng phân quyền (RBAC) — hiện tại
 1. Client `POST /api/auth/login` với `{ hrm_code, password }`.
 2. Server tra `users`, `verifyPassword` (scrypt) → nếu đúng, `signToken` trả JWT (payload: `id, hrm_code, full_name, role`).
-3. Route ghi (POST/PUT): client gửi header `Authorization: Bearer <token>`.
+3. Mọi route `/api/*` (trừ đăng nhập): client gửi header `Authorization: Bearer <token>`.
 4. `authRequired` verify token → set `req.user`. Sai/thiếu → **401**.
 5. `requireManager`: `role === 'STAFF'` → **403**; khác STAFF → cho qua.
-6. Route đọc (GET) không gắn middleware → mở.
+6. Route đọc (GET) cũng bắt buộc token (middleware toàn cục trong `server/index.js`), trước đó còn lớp lọc IP `server/security.js`.
 
 ## Route ghi được bảo vệ
 - `POST /api/equipments`  ← nhận thêm `assigned_user_id` (feat/personnel-backend)

@@ -4,6 +4,20 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-05] - Lọc IP truy cập + đóng API đọc + header bảo mật (feat/ip-allowlist-security)
+
+### Changes
+- **server/security.js (mới)**: `parseIpList` (IP/CIDR IPv4/IPv6), `clientIp` (chỉ tin `X-Forwarded-For` từ `TRUSTED_PROXIES`, đọc phải→trái), `createSecurity()` → `ipFilter` (lọc `CMS_ALLOWED_IPS`, mặc định chỉ localhost), `securityHeaders`, `sendNotFound`, nhật ký `data/security.log`.
+- **server/pages/404.html (mới)**: trang 404 (cùng mẫu với hệ thống KSK), CSS nhúng, CSP `default-src 'none'` + mã băm style tính lúc chạy, không script.
+- **server/index.js**: gắn `ipFilter` + `securityHeaders` đầu tiên; bỏ `cors()`; tắt `x-powered-by`; middleware toàn cục bắt buộc token cho mọi `/api/*` trừ đăng nhập; rate-limit đăng nhập dùng `req.clientIp` + thêm trần theo IP `LOGIN_IP_MAX_FAILS`; ghi nhật ký đăng nhập; `/api/*` không khớp route → 404 JSON (không trả `index.html`); 404 cuối cùng dùng trang mới.
+- **src/components/** (8 file): mọi `fetch()` GET đổi sang `apiFetch()` (gắn token). `src/utils/api.js`: sửa chú thích.
+- **vite.config.mjs**: proxy `/api` thêm `xfwd: true` (gửi IP thật cho backend khi chạy qua Vite).
+- **tests/security.test.js (mới, 12 test)**; `tests/equipments.test.js`, `tests/personnel.test.js`: 4 lệnh GET kèm token.
+- **Tested**: `npm test` 130/130 pass; `npm run build` OK. Chạy thật (backend :5000 phục vụ `dist/` + Vite preview :3000, Chromium): đăng nhập + Tổng quan tải dữ liệu, không API nào lỗi; truy cập từ IP không được phép (192.0.2.2) → `:5000` trang 404, API 404, đăng nhập qua `:3000` → 404; `security.log` ghi `ip_denied` đúng IP.
+- Phạm vi: các file trên + `docs/ai/00_SNAPSHOT.md`, `03_ARCHITECTURE_MAP.md`, `06_DEPLOYMENT.md` (mục 5). `package.json`: chỉ thêm test vào script (gói `cors` còn trong dependencies nhưng không dùng nữa).
+
+---
+
 ## [2026-08-18] - Bản Đồ Điểm Phục Vụ tương tác (feat/network-map-view)
 
 ### Changes

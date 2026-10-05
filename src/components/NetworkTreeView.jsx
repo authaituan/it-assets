@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Cpu
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 // ==========================================
 // "Cây Thư Mục" — submenu con của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure).
@@ -26,7 +27,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/organization/tree')
+    apiFetch('/api/organization/tree')
       .then(res => res.json())
       .then(data => {
         setTreeData(data);

@@ -1,16 +1,33 @@
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid');
 const { signToken, verifyPassword, hashPassword, authRequired, requireManager } = require('./auth');
+const { createSecurity } = require('./security');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors());
+// ==========================================
+// Lớp bảo mật (server/security.js) — chạy TRƯỚC mọi thứ khác:
+//   1. Lọc IP theo CMS_ALLOWED_IPS: IP không được phép nhận trang 404 (không
+//      lộ là có hệ thống ở đây), API nhận 404 JSON; ghi data/security.log.
+//   2. Header bảo mật cho mọi phản hồi.
+//   3. Mọi /api/* (trừ đăng nhập) đều bắt buộc token — kể cả route đọc, và cả
+//      route thêm sau này nếu quên gắn authRequired (mặc định là chặn).
+// Không bật CORS: frontend chạy cùng địa chỉ với backend (bản build trong
+// dist/ do chính server này phục vụ, hoặc qua proxy của Vite khi dev).
+// ==========================================
+const security = createSecurity();
+app.disable('x-powered-by');
+app.use(security.ipFilter);
+app.use(security.securityHeaders);
 app.use(express.json({ limit: '50mb' }));
+app.use('/api', (req, res, next) => {
+  if (req.path === '/auth/login') return next();
+  return authRequired(req, res, next);
+});
 
 // ==========================================
 // Rate limit đăng nhập: chống brute-force đoán mật khẩu.
@@ -20,25 +37,31 @@ app.use(express.json({ limit: '50mb' }));
 // Lưu trong bộ nhớ tiến trình (Map, không dùng DB/Redis) — đủ dùng cho quy
 // mô 1 instance hiện tại; sẽ tự reset khi restart server (đánh đổi chấp
 // nhận được, không phải phòng thủ tuyệt đối cho hệ thống nhiều instance).
-// LƯU Ý triển khai: nếu sau này chạy sau reverse proxy (nginx...), cần
-// `app.set('trust proxy', ...)` để req.ip lấy đúng IP thật của client thay
-// vì IP của proxy — hiện chưa cấu hình vì chưa biết mô hình deploy thật.
+// IP lấy từ req.clientIp (server/security.js): chỉ tin X-Forwarded-For khi
+// kết nối đến từ proxy khai báo trong TRUSTED_PROXIES.
+// Thêm 1 trần THEO IP (LOGIN_IP_MAX_FAILS lần sai / 15 phút, mọi tài khoản cộng
+// dồn): chặn 1 máy dò lần lượt nhiều tài khoản, mỗi tài khoản vài lần.
 // ==========================================
 const LOGIN_MAX_ATTEMPTS = 5;
 const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 phút
-const loginAttempts = new Map(); // key: "ip|hrm_code" -> { count, windowStart }
+const LOGIN_IP_MAX_FAILS = Number(process.env.LOGIN_IP_MAX_FAILS) || 20;
+const loginAttempts = new Map(); // key: "ip|hrm_code" hoặc "ip|*" -> { count, windowStart }
 
 function getLoginRateLimitKey(req, hrmCode) {
-  return `${req.ip}|${hrmCode}`;
+  return `${req.clientIp || req.ip}|${hrmCode}`;
 }
 
-function checkLoginRateLimit(key) {
+function getLoginIpKey(req) {
+  return `${req.clientIp || req.ip}|*`;
+}
+
+function checkLoginRateLimit(key, max = LOGIN_MAX_ATTEMPTS) {
   const now = Date.now();
   const entry = loginAttempts.get(key);
   if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
     return { limited: false };
   }
-  if (entry.count >= LOGIN_MAX_ATTEMPTS) {
+  if (entry.count >= max) {
     const retryAfterMs = LOGIN_WINDOW_MS - (now - entry.windowStart);
     return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
   }
@@ -47,6 +70,12 @@ function checkLoginRateLimit(key) {
 
 function recordFailedLogin(key) {
   const now = Date.now();
+  if (loginAttempts.size > 10000) {
+    // Dọn mục đã hết cửa sổ để Map không phình vô hạn khi bị dò liên tục.
+    for (const [k, v] of loginAttempts) {
+      if (now - v.windowStart > LOGIN_WINDOW_MS) loginAttempts.delete(k);
+    }
+  }
   const entry = loginAttempts.get(key);
   if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
     loginAttempts.set(key, { count: 1, windowStart: now });
@@ -73,8 +102,12 @@ app.post('/api/auth/login', (req, res) => {
     }
 
     const rateLimitKey = getLoginRateLimitKey(req, hrm_code);
-    const rateLimitCheck = checkLoginRateLimit(rateLimitKey);
+    const ipKey = getLoginIpKey(req);
+    const ipCheck = checkLoginRateLimit(ipKey, LOGIN_IP_MAX_FAILS);
+    const accountCheck = checkLoginRateLimit(rateLimitKey);
+    const rateLimitCheck = ipCheck.limited ? ipCheck : accountCheck;
     if (rateLimitCheck.limited) {
+      security.log({ event: 'login_limited', ip: req.clientIp, hrm_code: String(hrm_code).slice(0, 50), scope: ipCheck.limited ? 'ip' : 'account' });
       res.set('Retry-After', String(rateLimitCheck.retryAfterSeconds));
       return res.status(429).json({
         error: `Đăng nhập sai quá nhiều lần, vui lòng thử lại sau ${Math.ceil(rateLimitCheck.retryAfterSeconds / 60)} phút`
@@ -85,6 +118,8 @@ app.post('/api/auth/login', (req, res) => {
     // Thông báo chung để tránh lộ thông tin tài khoản tồn tại hay không.
     if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
       recordFailedLogin(rateLimitKey);
+      recordFailedLogin(ipKey);
+      security.log({ event: 'login_fail', ip: req.clientIp, hrm_code: String(hrm_code).slice(0, 50) });
       return res.status(401).json({ error: 'Mã HRM hoặc mật khẩu không đúng' });
     }
 
@@ -93,10 +128,12 @@ app.post('/api/auth/login', (req, res) => {
     // trị viên. Kiểm tra SAU KHI verify mật khẩu đúng (không phải trước) để tránh lộ
     // trạng thái vô hiệu hoá của 1 tài khoản cho người chưa chứng minh biết mật khẩu.
     if (user.deactivated_at) {
+      security.log({ event: 'login_deactivated', ip: req.clientIp, hrm_code: user.hrm_code });
       return res.status(401).json({ error: 'Tài khoản đã bị vô hiệu hoá, vui lòng liên hệ quản trị viên' });
     }
 
     clearLoginAttempts(rateLimitKey);
+    security.log({ event: 'login_ok', ip: req.clientIp, hrm_code: user.hrm_code });
     const token = signToken(user);
     res.json({
       message: 'Đăng nhập thành công',
@@ -2195,10 +2232,16 @@ if (fs.existsSync(clientBuildPath)) {
   // nếu thư mục dist/ tồn tại). Dùng app.use() không path — middleware
   // cuối cùng, chạy cho MỌI request chưa được route nào ở trên xử lý,
   // tương đương ý nghĩa wildcard cũ nhưng không cần path-to-regexp parse.
-  app.use((req, res) => {
+  app.use((req, res, next) => {
+    // /api/* không khớp route nào -> 404 JSON, không trả trang giao diện.
+    if (req.path.startsWith('/api/')) return next();
+    if (req.method !== 'GET' && req.method !== 'HEAD') return next();
     res.sendFile(path.join(clientBuildPath, 'index.html'));
   });
 }
+
+// Mọi yêu cầu còn lại: trang 404 (trình duyệt) hoặc 404 JSON (API).
+app.use(security.sendNotFound);
 
 app.listen(PORT, () => {
   console.log(`Server CCDC bưu điện đang chạy tại http://localhost:${PORT}`);

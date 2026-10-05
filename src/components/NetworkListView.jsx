@@ -23,7 +23,7 @@ import {
   Save,
   Eye
 } from 'lucide-react';
-import { apiFetchJson } from '../utils/api';
+import { apiFetch, apiFetchJson } from '../utils/api';
 
 // ==========================================
 // "Danh Sách" — 1 trong 3 submenu con của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure).
@@ -995,7 +995,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
   const [viewingPostOffice, setViewingPostOffice] = useState(null);
 
   useEffect(() => {
-    fetch('/api/organization/communes')
+    apiFetch('/api/organization/communes')
       .then((res) => res.json())
       .then((data) => setCommunes(data || []))
       .catch((err) => console.error(err));
@@ -1024,7 +1024,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
   // có thể tạo mới BĐX cần cập nhật dropdown lọc).
   const handleMutationSuccess = () => {
     fetchNetwork();
-    fetch('/api/organization/communes')
+    apiFetch('/api/organization/communes')
       .then((res) => res.json())
       .then((data) => setCommunes(data || []))
       .catch((err) => console.error(err));

@@ -355,8 +355,8 @@ test('POST /api/equipments assigned_user_id hợp lệ -> 201, lưu đúng assig
   const row = ctx.db.prepare('SELECT assigned_user_id FROM equipments WHERE id = ?').get(eq.id);
   assert.equal(row.assigned_user_id, personnel.id);
 
-  // Verify qua API công khai (GET detail) -> hiển thị đúng tên nhân sự đã gán.
-  const detail = await (await fetch(`${ctx.baseUrl}/api/equipments/${eq.id}`)).json();
+  // Verify qua API GET detail (bắt buộc token) -> hiển thị đúng tên nhân sự đã gán.
+  const detail = await (await fetch(`${ctx.baseUrl}/api/equipments/${eq.id}`, { headers: { Authorization: `Bearer ${mgrToken}` } })).json();
   assert.equal(detail.assigned_user_name, 'Nguoi Duoc Gan May');
 });
 

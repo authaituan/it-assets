@@ -21,6 +21,7 @@ import {
   FolderTree,
   Map
 } from 'lucide-react';
+import { apiFetch } from '../utils/api';
 
 // Submenu TĨNH 3 mục cố định của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure)
 // — KHÁC hẳn submenu động của "Quản Lý CCDC" (deviceTypes fetch từ API): đây là 3 VIEW
@@ -37,7 +38,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
   const [isNetworkExpanded, setIsNetworkExpanded] = useState(false);
 
   useEffect(() => {
-    fetch('/api/device-types')
+    apiFetch('/api/device-types')
       .then(res => res.json())
       .then(data => setDeviceTypes(data))
       .catch(err => console.error(err));

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Plus, Monitor, Printer, QrCode, Wifi, Zap, Camera, Scale, Check, AlertCircle } from 'lucide-react';
-import { apiFetchJson } from '../utils/api';
+import { apiFetch, apiFetchJson } from '../utils/api';
 
 export default function AddEquipmentModal({ onClose, onSuccess }) {
   const [deviceTypes, setDeviceTypes] = useState([]);
@@ -44,25 +44,25 @@ export default function AddEquipmentModal({ onClose, onSuccess }) {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    fetch('/api/device-types')
+    apiFetch('/api/device-types')
       .then(res => res.json())
       .then(data => {
         setDeviceTypes(data);
         if (data.length > 0) setSelectedDeviceTypeId(data[0].id);
       });
 
-    fetch('/api/organization/communes')
+    apiFetch('/api/organization/communes')
       .then(res => res.json())
       .then(data => setCommunes(data));
 
-    fetch('/api/equipments/category-raw-options')
+    apiFetch('/api/equipments/category-raw-options')
       .then(res => res.json())
       .then(data => setCategoryRawOptions(data || []));
   }, []);
 
   useEffect(() => {
     if (selectedCommuneId) {
-      fetch(`/api/organization/post-offices?communeId=${selectedCommuneId}`)
+      apiFetch(`/api/organization/post-offices?communeId=${selectedCommuneId}`)
         .then(res => res.json())
         .then(data => {
           setPostOffices(data);
