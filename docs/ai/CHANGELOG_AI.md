@@ -4,6 +4,12 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-05] - Tách server/index.js giai đoạn A (refactor/split-index-A)
+
+- Chỉ di chuyển code, không đổi hành vi/route: thêm `server/routes/{auth,dashboard,users}.js`, `server/lib/helpers.js`; `index.js` 2255 → 1859 dòng (mount `app.use('/api', router)` đúng vị trí cũ, `app.locals.security` cho log đăng nhập). 34 route đối chiếu khớp; `npm test` 133/133, `npm run build` OK. Còn giai đoạn B, C.
+
+---
+
 ## [2026-10-05] - CI GitHub Actions (feat/ci-github-actions)
 
 - Thêm `.github/workflows/ci.yml`: chạy `npm ci` → `npm test` → `npm run build` trên ubuntu-latest, Node 22, cache npm, khi PR vào `main` và push lên `main`; `timeout-minutes: 10`, `permissions: contents: read`. Không đổi code/package.json. Cập nhật `05_BACKLOG.md`, `00_SNAPSHOT.md` (bỏ rủi ro "chưa có CI").

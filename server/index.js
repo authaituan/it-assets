@@ -7,8 +7,12 @@ const path = require('path');
 const fs = require('fs');
 const db = require('./db');
 const { v4: uuidv4 } = require('uuid');
-const { signToken, verifyPassword, hashPassword, authRequired, requireManager } = require('./auth');
+const { authRequired, requireManager } = require('./auth');
 const { createSecurity } = require('./security');
+const { parseSpecs, parseFloatOrNull, normalizeStr } = require('./lib/helpers');
+const authRoutes = require('./routes/auth');
+const dashboardRoutes = require('./routes/dashboard');
+const usersRoutes = require('./routes/users');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -24,6 +28,7 @@ const PORT = process.env.PORT || 5000;
 // dist/ do chính server này phục vụ, hoặc qua proxy của Vite khi dev).
 // ==========================================
 const security = createSecurity();
+app.locals.security = security; // routes/auth.js ghi nhật ký bảo mật qua req.app.locals.security
 app.disable('x-powered-by');
 app.use(security.ipFilter);
 app.use(security.securityHeaders);
@@ -36,226 +41,9 @@ app.use('/api', (req, res, next) => {
 });
 app.use(express.json({ limit: '50mb' }));
 
-// ==========================================
-// Rate limit đăng nhập: chống brute-force đoán mật khẩu.
-// Giới hạn theo cặp (IP + hrm_code) — không chặn nhầm nhiều người dùng
-// chung 1 mạng (NAT/wifi công ty) đăng nhập các tài khoản KHÁC nhau, chỉ
-// chặn việc dò mật khẩu liên tục nhắm vào 1 tài khoản cụ thể.
-// Lưu trong bộ nhớ tiến trình (Map, không dùng DB/Redis) — đủ dùng cho quy
-// mô 1 instance hiện tại; sẽ tự reset khi restart server (đánh đổi chấp
-// nhận được, không phải phòng thủ tuyệt đối cho hệ thống nhiều instance).
-// IP lấy từ req.clientIp (server/security.js): chỉ tin X-Forwarded-For khi
-// kết nối đến từ proxy khai báo trong TRUSTED_PROXIES.
-// Thêm 1 trần THEO IP (LOGIN_IP_MAX_FAILS lần sai / 15 phút, mọi tài khoản cộng
-// dồn): chặn 1 máy dò lần lượt nhiều tài khoản, mỗi tài khoản vài lần.
-// ==========================================
-const LOGIN_MAX_ATTEMPTS = 5;
-const LOGIN_WINDOW_MS = 15 * 60 * 1000; // 15 phút
-const LOGIN_IP_MAX_FAILS = Number(process.env.LOGIN_IP_MAX_FAILS) || 20;
-const loginAttempts = new Map(); // key: "ip|hrm_code" hoặc "ip|*" -> { count, windowStart }
-
-function getLoginRateLimitKey(req, hrmCode) {
-  return `${req.clientIp || req.ip}|${hrmCode}`;
-}
-
-function getLoginIpKey(req) {
-  return `${req.clientIp || req.ip}|*`;
-}
-
-function checkLoginRateLimit(key, max = LOGIN_MAX_ATTEMPTS) {
-  const now = Date.now();
-  const entry = loginAttempts.get(key);
-  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
-    return { limited: false };
-  }
-  if (entry.count >= max) {
-    const retryAfterMs = LOGIN_WINDOW_MS - (now - entry.windowStart);
-    return { limited: true, retryAfterSeconds: Math.max(1, Math.ceil(retryAfterMs / 1000)) };
-  }
-  return { limited: false };
-}
-
-function recordFailedLogin(key) {
-  const now = Date.now();
-  if (loginAttempts.size > 10000) {
-    // Dọn mục đã hết cửa sổ để Map không phình vô hạn khi bị dò liên tục.
-    for (const [k, v] of loginAttempts) {
-      if (now - v.windowStart > LOGIN_WINDOW_MS) loginAttempts.delete(k);
-    }
-  }
-  const entry = loginAttempts.get(key);
-  if (!entry || now - entry.windowStart > LOGIN_WINDOW_MS) {
-    loginAttempts.set(key, { count: 1, windowStart: now });
-  } else {
-    entry.count += 1;
-  }
-}
-
-function clearLoginAttempts(key) {
-  loginAttempts.delete(key);
-}
-
-// ==========================================
-// 0. AUTHENTICATION API (Đăng nhập + JWT)
-// ==========================================
-// POST /api/auth/login  { hrm_code, password }
-// Trả về JWT nếu hợp lệ. Dùng token này ở header cho các route ghi:
-//   Authorization: Bearer <token>
-app.post('/api/auth/login', (req, res) => {
-  try {
-    const { hrm_code, password } = req.body || {};
-    if (!hrm_code || !password) {
-      return res.status(400).json({ error: 'Vui lòng nhập mã HRM và mật khẩu' });
-    }
-
-    const rateLimitKey = getLoginRateLimitKey(req, hrm_code);
-    const ipKey = getLoginIpKey(req);
-    const ipCheck = checkLoginRateLimit(ipKey, LOGIN_IP_MAX_FAILS);
-    const accountCheck = checkLoginRateLimit(rateLimitKey);
-    const rateLimitCheck = ipCheck.limited ? ipCheck : accountCheck;
-    if (rateLimitCheck.limited) {
-      security.log({ event: 'login_limited', ip: req.clientIp, hrm_code: String(hrm_code).slice(0, 50), scope: ipCheck.limited ? 'ip' : 'account' });
-      res.set('Retry-After', String(rateLimitCheck.retryAfterSeconds));
-      return res.status(429).json({
-        error: `Đăng nhập sai quá nhiều lần, vui lòng thử lại sau ${Math.ceil(rateLimitCheck.retryAfterSeconds / 60)} phút`
-      });
-    }
-
-    const user = db.prepare("SELECT * FROM users WHERE hrm_code = ?").get(hrm_code);
-    // Thông báo chung để tránh lộ thông tin tài khoản tồn tại hay không.
-    if (!user || !user.password_hash || !verifyPassword(password, user.password_hash)) {
-      recordFailedLogin(rateLimitKey);
-      recordFailedLogin(ipKey);
-      security.log({ event: 'login_fail', ip: req.clientIp, hrm_code: String(hrm_code).slice(0, 50) });
-      return res.status(401).json({ error: 'Mã HRM hoặc mật khẩu không đúng' });
-    }
-
-    // Mật khẩu đúng nhưng tài khoản đã bị vô hiệu hoá -> vẫn chặn đăng nhập, dùng
-    // message RIÊNG (khác lỗi sai mật khẩu) để người dùng biết rõ cần liên hệ quản
-    // trị viên. Kiểm tra SAU KHI verify mật khẩu đúng (không phải trước) để tránh lộ
-    // trạng thái vô hiệu hoá của 1 tài khoản cho người chưa chứng minh biết mật khẩu.
-    if (user.deactivated_at) {
-      security.log({ event: 'login_deactivated', ip: req.clientIp, hrm_code: user.hrm_code });
-      return res.status(401).json({ error: 'Tài khoản đã bị vô hiệu hoá, vui lòng liên hệ quản trị viên' });
-    }
-
-    clearLoginAttempts(rateLimitKey);
-    security.log({ event: 'login_ok', ip: req.clientIp, hrm_code: user.hrm_code });
-    const token = signToken(user);
-    res.json({
-      message: 'Đăng nhập thành công',
-      token,
-      user: {
-        id: user.id,
-        hrm_code: user.hrm_code,
-        full_name: user.full_name,
-        role: user.role
-      }
-    });
-  } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Helper function to format JSON specs
-const parseSpecs = (specsStr) => {
-  try {
-    return typeof specsStr === 'string' ? JSON.parse(specsStr) : (specsStr || {});
-  } catch (e) {
-    return {};
-  }
-};
-
-// ==========================================
-// 1. DASHBOARD & STATS API
-// ==========================================
-app.get('/api/dashboard/stats', (req, res) => {
-  try {
-    const totalAssets = db.prepare("SELECT COUNT(*) as count FROM equipments WHERE deleted_at IS NULL").get().count;
-    const activeAssets = db.prepare("SELECT COUNT(*) as count FROM equipments WHERE status = 'IN_USE' AND deleted_at IS NULL").get().count;
-    const totalCommunes = db.prepare("SELECT COUNT(*) as count FROM commune_post_offices").get().count;
-    const totalPostOffices = db.prepare("SELECT COUNT(*) as count FROM post_offices").get().count;
-    const emptyPostOffices = db.prepare("SELECT COUNT(*) as count FROM post_offices WHERE has_computer = 0 OR id NOT IN (SELECT DISTINCT post_office_id FROM equipments WHERE deleted_at IS NULL)").get().count;
-
-    // Equipments with specs needing upgrade (RAM <= 4GB or HDD only)
-    const allEquipments = db.prepare("SELECT specs FROM equipments WHERE deleted_at IS NULL").all();
-    let lowSpecCount = 0;
-    allEquipments.forEach(eq => {
-      const specs = parseSpecs(eq.specs);
-      const ram = (specs.ram || '').toLowerCase();
-      const storage = (specs.storage || '').toLowerCase();
-      if (ram.includes('4gb') || ram.includes('2gb') || storage.includes('hdd') && !storage.includes('ssd')) {
-        lowSpecCount++;
-      }
-    });
-
-    // 1. Assets count by BĐX (Top 10 BĐX)
-    const assetsByCommune = db.prepare(`
-      SELECT c.id, c.code, c.name, COUNT(e.id) as assetCount
-      FROM commune_post_offices c
-      JOIN post_offices p ON p.commune_id = c.id
-      JOIN equipments e ON e.post_office_id = p.id AND e.deleted_at IS NULL
-      GROUP BY c.id
-      ORDER BY assetCount DESC
-      LIMIT 10
-    `).all();
-
-    // 2. Assets count by Device Type
-    const assetsByType = db.prepare(`
-      SELECT dt.name, dt.code, COUNT(e.id) as count
-      FROM device_types dt
-      LEFT JOIN equipments e ON e.device_type_id = dt.id AND e.deleted_at IS NULL
-      GROUP BY dt.id
-    `).all();
-
-    // 3. Assets count by Brand
-    const assetsByBrand = db.prepare(`
-      SELECT COALESCE(b.name, 'Chưa xác định') as brandName, COUNT(e.id) as count
-      FROM equipments e
-      LEFT JOIN brands b ON e.brand_id = b.id
-      WHERE e.deleted_at IS NULL
-      GROUP BY brandName
-      ORDER BY count DESC
-      LIMIT 6
-    `).all();
-
-    // 4. IT Warnings (Missing MAC, Missing IP, Windows 7)
-    const missingMac = db.prepare("SELECT COUNT(*) as count FROM equipments WHERE (mac_address IS NULL OR mac_address = '' OR mac_address = 'UNKNOWN') AND deleted_at IS NULL").get().count;
-    const missingIp = db.prepare("SELECT COUNT(*) as count FROM equipments WHERE (ip_address IS NULL OR ip_address = '') AND deleted_at IS NULL").get().count;
-    let win7Count = 0;
-    allEquipments.forEach(eq => {
-      const specs = parseSpecs(eq.specs);
-      if ((specs.os || '').toLowerCase().includes('win') && (specs.os || '').includes('7')) {
-        win7Count++;
-      }
-    });
-
-    res.json({
-      summary: {
-        totalAssets,
-        activeAssets,
-        totalCommunes,
-        totalPostOffices,
-        emptyPostOffices,
-        lowSpecCount
-      },
-      charts: {
-        assetsByCommune,
-        assetsByType,
-        assetsByBrand
-      },
-      warnings: {
-        missingMac,
-        missingIp,
-        win7Count
-      }
-    });
-  } catch (error) {
-    console.error("Dashboard stats error:", error);
-    res.status(500).json({ error: error.message });
-  }
-});
+// Router tách module (server/routes/*), mount đúng vị trí cũ để giữ thứ tự route.
+app.use('/api', authRoutes);
+app.use('/api', dashboardRoutes);
 
 // ==========================================
 // 2. EQUIPMENTS CRUD API
@@ -902,13 +690,6 @@ app.delete('/api/equipments/:id', authRequired, requireManager, (req, res) => {
 // mới Tỉnh/BĐX/Bưu cục. Route Equipment Import KHÔNG còn tự tạo tổ chức nữa —
 // gọi requireExistingPostOffice() và CHẶN (400) nếu mã bưu cục chưa tồn tại.
 // ==========================================
-
-// Parse chuỗi -> số thực, rỗng/không hợp lệ -> null (dùng cho latitude/longitude).
-function parseFloatOrNull(v) {
-  if (v === undefined || v === null || String(v).trim() === '') return null;
-  const n = parseFloat(v);
-  return Number.isNaN(n) ? null : n;
-}
 
 // resolveOrCreateOrgChain: chứa NGUYÊN VẸN logic tự tạo Tỉnh->BĐX->Bưu cục
 // (tách ra từ route Equipment Import cũ), MỞ RỘNG lưu thêm 9 cột mới của
@@ -1778,14 +1559,6 @@ app.put('/api/device-types/:id', authRequired, requireManager, (req, res) => {
 // 4. HRM AUTO-MAPPING API
 // ==========================================
 // ==========================================
-// Helper string normalizer (bỏ dấu + viết thường), dùng chung cho tìm kiếm
-// nhân sự (search/autocomplete). Copy nguyên logic từ route HRM cũ
-// (POST /api/hrm/upload-and-map, đã xoá — xem docs/ai/04_DECISIONS.md) trước
-// khi xoá route đó, giữ lại đúng hành vi chuẩn hoá.
-// ==========================================
-const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
-
-// ==========================================
 // 4b. PERSONNEL API (nhân sự — bảng `users`, KHÔNG liên quan tài khoản đăng
 // nhập). Thay thế route HRM cũ `POST /api/hrm/upload-and-map` (đã xoá).
 // Bảng `users` dùng chung cho 2 mục đích: tài khoản đăng nhập (role,
@@ -2059,176 +1832,7 @@ app.post('/api/personnel/import', authRequired, requireManager, (req, res) => {
   }
 });
 
-// ==========================================
-// 5. USER ADMINISTRATION API
-// ==========================================
-// Danh sách user — KHÔNG bao giờ trả password_hash (SELECT tường minh từng cột).
-// CHỈ trả tài khoản đăng nhập THẬT (password_hash IS NOT NULL) — bảng `users`
-// giờ dùng chung cho cả nhân sự thuần (không có password_hash, quản lý qua
-// /api/personnel), nên route này phải lọc để không lẫn nhân sự vào danh sách
-// tài khoản đăng nhập.
-app.get('/api/users', authRequired, requireManager, (req, res) => {
-  try {
-    // Vẫn trả về CẢ user đã vô hiệu hoá (khác equipments soft-delete vốn ẩn khỏi danh
-    // sách) — UI cần thấy để biết ai đang bị khoá + có nút Kích Hoạt Lại.
-    const users = db.prepare(`
-      SELECT id, hrm_code, full_name, role, post_office_code, commune_code, post_office_id, created_at, deactivated_at
-      FROM users
-      WHERE password_hash IS NOT NULL
-      ORDER BY created_at DESC
-    `).all();
-    res.json(users);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Tạo user mới. hrm_code bắt buộc + unique, password bắt buộc >= 6 ký tự,
-// hash bằng hashPassword() trước khi lưu (không bao giờ lưu plaintext).
-app.post('/api/users', authRequired, requireManager, (req, res) => {
-  try {
-    const { hrm_code, full_name, role, password } = req.body || {};
-
-    if (!hrm_code || typeof hrm_code !== 'string' || !hrm_code.trim()) {
-      return res.status(400).json({ error: 'Vui lòng nhập Mã HRM' });
-    }
-    if (!full_name || typeof full_name !== 'string' || !full_name.trim()) {
-      return res.status(400).json({ error: 'Vui lòng nhập Họ và Tên' });
-    }
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ error: 'Mật khẩu phải có ít nhất 6 ký tự' });
-    }
-
-    const trimmedHrmCode = hrm_code.trim();
-    const existing = db.prepare("SELECT id FROM users WHERE hrm_code = ?").get(trimmedHrmCode);
-    if (existing) {
-      return res.status(400).json({ error: 'Mã HRM này đã tồn tại trong hệ thống' });
-    }
-
-    const finalRole = (role && typeof role === 'string' && role.trim()) ? role.trim() : 'STAFF';
-    const id = uuidv4();
-
-    db.prepare(`
-      INSERT INTO users (id, hrm_code, full_name, role, password_hash)
-      VALUES (?, ?, ?, ?, ?)
-    `).run(id, trimmedHrmCode, full_name.trim(), finalRole, hashPassword(password));
-
-    res.status(201).json({
-      message: 'Tạo tài khoản người dùng thành công',
-      id,
-      hrm_code: trimmedHrmCode,
-      full_name: full_name.trim(),
-      role: finalRole
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Sửa full_name/role của 1 user. Chặn tự đổi role của chính mình (so
-// req.user.id với :id) để tránh tự khoá quyền quản lý của chính mình.
-app.put('/api/users/:id', authRequired, requireManager, (req, res) => {
-  try {
-    const { full_name, role } = req.body || {};
-    const existing = db.prepare("SELECT * FROM users WHERE id = ?").get(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-
-    const wantsRoleChange = role !== undefined && typeof role === 'string' && role.trim() && role.trim() !== existing.role;
-    if (wantsRoleChange && req.user.id === req.params.id) {
-      return res.status(400).json({ error: 'Không thể tự đổi quyền (role) của chính mình, tránh tự khoá quyền quản lý' });
-    }
-
-    const finalFullName = (full_name !== undefined && typeof full_name === 'string' && full_name.trim())
-      ? full_name.trim()
-      : existing.full_name;
-    const finalRole = wantsRoleChange ? role.trim() : existing.role;
-
-    db.prepare("UPDATE users SET full_name = ?, role = ? WHERE id = ?").run(finalFullName, finalRole, req.params.id);
-
-    res.json({ message: 'Cập nhật người dùng thành công' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Reset mật khẩu cho user KHÁC — không cần biết mật khẩu cũ (dùng cho quản lý).
-app.put('/api/users/:id/reset-password', authRequired, requireManager, (req, res) => {
-  try {
-    const { password } = req.body || {};
-    if (!password || typeof password !== 'string' || password.length < 6) {
-      return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
-    }
-
-    const existing = db.prepare("SELECT id FROM users WHERE id = ?").get(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-
-    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(password), req.params.id);
-
-    res.json({ message: 'Đặt lại mật khẩu thành công' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Vô hiệu hoá tài khoản (KHÔNG xoá cứng, chỉ set deactivated_at) — chặn đăng nhập
-// từ lần sau (xem POST /api/auth/login). Chặn tự vô hiệu hoá chính mình (so
-// req.user.id với :id) — copy đúng pattern đã dùng để chặn tự đổi role.
-app.put('/api/users/:id/deactivate', authRequired, requireManager, (req, res) => {
-  try {
-    if (req.user.id === req.params.id) {
-      return res.status(400).json({ error: 'Không thể tự vô hiệu hoá chính tài khoản đang đăng nhập' });
-    }
-
-    const existing = db.prepare("SELECT id FROM users WHERE id = ?").get(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-
-    db.prepare("UPDATE users SET deactivated_at = CURRENT_TIMESTAMP WHERE id = ?").run(req.params.id);
-
-    res.json({ message: 'Đã vô hiệu hoá tài khoản' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Khôi phục tài khoản đã vô hiệu hoá (set deactivated_at = NULL).
-app.put('/api/users/:id/reactivate', authRequired, requireManager, (req, res) => {
-  try {
-    const existing = db.prepare("SELECT id FROM users WHERE id = ?").get(req.params.id);
-    if (!existing) return res.status(404).json({ error: 'Không tìm thấy người dùng' });
-
-    db.prepare("UPDATE users SET deactivated_at = NULL WHERE id = ?").run(req.params.id);
-
-    res.json({ message: 'Đã kích hoạt lại tài khoản' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Tự đổi mật khẩu CỦA CHÍNH MÌNH — chỉ cần authRequired (KHÔNG cần
-// requireManager, mọi user kể cả STAFF đều tự đổi được). Bắt buộc verify
-// đúng mật khẩu hiện tại trước khi cho đổi.
-app.put('/api/users/me/password', authRequired, (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body || {};
-    if (!currentPassword || !newPassword) {
-      return res.status(400).json({ error: 'Vui lòng nhập mật khẩu hiện tại và mật khẩu mới' });
-    }
-    if (typeof newPassword !== 'string' || newPassword.length < 6) {
-      return res.status(400).json({ error: 'Mật khẩu mới phải có ít nhất 6 ký tự' });
-    }
-
-    const user = db.prepare("SELECT * FROM users WHERE id = ?").get(req.user.id);
-    if (!user || !verifyPassword(currentPassword, user.password_hash)) {
-      return res.status(400).json({ error: 'Mật khẩu hiện tại không đúng' });
-    }
-
-    db.prepare("UPDATE users SET password_hash = ? WHERE id = ?").run(hashPassword(newPassword), req.user.id);
-
-    res.json({ message: 'Đổi mật khẩu thành công' });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
+app.use('/api', usersRoutes);
 
 // Serve frontend static files in production
 const clientBuildPath = path.join(__dirname, '..', 'dist');
