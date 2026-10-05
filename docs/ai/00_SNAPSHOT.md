@@ -17,7 +17,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - **Backend**: Node.js + Express (`server/index.js`, ~1900 dòng), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
-- **Test**: `node:test` built-in, **130 test case** trong `tests/*.test.js`, chạy
+- **Test**: `node:test` built-in, **133 test case** trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -49,6 +49,10 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - **Mọi `/api/*` trừ `POST /api/auth/login` bắt buộc token** (middleware toàn cục, mặc
   định chặn cả route thêm sau này). Không CORS; header nosniff/X-Frame-Options/
   Referrer-Policy/Permissions-Policy/COOP; `/api` `Cache-Control: no-store`; tắt X-Powered-By.
+- `JWT_SECRET` bắt buộc: thiếu thì server không khởi động (trừ `ALLOW_INSECURE_DEV=1`, chỉ dev).
+  `server/index.js` tự nạp `.env` bằng `process.loadEnvFile()` (biến hệ thống thắng `.env`).
+- Body: `/api/auth/login` tối đa 10kb; `express.json(50mb)` chỉ áp sau lớp bắt buộc token.
+  Trang 404 chuẩn hoá CRLF→LF trước khi băm CSP (`.gitattributes` ép LF cho `server/pages/*.html`).
 - Nhật ký `data/security.log` (`SECURITY_LOG`): `ip_denied` (1 dòng/IP/phút),
   `login_ok/login_fail/login_limited/login_deactivated` — không ghi mật khẩu/token.
 
@@ -150,8 +154,8 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   `CircleMarker` màu theo tình trạng + bán kính theo số thiết bị).
 
 ## Chưa có / rủi ro (còn lại — không khẩn cấp)
-- ⚠️ **JWT_SECRET mặc định cho DEV** — hướng dẫn set thật ở `06_DEPLOYMENT.md`, PO tự
-  làm khi deploy (thao tác vận hành, không phải code).
+- ⚠️ **Máy chủ thật phải có `JWT_SECRET`** (biến môi trường hoặc `.env`, xem
+  `06_DEPLOYMENT.md` mục 1) — thiếu thì server từ chối chạy sau khi merge nhánh này.
 - ⚠️ Chưa có refresh token — token hết hạn phải đăng nhập lại thủ công.
 - ⚠️ Import HRM/Equipment/Network cả đợt chạy 1 transaction — lỗi 1 dòng rollback toàn
   bộ, phải chạy lại từ đầu (đánh đổi có chủ đích).

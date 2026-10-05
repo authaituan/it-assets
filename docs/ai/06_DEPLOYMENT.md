@@ -4,39 +4,37 @@
 > trên máy cá nhân) sang chạy thật trên máy chủ. Không phải code, là các bước thao tác
 > tay khi deploy — không AI nào có thể tự làm thay vì cần quyền truy cập máy chủ thật.
 
-## 1. Set `JWT_SECRET` thật (bắt buộc trước khi deploy)
+## 1. Set `JWT_SECRET` thật (bắt buộc — thiếu thì server KHÔNG khởi động)
 
-**Vì sao quan trọng**: hiện tại nếu không set biến môi trường `JWT_SECRET`, server tự
-dùng 1 chuỗi mặc định cố định (`server/auth.js:12`) — bất kỳ ai đọc được mã nguồn (kể
-cả trên GitHub công khai... dù repo này đang private) đều biết được chuỗi đó, và có thể
-tự ký ra token giả mạo bất kỳ quyền nào (kể cả ADMIN) mà không cần mật khẩu.
+**Vì sao quan trọng**: nếu biết secret, kẻ tấn công tự ký được token giả mạo bất kỳ quyền
+nào (kể cả ADMIN) mà không cần mật khẩu. Vì vậy từ `feat/security-hardening-2`, thiếu
+`JWT_SECRET` thì `server/auth.js` báo lỗi rõ và thoát, không còn secret mặc định. Chỉ máy
+dev mới được đặt `ALLOW_INSECURE_DEV=1` để dùng secret mặc định (kèm cảnh báo) — KHÔNG
+dùng trên máy chủ thật.
 
-**Cách tạo 1 chuỗi bí mật đủ mạnh** (chạy trên máy, 1 lần duy nhất, lưu lại an toàn — không
-commit vào Git):
+**Cách tạo 1 chuỗi bí mật đủ mạnh** (chạy 1 lần, lưu an toàn — không commit vào Git):
 ```
 node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
 ```
 
-**Cách set biến môi trường** (tuỳ máy chủ triển khai thật, ví dụ phổ biến):
-- Nếu chạy trực tiếp bằng `node`: tạo file `.env` ở thư mục gốc dự án (đã có sẵn trong
-  `.gitignore`, sẽ không bị commit nhầm):
+**Cách set**:
+- Chạy trực tiếp bằng `node`: tạo file `.env` ở thư mục gốc dự án (đã có trong
+  `.gitignore`):
   ```
   JWT_SECRET=<dán_chuỗi_vừa_tạo_ở_trên>
   ```
-  rồi cần thêm thư viện đọc `.env` (ví dụ `dotenv`) nếu server chưa tự đọc — hiện
-  `server/index.js`/`server/auth.js` CHƯA có `require('dotenv').config()`, cần Dev AI bổ
-  sung nếu chọn hướng deploy này.
-- Nếu deploy bằng PM2: set trong `ecosystem.config.js` mục `env`.
-- Nếu deploy bằng Docker: set qua `-e JWT_SECRET=...` hoặc trong `docker-compose.yml`.
-- Nếu deploy lên nền tảng cloud (Render, Railway, VPS có control panel...): set trong
-  mục "Environment Variables" của nền tảng đó.
+  `server/index.js` tự nạp `.env` bằng `process.loadEnvFile()` (Node 20.12+/21.7+, không
+  cần thư viện `dotenv`). Biến môi trường hệ thống đã set sẵn luôn thắng giá trị trong
+  `.env`. Lưu ý: `.env` được tìm theo thư mục làm việc hiện tại — chạy `node` từ thư mục
+  gốc dự án.
+- PM2: set trong `ecosystem.config.js` mục `env`.
+- Docker: `-e JWT_SECRET=...` hoặc `docker-compose.yml`.
+- Cloud/VPS: mục "Environment Variables" của nền tảng.
 
-**Xác nhận đã set đúng**: khởi động server, KHÔNG được thấy dòng cảnh báo
-`[auth] CẢNH BÁO: JWT_SECRET chưa được set...` trong log console.
+**Xác nhận**: khởi động server không báo lỗi `[auth] Thiếu JWT_SECRET`.
 
-⚠️ Lưu ý: nếu đổi `JWT_SECRET` trong khi hệ thống đang có người dùng đăng nhập, mọi
-token cũ (ký bằng secret cũ) sẽ ngay lập tức không hợp lệ nữa — mọi người sẽ bị đăng
-xuất và phải đăng nhập lại. Nên đổi vào giờ ít người dùng.
+⚠️ Đổi `JWT_SECRET` khi đang có người đăng nhập sẽ làm mọi token cũ mất hiệu lực (mọi
+người bị đăng xuất). Nên đổi vào giờ ít người dùng.
 
 ## 2. Rate-limit đăng nhập (đã có sẵn, không cần làm gì thêm)
 Đã cài từ Vòng 2: tối đa 5 lần sai trong 15 phút cho mỗi cặp (IP + mã HRM), lần thứ 6
