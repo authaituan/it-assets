@@ -163,7 +163,6 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   cần ticket riêng, thử trên giao diện thật.
 - ⚠️ Token của tài khoản đã vô hiệu hoá vẫn dùng được tới khi hết hạn (`JWT_EXPIRY`, 8h).
 - ⚠️ `GET /api/organization/tree` trả 500 khi DB chưa có BĐT/TP nào (có từ trước, chưa sửa).
-- ⚠️ Chưa có CI (phải tự gõ `npm test`, không tự chạy trên GitHub).
 - ⚠️ Rate-limit đăng nhập lưu trong bộ nhớ tiến trình — không đúng nếu scale nhiều
   instance (cần Redis lúc đó, chưa cần ở quy mô hiện tại).
 
