@@ -24,4 +24,7 @@ function parseFloatOrNull(v) {
 // ==========================================
 const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
-module.exports = { parseSpecs, parseFloatOrNull, normalizeStr };
+// Tiền tố mã CCDC hợp lệ: 2-5 ký tự IN HOA / số (A-Z, 0-9).
+const ASSET_PREFIX_REGEX = /^[A-Z0-9]{2,5}$/;
+
+module.exports = { parseSpecs, parseFloatOrNull, normalizeStr, ASSET_PREFIX_REGEX };
