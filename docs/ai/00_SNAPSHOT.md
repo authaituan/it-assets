@@ -173,6 +173,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   autocomplete "Người Phụ Trách"), `NetworkTreeView.jsx` (cây phân cấp READ-ONLY, khôi
   phục nguyên bản từ trước khi có bảng CRUD), `NetworkMapView.jsx` (bản đồ Leaflet thật,
   `CircleMarker` màu theo tình trạng + bán kính theo số thiết bị).
+- **Quản Lý Email**: `EmailListView.jsx` (bảng quản lý email công vụ đơn vị/cá nhân, bộ lọc động 4 dropdown, Thêm/Sửa/Thu hồi/Kích hoạt lại).
 
 ## Chưa có / rủi ro (còn lại — không khẩn cấp)
 - ⚠️ **Máy chủ thật phải có `JWT_SECRET`** (biến môi trường hoặc `.env`, xem
