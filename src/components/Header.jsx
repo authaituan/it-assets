@@ -32,13 +32,13 @@ export default function Header({
       {/* Left side: Breadcrumbs & Title */}
       <div>
         <nav aria-label="breadcrumb">
-          <ol className="flex items-center space-x-2 text-sm text-[var(--color-text-muted)]">
+          <ol className="flex items-center space-x-2 text-[14px] text-[var(--color-subtext)]">
             <li>Trang</li>
             <li>/</li>
-            <li className="text-[var(--color-kpi-dark)]" aria-current="page">{getScreenName()}</li>
+            <li className="text-[var(--color-title)]" aria-current="page">{getScreenName()}</li>
           </ol>
         </nav>
-        <h6 className="font-bold text-[var(--color-kpi-dark)] mt-0.5 text-base capitalize">{getScreenName()}</h6>
+        <h6 className="font-bold text-[var(--color-title)] mt-0.5 text-base capitalize">{getScreenName()}</h6>
       </div>
 
       {/* Right side: Actions */}
@@ -51,53 +51,55 @@ export default function Header({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm..."
-            className="w-56 pl-9 pr-4 py-2 rounded-lg text-sm bg-white border border-gray-200 focus:outline-none focus:border-[var(--color-accent)] transition-all shadow-sm"
+            className="input-soft w-56 pl-9 pr-4 py-2"
           />
         </div>
 
         {/* Buttons */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onOpenCategoryModal}
-            className="btn-outline-accent flex items-center gap-1.5"
-          >
-            <FolderPlus className="w-4 h-4" />
-            <span>Thêm Danh Mục CCDC</span>
-          </button>
+        <div className="flex items-center gap-4">
+          {activeTab === 'inventory' && (
+            <button
+              onClick={onOpenCategoryModal}
+              className="btn btn-outline-primary flex items-center gap-1.5"
+            >
+              <FolderPlus className="w-4 h-4" />
+              <span>Thêm Danh Mục CCDC</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsChangePasswordOpen(true)}
-            className="text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-kpi-dark)] transition-colors flex items-center gap-1"
+            className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
           >
             <Lock className="w-4 h-4" />
-            <span>Đổi mật khẩu</span>
+            <span className="hidden sm:inline">Đổi mật khẩu</span>
           </button>
 
           <button
             onClick={onOpenHrmModal}
-            className="text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-kpi-dark)] transition-colors flex items-center gap-1"
+            className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
           >
             <UserCheck className="w-4 h-4" />
-            <span>Upload File HRM</span>
+            <span className="hidden sm:inline">Upload File HRM</span>
           </button>
 
           <button
             onClick={onLogout}
-            className="text-xs font-semibold text-[var(--color-text-muted)] hover:text-[var(--color-kpi-dark)] transition-colors flex items-center gap-1"
+            className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
           >
             <LogOut className="w-4 h-4" />
-            <span>Đăng xuất</span>
+            <span className="hidden sm:inline">Đăng xuất</span>
           </button>
         </div>
 
         {/* User Block */}
         <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-kpi-dark)] flex items-center justify-center font-bold text-xs text-white">
+          <div className="w-8 h-8 rounded-full bg-[var(--color-dark)] flex items-center justify-center font-bold text-xs text-white">
             {authUser?.full_name?.charAt(0) || 'U'}
           </div>
           <div className="hidden md:block text-left">
-            <div className="text-xs font-semibold text-[var(--color-kpi-dark)] leading-tight">{authUser?.full_name || authUser?.hrm_code || 'Người dùng'}</div>
-            <div className="text-[10px] text-[var(--color-text-muted)] font-medium">{authUser?.role === 'STAFF' ? 'Nhân viên (chỉ xem)' : 'Quản lý'}</div>
+            <div className="text-xs font-semibold text-[var(--color-title)] leading-tight">{authUser?.full_name || authUser?.hrm_code || 'Người dùng'}</div>
+            <div className="text-[10px] text-[var(--color-subtext)] font-medium">{authUser?.role === 'STAFF' ? 'Nhân viên (chỉ xem)' : 'Quản lý'}</div>
           </div>
         </div>
       </div>

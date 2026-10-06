@@ -111,7 +111,7 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="card-soft w-full max-w-2xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="p-5 border-b border-gray-100 flex items-center justify-between">
           <h3 className="font-bold text-base text-[var(--color-kpi-dark)] flex items-center gap-2">
@@ -180,8 +180,8 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
             </div>
           </div>
           <div className="pt-4 flex justify-end gap-3">
-            <button type="button" onClick={onClose} className="btn-outline-accent border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800">Hủy</button>
-            <button type="submit" disabled={loading} className="btn-solid-dark flex items-center gap-2">
+            <button type="button" onClick={onClose} className="btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800">Hủy</button>
+            <button type="submit" disabled={loading} className="btn btn-dark flex items-center gap-2">
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               <span>{isEdit ? 'Lưu Thay Đổi' : 'Thêm Email'}</span>
             </button>
@@ -212,7 +212,7 @@ function RevokeEmailModal({ emailItem, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
       <div className="card-soft w-full max-w-sm overflow-hidden bg-white">
         <div className="p-5 border-b border-gray-100">
           <h3 className="font-bold text-base text-[var(--color-kpi-dark)] flex items-center gap-2">
@@ -235,8 +235,8 @@ function RevokeEmailModal({ emailItem, onClose, onSuccess }) {
             <input type="date" value={revokedDate} onChange={(e) => setRevokedDate(e.target.value)} className="w-full px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[var(--color-accent)] transition-colors text-sm" />
           </div>
           <div className="flex justify-end gap-3 pt-2">
-            <button onClick={onClose} disabled={loading} className="btn-outline-accent border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800">Hủy</button>
-            <button onClick={handleRevoke} disabled={loading} className="btn-solid-dark !bg-red-600 hover:!bg-red-700 flex items-center gap-2">
+            <button onClick={onClose} disabled={loading} className="btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800">Hủy</button>
+            <button onClick={handleRevoke} disabled={loading} className="btn btn-dark !bg-red-600 hover:!bg-red-700 flex items-center gap-2">
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Thu Hồi'}
             </button>
           </div>
@@ -362,19 +362,19 @@ export default function EmailListView({ authUser, search, setSearch }) {
         <div className="p-6 border-b border-gray-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h6 className="text-base font-bold text-[var(--color-kpi-dark)]">Quản Lý Email</h6>
-              <p className="text-sm text-[var(--color-text-muted)] mt-1">Danh sách email công vụ của Đơn vị và Cá nhân</p>
+              <h6 className="text-base font-bold text-[var(--color-title)]">Quản Lý Email</h6>
+              <p className="text-sm text-[var(--color-subtext)] mt-1">Danh sách email công vụ của Đơn vị và Cá nhân</p>
             </div>
             <div className="flex items-center gap-3">
               {canEdit && (
                 <>
-                  <button onClick={() => setShowImportModal(true)} className="btn-outline-accent">
+                  <button onClick={() => setShowImportModal(true)} className="btn btn-outline-primary">
                     Import Excel
                   </button>
-                  <button onClick={() => setShowExportModal(true)} className="btn-outline-accent border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-800">
+                  <button onClick={() => setShowExportModal(true)} className="btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-800">
                     Export Excel
                   </button>
-                  <button onClick={() => { setEditingEmail(null); setIsFormOpen(true); }} className="btn-solid-dark flex items-center gap-1.5">
+                  <button onClick={() => { setEditingEmail(null); setIsFormOpen(true); }} className="btn btn-dark flex items-center gap-1.5">
                     <Plus className="w-4 h-4" />
                     Thêm Email
                   </button>
@@ -411,7 +411,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
                 <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Email</th>
                 <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Người Dùng / Đơn Vị</th>
                 <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider">Trạng Thái</th>
-                <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center">Thao Tác</th>
+                {canEdit && <th className="px-6 py-3 text-[10px] font-bold text-gray-400 uppercase tracking-wider text-center">Thao Tác</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -425,14 +425,14 @@ export default function EmailListView({ authUser, search, setSearch }) {
                           {em.kind === 'UNIT' ? <Building2 className="w-4 h-4" /> : <User className="w-4 h-4" />}
                         </div>
                         <div>
-                          <p className="font-semibold text-[var(--color-kpi-dark)]">{em.email}</p>
-                          <p className="text-xs text-[var(--color-text-muted)]">{em.kind === 'UNIT' ? 'Đơn vị' : 'Cá nhân'}</p>
+                          <p className="font-semibold text-[var(--color-title)]">{em.email}</p>
+                          <p className="text-xs text-[var(--color-subtext)]">{em.kind === 'UNIT' ? 'Đơn vị' : 'Cá nhân'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <p className="font-semibold text-[var(--color-kpi-dark)]">{em.full_name}</p>
-                      <p className="text-xs text-[var(--color-text-muted)]">{em.job_title || (em.kind === 'PERSONAL' ? `HRM: ${em.hrm_code || '—'}` : '—')}</p>
+                      <p className="font-semibold text-[var(--color-title)]">{em.full_name}</p>
+                      <p className="text-xs text-[var(--color-subtext)]">{em.job_title || (em.kind === 'PERSONAL' ? `HRM: ${em.hrm_code || '—'}` : '—')}</p>
                     </td>
                     <td className="px-6 py-4">
                       {isRevoked ? (
@@ -442,27 +442,29 @@ export default function EmailListView({ authUser, search, setSearch }) {
                         </div>
                       ) : (
                         <div className="flex items-center gap-2">
-                          <span className="w-2 h-2 rounded-full bg-[var(--color-green)]"></span>
-                          <span className="text-xs font-medium text-[var(--color-green)]">Đang sử dụng</span>
+                          <span className="w-2 h-2 rounded-full bg-[var(--color-success)]"></span>
+                          <span className="text-xs font-medium text-[var(--color-success)]">Đang sử dụng</span>
                         </div>
                       )}
                     </td>
-                    <td className="px-6 py-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => { setEditingEmail(em); setIsFormOpen(true); }} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[var(--color-kpi-dark)] hover:bg-gray-50 transition-colors" title="Sửa">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        {isRevoked ? (
-                          <button onClick={() => handleReactivate(em)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[var(--color-green)] hover:bg-gray-50 transition-colors" title="Kích hoạt lại">
-                            <Power className="w-4 h-4" />
+                    {canEdit && (
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <button onClick={() => { setEditingEmail(em); setIsFormOpen(true); }} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[var(--color-title)] hover:bg-gray-50 transition-colors" title="Sửa">
+                            <Edit className="w-4 h-4" />
                           </button>
-                        ) : (
-                          <button onClick={() => setRevokingEmail(em)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-50 transition-colors" title="Thu hồi">
-                            <PowerOff className="w-4 h-4" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
+                          {isRevoked ? (
+                            <button onClick={() => handleReactivate(em)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-[var(--color-success)] hover:bg-gray-50 transition-colors" title="Kích hoạt lại">
+                              <Power className="w-4 h-4" />
+                            </button>
+                          ) : (
+                            <button onClick={() => setRevokingEmail(em)} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-400 hover:text-red-500 hover:bg-gray-50 transition-colors" title="Thu hồi">
+                              <PowerOff className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    )}
                   </tr>
                 );
               })}

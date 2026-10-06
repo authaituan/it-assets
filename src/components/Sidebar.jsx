@@ -71,14 +71,14 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
   }
 
   return (
-    <aside className="w-[250px] bg-[var(--color-page)] flex flex-col justify-between h-screen sticky top-0 z-20 m-4 rounded-xl">
+    <aside className="w-[250px] bg-transparent flex flex-col justify-between h-screen sticky top-0 z-20 my-4 ml-4">
       <div>
         {/* Brand Header */}
         <div className="h-16 px-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-kpi-dark)] flex items-center justify-center text-white">
+          <div className="w-8 h-8 rounded-lg bg-[var(--color-dark)] flex items-center justify-center text-white">
             <Hexagon className="w-5 h-5 fill-white" />
           </div>
-          <span className="font-bold text-sm text-[var(--color-kpi-dark)] tracking-wide">CCDC Huế</span>
+          <span className="font-bold text-sm text-[var(--color-title)] tracking-wide">CCDC Huế</span>
         </div>
         
         <hr className="h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/10 to-transparent border-none" />
@@ -100,13 +100,13 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                       <button
                         key={idx}
                         onClick={() => onSelectSub(sub.id)}
-                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all text-left ${
+                        className={`w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-medium transition-all text-left ${
                           isSubActive 
-                            ? 'text-[var(--color-kpi-dark)] font-bold' 
-                            : 'text-[var(--color-text-muted)] hover:text-[var(--color-kpi-dark)]'
+                            ? 'text-[var(--color-title)] font-bold' 
+                            : 'text-[var(--color-body)] hover:text-[var(--color-title)]'
                         }`}
                       >
-                        <span className={`w-1.5 h-1.5 rounded-full ${isSubActive ? 'bg-[var(--color-accent)]' : 'bg-gray-300'}`}></span>
+                        <span className={`w-1.5 h-1.5 rounded-full ${isSubActive ? 'bg-[var(--color-primary)]' : 'bg-gray-300'}`}></span>
                         <span className="truncate leading-tight">{sub.label}</span>
                       </button>
                     );
@@ -145,10 +145,10 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                   className={`nav-item w-full flex items-center justify-between ${isActive ? 'active' : ''}`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="nav-icon-wrapper w-8 h-8 flex items-center justify-center rounded-lg shadow-sm">
+                    <div className="icon-sm">
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-sm">{item.label}</span>
+                    <span className="text-[14px]">{item.label}</span>
                   </div>
                   {(item.id === 'inventory' || item.id === 'unittree' || item.id === 'emails') && (
                     <div className="text-[var(--color-text-muted)]">
@@ -169,13 +169,13 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
 
       {/* Help Card replacement */}
       <div className="p-4">
-        <div className="card-soft p-4 rounded-xl relative overflow-hidden bg-white">
+        <div className="card-soft p-4 relative overflow-hidden">
           <div className="w-8 h-8 bg-[var(--color-page)] rounded-lg flex items-center justify-center mb-3">
-            <Hexagon className="w-4 h-4 text-[var(--color-kpi-dark)]" />
+            <Hexagon className="w-4 h-4 text-[var(--color-dark)]" />
           </div>
-          <h6 className="text-sm font-bold text-[var(--color-kpi-dark)] mb-1">Hệ thống CCDC online</h6>
-          <p className="text-xs text-[var(--color-text-muted)]">Database SQLite / Prisma 3NF</p>
-          <a href="#" className="btn-solid-dark w-full mt-3 flex justify-center text-[10px]">TÀI LIỆU HƯỚNG DẪN</a>
+          <h6 className="text-[14px] font-bold text-[var(--color-title)] mb-1">Hệ thống CCDC online</h6>
+          <p className="text-[12px] text-[var(--color-body)] mb-4">Database SQLite / Prisma 3NF</p>
+          <a href="#" className="btn btn-dark w-full">TÀI LIỆU HƯỚNG DẪN</a>
         </div>
       </div>
     </aside>
