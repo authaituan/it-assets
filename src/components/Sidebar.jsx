@@ -58,7 +58,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
   };
 
   const navItems = [
-    { id: 'dashboard', label: 'Tổng quan KPI', icon: LayoutDashboard },
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor },
     { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network },
     { id: 'emails', label: 'Quản lý email', icon: Mail },
@@ -136,6 +136,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
             return (
               <div key={item.id} className="flex flex-col">
                 <button
+                  id={`nav-${item.id}`}
                   onClick={() => {
                     if (item.id === 'inventory') handleClick(isInventoryExpanded, setIsInventoryExpanded, item.id);
                     else if (item.id === 'unittree') handleClick(isNetworkExpanded, setIsNetworkExpanded, item.id);

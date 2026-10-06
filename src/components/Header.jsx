@@ -16,7 +16,7 @@ export default function Header({
   // Helper function to get screen name
   const getScreenName = () => {
     switch(activeTab) {
-      case 'dashboard': return 'Tổng quan KPI';
+      case 'dashboard': return 'Dashboard';
       case 'inventory': return 'Quản lý CCDC';
       case 'unittree': return 'Quản lý mạng lưới';
       case 'emails': return 'Quản lý Email';
