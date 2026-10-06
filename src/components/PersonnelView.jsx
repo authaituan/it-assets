@@ -153,7 +153,7 @@ export default function PersonnelView() {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs">
+        <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs">
           {error}
         </div>
       )}

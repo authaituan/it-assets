@@ -67,7 +67,7 @@ export default function AddPersonnelModal({ onClose, onSuccess, editingPersonnel
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -135,7 +135,7 @@ export default function AddPersonnelModal({ onClose, onSuccess, editingPersonnel
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-orange-500 hover: text-white font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="btn btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {editingPersonnel ? <Edit className="w-4 h-4" /> : <UserPlus className="w-4 h-4" />}
               <span>{loading ? 'Đang Xử Lý...' : (editingPersonnel ? 'LƯU THAY ĐỔI' : 'THÊM NGƯỜI SỬ DỤNG')}</span>

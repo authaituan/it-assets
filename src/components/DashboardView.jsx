@@ -22,7 +22,7 @@ function formatRelativeTime(dateString) {
 
 const getActivityColor = (action) => {
   switch (action) {
-    case 'TRANSFER': return 'bg-blue-500';
+    case 'TRANSFER': return 'bg-[#0EA5E9]';
     case 'ASSIGN': return 'bg-green-500';
     case 'MAINTENANCE': return 'bg-yellow-500';
     case 'RECLAIM': return 'bg-red-500';
@@ -127,7 +127,7 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
   const byAgeBuckets = {
     'BEFORE_2015': { label: 'Trước 2015', color: 'bg-red-500' },
     'Y2015_2018': { label: '2015–2018', color: 'bg-yellow-500' },
-    'Y2019_2021': { label: '2019–2021', color: 'bg-blue-500' },
+    'Y2019_2021': { label: '2019–2021', color: 'bg-[#0EA5E9]' },
     'Y2022_PLUS': { label: '2022 trở lại', color: 'bg-green-500' }
   };
 
@@ -440,10 +440,10 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
       >
         <div className="flex items-center justify-between mb-4">
           <h6 className="font-bold text-gray-800 text-base flex items-center gap-2">
-            <Mail className="w-5 h-5 text-blue-500" />
+            <Mail className="w-5 h-5 text-[#0EA5E9]" />
             Email công vụ
           </h6>
-          <span className="text-sm text-blue-600 font-medium hover:underline">Quản lý email &rarr;</span>
+          <span className="text-sm text-[#0284C7] font-medium hover:underline">Quản lý email &rarr;</span>
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="p-3 bg-gray-50 rounded-lg">
@@ -458,13 +458,13 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
             <div className="text-xs text-red-700 font-medium mb-1">Đã thu hồi</div>
             <div className="text-xl font-bold text-red-700">{emails.revoked || 0}</div>
           </div>
-          <div className="p-3 bg-blue-50 rounded-lg">
-            <div className="text-xs text-blue-700 font-medium mb-1">Của đơn vị</div>
-            <div className="text-xl font-bold text-blue-700">{emails.unit || 0}</div>
+          <div className="p-3 bg-[#F0F9FF] rounded-lg">
+            <div className="text-xs text-[#0369A1] font-medium mb-1">Của đơn vị</div>
+            <div className="text-xl font-bold text-[#0369A1]">{emails.unit || 0}</div>
           </div>
-          <div className="p-3 bg-purple-50 rounded-lg">
-            <div className="text-xs text-purple-700 font-medium mb-1">Của cá nhân</div>
-            <div className="text-xl font-bold text-purple-700">{emails.personal || 0}</div>
+          <div className="p-3 bg-[#F4F4F5] rounded-lg">
+            <div className="text-xs text-[#27272A] font-medium mb-1">Của cá nhân</div>
+            <div className="text-xl font-bold text-[#27272A]">{emails.personal || 0}</div>
           </div>
           <div className="p-3 bg-orange-50 rounded-lg">
             <div className="text-xs text-orange-700 font-medium mb-1">Mới tạo (tháng)</div>

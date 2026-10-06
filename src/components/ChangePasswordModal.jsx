@@ -69,14 +69,14 @@ export default function ChangePasswordModal({ onClose }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {success && (
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D] text-xs flex items-start gap-2">
               <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
               <span>Đổi mật khẩu thành công!</span>
             </div>
@@ -135,7 +135,7 @@ export default function ChangePasswordModal({ onClose }) {
             <button
               type="submit"
               disabled={loading || success}
-              className="w-full py-3 rounded-xl bg-orange-500 hover: text-white font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="btn btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <Lock className="w-4 h-4" />
               <span>{loading ? 'Đang Đổi...' : success ? 'Đã Xong' : 'ĐỔI MẬT KHẨU'}</span>

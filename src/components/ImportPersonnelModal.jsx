@@ -138,7 +138,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -185,7 +185,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+                <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{importError}</span>
                 </div>
@@ -194,7 +194,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || invalidRowCount > 0}
-                className="w-full py-3 rounded-xl bg-orange-500 hover: text-white font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="btn btn-primary w-full py-3 flex items-center justify-center gap-2 disabled:opacity-50"
                 title={invalidRowCount > 0 ? 'Sửa các dòng thiếu Mã HRM/Tên trong file rồi tải lại' : ''}
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -204,7 +204,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-green-600 space-y-2">
+            <div className="p-4 rounded-xl bg-[#F0FDF4] border border-[#BBF7D0] text-[#15803D] space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
@@ -212,7 +212,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-2.5 rounded-lg bg-white text-center">
                   <div className="text-[11px] text-[--color-body]">Tạo Mới</div>
-                  <div className="text-lg font-bold text-emerald-400">{importResult.created}</div>
+                  <div className="text-lg font-bold text-[#15803D]">{importResult.created}</div>
                 </div>
                 <div className="p-2.5 rounded-lg bg-white text-center">
                   <div className="text-[11px] text-[--color-body]">Cập Nhật</div>

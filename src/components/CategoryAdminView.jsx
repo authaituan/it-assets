@@ -85,7 +85,7 @@ export default function CategoryAdminView() {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+        <div className="p-3 rounded-xl bg-[#FEF2F2] border border-[#FECACA] text-[#B91C1C] text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
@@ -157,7 +157,7 @@ export default function CategoryAdminView() {
                             {dt.asset_prefix}
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-500/10 text-yellow-600 border-amber-500/30">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-[#FEFCE8] text-[#A16207] border-[#FEF08A]">
                             Chưa cấu hình
                           </span>
                         )}
@@ -171,7 +171,7 @@ export default function CategoryAdminView() {
                                 onClick={() => saveEdit(dt.id)}
                                 disabled={saving}
                                 title="Lưu"
-                                className="w-7 h-7 rounded-lg bg-green-50 text-green-600 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center disabled:opacity-50"
+                                className="w-7 h-7 rounded-lg bg-[#F0FDF4] text-[#15803D] border border-[#BBF7D0] hover:bg-[#DCFCE7] flex items-center justify-center disabled:opacity-50"
                               >
                                 <Check className="w-3.5 h-3.5" />
                               </button>
