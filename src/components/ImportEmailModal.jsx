@@ -129,14 +129,14 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
   const previewRows = parsedRows.slice(0, 20);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-5xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-5xl overflow-hidden max-h-[92vh] flex flex-col bg-white">
+        <div className="p-5 border-b border-gray-100 flex items-center justify-between shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Upload className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Import Email Từ Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X className="w-5 h-5" />
           </button>
         </div>
@@ -145,21 +145,21 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
           {!importResult && (
             <>
           {hasExampleWarnings && (
-            <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-yellow-50 border border-yellow-100 text-yellow-600 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>Cảnh báo: Phát hiện các dòng ví dụ nền vàng trong template (chứa vidu.*@example.com). Các dòng này phải xoá trước khi import để tránh lỗi hoặc dữ liệu rác.</span>
             </div>
           )}
 
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-slate-400">
-              File <code className="text-purple-300">.xlsx</code> sheet "Dữ liệu", dòng 1 là tiêu đề cột.
+            <p className="text-gray-600">
+              File <code className="text-[var(--color-primary)]">.xlsx</code> sheet "Dữ liệu", dòng 1 là tiêu đề cột.
               Mỗi dòng phải có <b>Email</b>. Email đã có → cập nhật; email chưa có → tạo mới.
             </p>
             <button
               onClick={handleDownloadTemplate}
               disabled={generatingTemplate}
-              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 glass-input hover:border-purple-500/40 transition-all disabled:opacity-50"
+              className="btn btn-outline-primary shrink-0 flex items-center gap-2 disabled:opacity-50"
             >
               {generatingTemplate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               <span>Tải template</span>
@@ -167,26 +167,26 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[var(--color-subtext)] uppercase mb-1">
               Chọn File Excel (.xlsx)
             </label>
             <input
               type="file"
               accept=".xlsx"
               onChange={handleFileChange}
-              className="w-full glass-input p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+              className="w-full input-soft file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-[var(--color-primary)] file:text-white file:text-xs file:font-semibold"
             />
           </div>
 
           {parsing && (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-gray-500">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Đang đọc file Excel...</span>
             </div>
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -195,8 +195,8 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
           {parsedRows.length > 0 && !importResult && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-200 flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                <h4 className="font-semibold text-[var(--color-title)] flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-[var(--color-primary)]" />
                   <span>
                     Xem trước ({parsedRows.length} dòng từ "{fileName}"
                     {parsedRows.length > 20 ? ` — hiện 20 dòng đầu` : ''})
@@ -204,21 +204,21 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
                 </h4>
               </div>
 
-              <div className="border border-slate-800 rounded-xl overflow-auto max-h-[320px]">
-                <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 sticky top-0">
+              <div className="border border-gray-200 rounded-xl overflow-auto max-h-[320px]">
+                <table className="w-full text-left text-[11px] table-soft">
+                  <thead className="bg-gray-50 sticky top-0">
                     <tr>
                       {EMAIL_FIELDS.map((f) => (
-                        <th key={f.key} className="py-2 px-3 whitespace-nowrap">{f.label}</th>
+                        <th key={f.key}>{f.label}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                  <tbody className="divide-y divide-gray-100 font-mono">
                     {previewRows.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-slate-800/40">
+                      <tr key={idx} className="hover:bg-gray-50">
                         {EMAIL_FIELDS.map((f) => (
-                          <td key={f.key} className="py-1.5 px-3 text-slate-300 whitespace-nowrap">
-                            {r[f.key] || <span className="text-slate-600">—</span>}
+                          <td key={f.key} className="text-gray-700">
+                            {r[f.key] || <span className="text-gray-400">—</span>}
                           </td>
                         ))}
                       </tr>
@@ -228,7 +228,7 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs space-y-2">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>Lỗi: {importError} — Chưa có dữ liệu nào được ghi.</span>
@@ -247,7 +247,7 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || !!parseError}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="btn btn-primary w-full py-3 text-[14px] flex items-center justify-center gap-2"
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <span>{importing ? 'Đang Import...' : `Import ${parsedRows.length} Email`}</span>
@@ -258,7 +258,7 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+            <div className="p-4 rounded-xl bg-green-50 border border-green-100 text-green-700 space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
@@ -269,14 +269,14 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
                   ['Cập nhật', importResult.updated],
                   ['Người sử dụng', importResult.personnelCreated]
                 ].map(([label, value]) => (
-                  <div key={label} className="p-2.5 rounded-lg bg-slate-900/60 text-center">
-                    <div className="text-[10px] text-slate-400">{label}</div>
-                    <div className="text-lg font-bold text-emerald-400">{value ?? 0}</div>
+                  <div key={label} className="p-2.5 rounded-lg bg-white border border-green-200 text-center">
+                    <div className="text-[10px] text-gray-500">{label}</div>
+                    <div className="text-lg font-bold text-green-600">{value ?? 0}</div>
                   </div>
                 ))}
               </div>
               {importResult.warnings && importResult.warnings.length > 0 && (
-                <div className="mt-2 text-yellow-400">
+                <div className="mt-2 text-yellow-600">
                   <div className="font-semibold mb-1 text-[11px]">Cảnh báo:</div>
                   <ul className="list-disc list-inside">
                     {importResult.warnings.map((w, idx) => (
@@ -287,7 +287,7 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
               )}
               <button
                 onClick={onClose}
-                className="w-full mt-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all"
+                className="btn btn-outline-primary w-full mt-4"
               >
                 Đóng
               </button>

@@ -184,26 +184,26 @@ function ExportNetworkModal({ onClose, search, communeId }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Download className="w-5 h-5 text-cyan-400" />
+    <div className="fixed inset-0 z-50 bg-gray-900/50 -md flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-lg rounded-2xl border border-[var(--color-border)]/60 shadow-2xl overflow-hidden">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Download className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Export Mạng Lưới Ra Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs">
-          <p className="text-slate-400">
+          <p className="text-[var(--color-body)]">
             Xuất toàn bộ 20 cột theo đúng thứ tự chuẩn, dùng đúng bộ lọc đang áp dụng trên danh sách
             {search || communeId ? ' (đang lọc)' : ' (không lọc — toàn bộ bưu cục)'}.
           </p>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -212,7 +212,7 @@ function ExportNetworkModal({ onClose, search, communeId }) {
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl btn btn-dark flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {exporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
             <span>{exporting ? 'Đang xuất file...' : 'Xuất File Excel'}</span>
@@ -342,28 +342,28 @@ function ImportNetworkModal({ onClose, onSuccess }) {
   const previewRows = parsedRows.slice(0, 20);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-5xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+    <div className="fixed inset-0 z-50 bg-gray-900/50 -md flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-5xl rounded-2xl border border-[var(--color-border)]/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Upload className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Import Mạng Lưới Từ Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-slate-400">
-              File <code className="text-purple-300">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột.
+            <p className="text-[var(--color-body)]">
+              File <code className="text-[var(--color-primary)]">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột.
               Mỗi dòng phải có <b>Mã MBC</b>. Mã đã có → cập nhật; mã chưa có → tạo mới (kèm Tỉnh/BĐX nếu cần).
             </p>
             <button
               onClick={handleDownloadTemplate}
               disabled={generatingTemplate}
-              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 glass-input hover:border-purple-500/40 transition-all disabled:opacity-50"
+              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-primary)] input-soft hover:border-orange-300 transition-all disabled:opacity-50"
             >
               {generatingTemplate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               <span>Tải Template Mẫu</span>
@@ -371,26 +371,26 @@ function ImportNetworkModal({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">
               Chọn File Excel (.xlsx)
             </label>
             <input
               type="file"
               accept=".xlsx"
               onChange={handleFileChange}
-              className="w-full glass-input p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+              className="w-full input-soft p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-[var(--color-primary)] file:text-xs file:font-semibold"
             />
           </div>
 
           {parsing && (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-[var(--color-body)]">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Đang đọc file Excel...</span>
             </div>
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -399,37 +399,37 @@ function ImportNetworkModal({ onClose, onSuccess }) {
           {parsedRows.length > 0 && !importResult && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-200 flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                <h4 className="font-semibold text-[var(--color-title)] flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-[var(--color-primary)]" />
                   <span>
                     Xem Trước ({parsedRows.length} dòng từ "{fileName}"
                     {parsedRows.length > 20 ? ` — hiện 20 dòng đầu` : ''})
                   </span>
                 </h4>
                 {invalidRowCount > 0 && (
-                  <span className="text-rose-400 text-[11px] font-semibold">
+                  <span className="text-red-600 text-[11px] font-semibold">
                     {invalidRowCount} dòng thiếu Mã MBC — sẽ bị chặn khi Import
                   </span>
                 )}
               </div>
 
-              <div className="border border-slate-800 rounded-xl overflow-auto max-h-[320px]">
+              <div className="border border-gray-200 rounded-xl overflow-auto max-h-[320px]">
                 <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 sticky top-0">
+                  <thead className="bg-white text-[var(--color-body)] font-semibold border-b border-gray-200 sticky top-0">
                     <tr>
                       {headerFields.map((f) => (
                         <th key={f.key} className="py-2 px-3 whitespace-nowrap">{f.label}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                  <tbody className="divide-y divide-gray-200 font-mono">
                     {previewRows.map((r, idx) => {
                       const invalid = !r.maMbc;
                       return (
-                        <tr key={idx} className={invalid ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
+                        <tr key={idx} className={invalid ? 'bg-red-50' : 'hover:bg-gray-50'}>
                           {headerFields.map((f) => (
-                            <td key={f.key} className="py-1.5 px-3 text-slate-300 whitespace-nowrap">
-                              {r[f.key] || <span className="text-slate-600">—</span>}
+                            <td key={f.key} className="py-1.5 px-3 text-[var(--color-body)] whitespace-nowrap">
+                              {r[f.key] || <span className="text-gray-500">—</span>}
                             </td>
                           ))}
                         </tr>
@@ -440,7 +440,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs space-y-2">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{importError}</span>
@@ -458,7 +458,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || invalidRowCount > 0}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl btn btn-dark flex items-center justify-center gap-2 disabled:opacity-50"
                 title={invalidRowCount > 0 ? 'Sửa các dòng thiếu Mã MBC trong file rồi tải lại' : ''}
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -468,7 +468,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
@@ -480,15 +480,15 @@ function ImportNetworkModal({ onClose, onSuccess }) {
                   ['Bưu Cục Mới', importResult.postOfficesCreated],
                   ['Bưu Cục Cập Nhật', importResult.postOfficesUpdated]
                 ].map(([label, value]) => (
-                  <div key={label} className="p-2.5 rounded-lg bg-slate-900/60 text-center">
-                    <div className="text-[10px] text-slate-400">{label}</div>
-                    <div className="text-lg font-bold text-emerald-400">{value ?? 0}</div>
+                  <div key={label} className="p-2.5 rounded-lg bg-white text-center">
+                    <div className="text-[10px] text-[var(--color-body)]">{label}</div>
+                    <div className="text-lg font-bold text-green-600">{value ?? 0}</div>
                   </div>
                 ))}
               </div>
               <button
                 onClick={onClose}
-                className="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all"
+                className="w-full mt-2 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-[var(--color-title)] font-semibold text-xs transition-all"
               >
                 Đóng
               </button>
@@ -537,7 +537,7 @@ function ResponsiblePersonField({ displayValue, onChangeDisplay, onSelectPerson 
 
   return (
     <div className="relative col-span-2">
-      <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Người Phụ Trách</label>
+      <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Người Phụ Trách</label>
       <input
         type="text"
         value={displayValue}
@@ -546,16 +546,16 @@ function ResponsiblePersonField({ displayValue, onChangeDisplay, onSelectPerson 
         onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
         placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
         autoComplete="off"
-        className="w-full glass-input p-2.5 rounded-xl text-xs"
+        className="w-full input-soft p-2.5 rounded-xl text-xs"
       />
       {showSuggestions && suggestions.length > 0 && (
-        <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl divide-y divide-slate-800">
+        <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-white shadow-xl divide-y divide-gray-200">
           {suggestions.map((p) => (
             <li
               key={p.id}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => handleSelect(p)}
-              className="px-3 py-2 text-[11px] text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-300 cursor-pointer"
+              className="px-3 py-2 text-[11px] text-[var(--color-title)] hover:bg-sky-50 hover:text-sky-600 cursor-pointer"
             >
               {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
             </li>
@@ -727,49 +727,49 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            {isEdit ? <Edit className="w-5 h-5 text-cyan-400" /> : <Plus className="w-5 h-5 text-cyan-400" />}
+    <div className="fixed inset-0 z-50 bg-gray-900/50 -md flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-2xl rounded-2xl border border-[var(--color-border)]/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            {isEdit ? <Edit className="w-5 h-5 text-[var(--color-primary)]" /> : <Plus className="w-5 h-5 text-[var(--color-primary)]" />}
             <span>{isEdit ? `Sửa Bưu Cục — ${editing.code}` : 'Thêm Bưu Cục Mới'}</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {!isEdit && (
-            <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 space-y-3">
-              <div className="text-[11px] font-semibold text-cyan-300 uppercase">Tổ chức (chỉ cần nếu Mã BĐX/Tỉnh chưa có sẵn)</div>
+            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 space-y-3">
+              <div className="text-[11px] font-semibold text-sky-600 uppercase">Tổ chức (chỉ cần nếu Mã BĐX/Tỉnh chưa có sẵn)</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã BĐT/TP</label>
-                  <input type="text" value={form.maBdtTp} onChange={setField('maBdtTp')} placeholder="53" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+                  <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã BĐT/TP</label>
+                  <input type="text" value={form.maBdtTp} onChange={setField('maBdtTp')} placeholder="53" className="w-full input-soft p-2.5 rounded-xl text-xs" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên BĐT/TP</label>
-                  <input type="text" value={form.tenBdtTp} onChange={setField('tenBdtTp')} placeholder="Bưu Điện Tỉnh TT-Huế" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+                  <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên BĐT/TP</label>
+                  <input type="text" value={form.tenBdtTp} onChange={setField('tenBdtTp')} placeholder="Bưu Điện Tỉnh TT-Huế" className="w-full input-soft p-2.5 rounded-xl text-xs" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã BĐX</label>
-                  <input type="text" value={form.maBdx} onChange={setField('maBdx')} placeholder="BDX01" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+                  <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã BĐX</label>
+                  <input type="text" value={form.maBdx} onChange={setField('maBdx')} placeholder="BDX01" className="w-full input-soft p-2.5 rounded-xl text-xs" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên BĐX</label>
-                  <input type="text" value={form.tenBuuDienXa} onChange={setField('tenBuuDienXa')} placeholder="BĐX Phú Vang" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+                  <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên BĐX</label>
+                  <input type="text" value={form.tenBuuDienXa} onChange={setField('tenBuuDienXa')} placeholder="BĐX Phú Vang" className="w-full input-soft p-2.5 rounded-xl text-xs" />
                 </div>
                 <div className="col-span-2">
-                  <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Bưu Điện Xã Trung Tâm</label>
-                  <input type="text" value={form.buuDienXaTrungTam} onChange={setField('buuDienXaTrungTam')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+                  <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Bưu Điện Xã Trung Tâm</label>
+                  <input type="text" value={form.buuDienXaTrungTam} onChange={setField('buuDienXaTrungTam')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
                 </div>
               </div>
             </div>
@@ -777,8 +777,8 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
 
           {isEdit && (
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">BĐX gán cho bưu cục</label>
-              <select value={form.communeId} onChange={setField('communeId')} className="w-full glass-input p-2.5 rounded-xl text-xs">
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">BĐX gán cho bưu cục</label>
+              <select value={form.communeId} onChange={setField('communeId')} className="w-full input-soft p-2.5 rounded-xl text-xs">
                 {communes.map((c) => (
                   <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
                 ))}
@@ -788,76 +788,76 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã MBC {!isEdit && <span className="text-rose-400">*</span>}</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã MBC {!isEdit && <span className="text-red-600">*</span>}</label>
               <input
                 type="text"
                 value={form.maMbc}
                 onChange={setField('maMbc')}
                 disabled={isEdit}
                 placeholder="MBC001"
-                className="w-full glass-input p-2.5 rounded-xl text-xs disabled:opacity-60"
+                className="w-full input-soft p-2.5 rounded-xl text-xs disabled:opacity-60"
                 required={!isEdit}
               />
-              {isEdit && <p className="text-[10px] text-slate-500 mt-1">Mã bưu cục không thể đổi sau khi tạo.</p>}
+              {isEdit && <p className="text-[10px] text-[var(--color-body)] mt-1">Mã bưu cục không thể đổi sau khi tạo.</p>}
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên Bưu Cục <span className="text-rose-400">*</span></label>
-              <input type="text" value={form.tenBuuCuc} onChange={setField('tenBuuCuc')} placeholder="Bưu cục Trung tâm" className="w-full glass-input p-2.5 rounded-xl text-xs" required />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên Bưu Cục <span className="text-red-600">*</span></label>
+              <input type="text" value={form.tenBuuCuc} onChange={setField('tenBuuCuc')} placeholder="Bưu cục Trung tâm" className="w-full input-soft p-2.5 rounded-xl text-xs" required />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Loại</label>
-              <input type="text" value={form.loai} onChange={setField('loai')} placeholder="GD3" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Loại</label>
+              <input type="text" value={form.loai} onChange={setField('loai')} placeholder="GD3" className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tình Trạng Hoạt Động</label>
-              <select value={form.tinhTrangHoatDong} onChange={setField('tinhTrangHoatDong')} className="w-full glass-input p-2.5 rounded-xl text-xs">
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tình Trạng Hoạt Động</label>
+              <select value={form.tinhTrangHoatDong} onChange={setField('tinhTrangHoatDong')} className="w-full input-soft p-2.5 rounded-xl text-xs">
                 <option value="ACTIVE">ACTIVE</option>
                 <option value="INACTIVE">INACTIVE</option>
               </select>
             </div>
             <div className="col-span-2">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Địa Chỉ Chi Tiết</label>
-              <input type="text" value={form.diaChiChiTiet} onChange={setField('diaChiChiTiet')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Địa Chỉ Chi Tiết</label>
+              <input type="text" value={form.diaChiChiTiet} onChange={setField('diaChiChiTiet')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã BĐKV</label>
-              <input type="text" value={form.maBdkv} onChange={setField('maBdkv')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã BĐKV</label>
+              <input type="text" value={form.maBdkv} onChange={setField('maBdkv')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên BĐKV</label>
-              <input type="text" value={form.tenBdkv} onChange={setField('tenBdkv')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên BĐKV</label>
+              <input type="text" value={form.tenBdkv} onChange={setField('tenBdkv')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Số Điện Thoại</label>
-              <input type="text" value={form.soDienThoai} onChange={setField('soDienThoai')} placeholder="0234123456" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Số Điện Thoại</label>
+              <input type="text" value={form.soDienThoai} onChange={setField('soDienThoai')} placeholder="0234123456" className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã Phường/Xã Cũ</label>
-              <input type="text" value={form.maPhuongXaCu} onChange={setField('maPhuongXaCu')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã Phường/Xã Cũ</label>
+              <input type="text" value={form.maPhuongXaCu} onChange={setField('maPhuongXaCu')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên Phường/Xã Cũ</label>
-              <input type="text" value={form.tenPhuongXaCu} onChange={setField('tenPhuongXaCu')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên Phường/Xã Cũ</label>
+              <input type="text" value={form.tenPhuongXaCu} onChange={setField('tenPhuongXaCu')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên Quận/Huyện</label>
-              <input type="text" value={form.tenQuanHuyen} onChange={setField('tenQuanHuyen')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên Quận/Huyện</label>
+              <input type="text" value={form.tenQuanHuyen} onChange={setField('tenQuanHuyen')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã Phường/Xã Mới</label>
-              <input type="text" value={form.maPhuongXaMoi} onChange={setField('maPhuongXaMoi')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã Phường/Xã Mới</label>
+              <input type="text" value={form.maPhuongXaMoi} onChange={setField('maPhuongXaMoi')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Tên Phường/Xã Mới</label>
-              <input type="text" value={form.tenPhuongXaMoi} onChange={setField('tenPhuongXaMoi')} className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Tên Phường/Xã Mới</label>
+              <input type="text" value={form.tenPhuongXaMoi} onChange={setField('tenPhuongXaMoi')} className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Vĩ Độ</label>
-              <input type="text" value={form.viDo} onChange={setField('viDo')} placeholder="16.4637" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Vĩ Độ</label>
+              <input type="text" value={form.viDo} onChange={setField('viDo')} placeholder="16.4637" className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Kinh Độ</label>
-              <input type="text" value={form.kinhDo} onChange={setField('kinhDo')} placeholder="107.5909" className="w-full glass-input p-2.5 rounded-xl text-xs" />
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Kinh Độ</label>
+              <input type="text" value={form.kinhDo} onChange={setField('kinhDo')} placeholder="107.5909" className="w-full input-soft p-2.5 rounded-xl text-xs" />
             </div>
 
             <ResponsiblePersonField
@@ -871,7 +871,7 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3 rounded-xl btn btn-dark flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               <span>{loading ? 'Đang Xử Lý...' : (isEdit ? 'LƯU THAY ĐỔI' : 'THÊM BƯU CỤC')}</span>
@@ -891,72 +891,72 @@ function PostOfficeDetailModal({ po, onClose }) {
   const isActive = po.operational_status === 'ACTIVE' || !po.operational_status;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Eye className="w-5 h-5 text-cyan-400" />
+    <div className="fixed inset-0 z-50 bg-gray-900/50 -md flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-lg rounded-2xl border border-[var(--color-border)]/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Eye className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Chi Tiết Bưu Cục — {po.code}</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
           <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Mã & Tên Bưu Cục</div>
-            <div className="text-sm font-bold text-white">{po.code} — {po.name}</div>
-            <div className="text-slate-400 mt-0.5">
-              {po.type && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 text-[10px] font-mono border border-slate-700 mr-1.5">{po.type}</span>}
+            <div className="text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Mã & Tên Bưu Cục</div>
+            <div className="text-sm font-bold text-[var(--color-title)]">{po.code} — {po.name}</div>
+            <div className="text-[var(--color-body)] mt-0.5">
+              {po.type && <span className="px-1.5 py-0.5 rounded bg-white text-[var(--color-body)] text-[10px] font-mono border border-[var(--color-border)] mr-1.5">{po.type}</span>}
               {po.commune_name}
             </div>
           </div>
 
           <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Địa Chỉ & Liên Hệ</div>
-            <div className="text-slate-200">{po.address || <span className="text-slate-600">Chưa có địa chỉ</span>}{po.new_ward_name ? `, ${po.new_ward_name}` : ''}</div>
+            <div className="text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Địa Chỉ & Liên Hệ</div>
+            <div className="text-[var(--color-title)]">{po.address || <span className="text-gray-500">Chưa có địa chỉ</span>}{po.new_ward_name ? `, ${po.new_ward_name}` : ''}</div>
             {po.phone && (
-              <div className="flex items-center gap-1.5 text-slate-300 mt-1">
-                <Phone className="w-3.5 h-3.5 text-slate-500" />
+              <div className="flex items-center gap-1.5 text-[var(--color-body)] mt-1">
+                <Phone className="w-3.5 h-3.5 text-[var(--color-body)]" />
                 <span className="font-mono">{po.phone}</span>
               </div>
             )}
           </div>
 
           <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Toạ Độ & Bản Đồ</div>
+            <div className="text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Toạ Độ & Bản Đồ</div>
             {hasCoords ? (
               <div>
-                <div className="font-mono text-slate-200">{po.latitude}, {po.longitude}</div>
+                <div className="font-mono text-[var(--color-title)]">{po.latitude}, {po.longitude}</div>
                 <a
                   href={`https://www.google.com/maps?q=${po.latitude},${po.longitude}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 mt-1"
+                  className="inline-flex items-center gap-1.5 text-[var(--color-primary)] hover:text-sky-600 mt-1"
                 >
                   <Compass className="w-3.5 h-3.5" />
                   <span>Mở Google Maps</span>
                 </a>
               </div>
             ) : (
-              <span className="text-slate-600">Chưa có toạ độ</span>
+              <span className="text-gray-500">Chưa có toạ độ</span>
             )}
           </div>
 
           <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Trạng Thái & CCDC</div>
+            <div className="text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Trạng Thái & CCDC</div>
             <div className="flex items-center gap-1.5">
-              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
-              <span className={isActive ? 'text-emerald-400' : 'text-slate-400'}>{isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}</span>
+              <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+              <span className={isActive ? 'text-green-600' : 'text-[var(--color-body)]'}>{isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}</span>
             </div>
-            <div className="text-slate-400 mt-1">{po.equipment_count ?? 0} thiết bị</div>
+            <div className="text-[var(--color-body)] mt-1">{po.equipment_count ?? 0} thiết bị</div>
           </div>
 
           <div>
-            <div className="text-[11px] font-semibold text-slate-500 uppercase mb-1">Người Phụ Trách</div>
-            <div className="text-slate-200">
-              {po.responsible_user_name ? `${po.responsible_user_name} (${po.responsible_user_hrm || '—'})` : <span className="text-slate-600">Chưa gán</span>}
+            <div className="text-[11px] font-semibold text-[var(--color-body)] uppercase mb-1">Người Phụ Trách</div>
+            <div className="text-[var(--color-title)]">
+              {po.responsible_user_name ? `${po.responsible_user_name} (${po.responsible_user_hrm || '—'})` : <span className="text-gray-500">Chưa gán</span>}
             </div>
           </div>
         </div>
@@ -1091,14 +1091,14 @@ export default function NetworkListView({ onSelectUnitFilter }) {
   return (
     <div className="p-6 space-y-6">
       {/* Header & Filter Bar */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
+      <div className="card-soft p-5 rounded-2xl space-y-4">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Network className="w-5 h-5 text-cyan-400" />
+            <h2 className="text-xl font-bold text-[var(--color-title)] flex items-center gap-2">
+              <Network className="w-5 h-5 text-[var(--color-primary)]" />
               <span>Quản Lý Mạng Lưới — Danh Sách</span>
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-[var(--color-body)] mt-1">
               Danh mục chuẩn Tỉnh/BĐX/Bưu cục — nguồn tổ chức duy nhất cho toàn hệ thống (BĐT/TP ➔ BĐX ➔ Bưu Cục)
             </p>
           </div>
@@ -1106,14 +1106,14 @@ export default function NetworkListView({ onSelectUnitFilter }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setIsExportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-input hover:border-cyan-500/40 hover:text-cyan-300 transition-all"
+              className="btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-800 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               <span>Export Excel</span>
             </button>
             <button
               onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-slate-200 glass-input hover:border-purple-500/40 hover:text-purple-300 transition-all"
+              className="btn btn-outline-primary flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
               <span>Import Excel</span>
@@ -1123,7 +1123,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                 setEditingPostOffice(null);
                 setIsFormOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
+              className="btn btn-dark flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm Bưu Cục</span>
@@ -1131,9 +1131,9 @@ export default function NetworkListView({ onSelectUnitFilter }) {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800 space-y-3">
+        <div className="pt-2 border-t border-gray-200 space-y-3">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
+            <Search className="w-4 h-4 text-[var(--color-body)] absolute left-3 top-1/2 -translate-y-1/2" />
             <input
               type="text"
               value={search}
@@ -1142,29 +1142,29 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                 resetToFirstPage();
               }}
               placeholder="Tìm theo Mã MBC, Tên Bưu Cục, Loại hình hoặc Tình trạng..."
-              className="w-full glass-input pl-9 pr-3 py-2 rounded-xl text-xs"
+              className="w-full input-soft pl-9 pr-3 py-2 rounded-xl text-xs"
             />
           </div>
 
           {/* 4 dropdown lọc — style nhất quán với InventoryView.jsx */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Phường/Xã Mới</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] mb-1 uppercase tracking-wider">Phường/Xã Mới</label>
               <select
                 value={selectedWard}
                 onChange={(e) => { setSelectedWard(e.target.value); resetToFirstPage(); }}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="w-full input-soft px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả phường/xã ({wardOptions.length}) --</option>
                 {wardOptions.map((w) => <option key={w} value={w}>{w}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu Điện Xã (BĐX)</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] mb-1 uppercase tracking-wider">Bưu Điện Xã (BĐX)</label>
               <select
                 value={selectedCommuneId}
                 onChange={(e) => { setSelectedCommuneId(e.target.value); resetToFirstPage(); }}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="w-full input-soft px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả BĐX ({communes.length}) --</option>
                 {communes.map((c) => (
@@ -1173,22 +1173,22 @@ export default function NetworkListView({ onSelectUnitFilter }) {
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Loại Hình</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] mb-1 uppercase tracking-wider">Loại Hình</label>
               <select
                 value={selectedType}
                 onChange={(e) => { setSelectedType(e.target.value); resetToFirstPage(); }}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="w-full input-soft px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả loại hình --</option>
                 {typeOptions.map((t) => <option key={t} value={t}>{t}</option>)}
               </select>
             </div>
             <div>
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Tình Trạng</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-body)] mb-1 uppercase tracking-wider">Tình Trạng</label>
               <select
                 value={selectedStatus}
                 onChange={(e) => { setSelectedStatus(e.target.value); resetToFirstPage(); }}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="w-full input-soft px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả tình trạng --</option>
                 {statusOptions.map((s) => <option key={s} value={s}>{s === 'ACTIVE' ? 'ACTIVE — Đang hoạt động' : s === 'INACTIVE' ? 'INACTIVE — Ngừng hoạt động' : s}</option>)}
@@ -1199,29 +1199,29 @@ export default function NetworkListView({ onSelectUnitFilter }) {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
           {error}
         </div>
       )}
 
       {/* Table — ĐÚNG 5 cột gộp cell theo layout PO duyệt */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="card-soft rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-400">Đang nạp danh sách mạng lưới...</p>
+            <div className="w-8 h-8 border-3 border-orange-200 border-t-[var(--color-primary)] rounded-full animate-spin"></div>
+            <p className="text-xs text-[var(--color-body)]">Đang nạp danh sách mạng lưới...</p>
           </div>
         ) : pageItems.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <Network className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <p className="font-semibold text-sm text-slate-300">Không tìm thấy bưu cục phù hợp</p>
-            <p className="text-xs text-slate-500 mt-1">Thử thay đổi bộ lọc, hoặc thêm mới / import Excel</p>
+          <div className="p-12 text-center text-[var(--color-body)]">
+            <Network className="w-12 h-12 mx-auto text-gray-500 mb-3" />
+            <p className="font-semibold text-sm text-[var(--color-body)]">Không tìm thấy bưu cục phù hợp</p>
+            <p className="text-xs text-[var(--color-body)] mt-1">Thử thay đổi bộ lọc, hoặc thêm mới / import Excel</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                <tr className="bg-gray-50 text-[var(--color-body)] font-semibold border-b border-gray-200 uppercase tracking-wider text-[11px]">
                   <th className="py-3.5 px-4">Mã & Tên Bưu Cục</th>
                   <th className="py-3.5 px-4">Địa Chỉ & Liên Hệ</th>
                   <th className="py-3.5 px-4">Toạ Độ & Bản Đồ</th>
@@ -1229,32 +1229,32 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-gray-200">
                 {pageItems.map((po) => {
                   const hasCoords = po.latitude !== null && po.latitude !== undefined && po.longitude !== null && po.longitude !== undefined;
                   const isActive = po.operational_status === 'ACTIVE' || !po.operational_status;
                   return (
-                    <tr key={po.id} className="hover:bg-slate-800/40 transition-colors align-top">
+                    <tr key={po.id} className="hover:bg-gray-50 transition-colors align-top">
                       {/* Cột 1: Mã & Tên Bưu Cục */}
                       <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-100">{po.code} — {po.name}</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5 flex items-center gap-1">
-                          {po.type && <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-mono border border-slate-700">{po.type}</span>}
+                        <div className="font-bold text-[var(--color-title)]">{po.code} — {po.name}</div>
+                        <div className="text-[10px] text-[var(--color-body)] mt-0.5 flex items-center gap-1">
+                          {po.type && <span className="px-1.5 py-0.5 rounded bg-white text-[var(--color-body)] font-mono border border-[var(--color-border)]">{po.type}</span>}
                           <span>• {po.commune_name}</span>
                         </div>
                       </td>
 
                       {/* Cột 2: Địa Chỉ & Liên Hệ */}
                       <td className="py-3.5 px-4">
-                        <div className="flex items-start gap-1.5 text-slate-300">
-                          <MapPin className="w-3.5 h-3.5 text-slate-500 shrink-0 mt-0.5" />
-                          <span className="max-w-[220px]">
-                            {po.address || <span className="text-slate-600">Chưa có địa chỉ</span>}
+                        <div className="flex items-start gap-1.5 text-[var(--color-body)]">
+                          <MapPin className="w-3.5 h-3.5 text-[var(--color-body)] shrink-0 mt-0.5" />
+                          <span className="max-w-[220px] whitespace-nowrap">
+                            {po.address || <span className="text-gray-500">Chưa có địa chỉ</span>}
                             {po.new_ward_name ? `, ${po.new_ward_name}` : ''}
                           </span>
                         </div>
                         {po.phone && (
-                          <div className="flex items-center gap-1.5 text-slate-500 text-[10px] mt-1">
+                          <div className="flex items-center gap-1.5 text-[var(--color-body)] text-[10px] mt-1">
                             <Phone className="w-3 h-3 shrink-0" />
                             <span className="font-mono">{po.phone}</span>
                           </div>
@@ -1265,29 +1265,29 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                       <td className="py-3.5 px-4">
                         {hasCoords ? (
                           <>
-                            <div className="text-slate-300 font-mono text-[10px]">{po.latitude}, {po.longitude}</div>
+                            <div className="text-[var(--color-body)] font-mono text-[10px]">{po.latitude}, {po.longitude}</div>
                             <a
                               href={`https://www.google.com/maps?q=${po.latitude},${po.longitude}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-cyan-400 hover:text-cyan-300 text-[10px] mt-1"
+                              className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:text-sky-600 text-[10px] mt-1"
                             >
                               <Compass className="w-3 h-3" />
                               <span>🔵 Mở Google Maps</span>
                             </a>
                           </>
-                        ) : <span className="text-slate-600">Chưa có toạ độ</span>}
+                        ) : <span className="text-gray-500">Chưa có toạ độ</span>}
                       </td>
 
                       {/* Cột 4: Trạng Thái & CCDC */}
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-1.5">
-                          <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-emerald-400' : 'bg-slate-500'}`}></span>
-                          <span className={isActive ? 'text-emerald-400 text-[11px] font-semibold' : 'text-slate-400 text-[11px] font-semibold'}>
+                          <span className={`w-2 h-2 rounded-full ${isActive ? 'bg-green-500' : 'bg-gray-400'}`}></span>
+                          <span className={isActive ? "text-green-600 text-[11px] font-semibold whitespace-nowrap" : "text-[var(--color-body)] text-[11px] font-semibold whitespace-nowrap"}>
                             {isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}
                           </span>
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1">{po.equipment_count ?? 0} thiết bị</div>
+                        <div className="text-[10px] text-[var(--color-body)] mt-1">{po.equipment_count ?? 0} thiết bị</div>
                       </td>
 
                       {/* Cột 5: Thao Tác */}
@@ -1296,21 +1296,21 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                           <button
                             onClick={() => setViewingPostOffice(po)}
                             title="Xem chi tiết"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                            className="p-1.5 rounded-lg text-[var(--color-body)] hover:text-green-600 hover:bg-green-50 transition-colors"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(po)}
                             title="Sửa"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                            className="p-1.5 rounded-lg text-[var(--color-body)] hover:text-[var(--color-primary)] hover:bg-sky-50 transition-colors"
                           >
                             <Edit className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => handleDelete(po)}
                             title="Xoá"
-                            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                            className="p-1.5 rounded-lg text-[var(--color-body)] hover:text-red-600 hover:bg-red-50 transition-colors"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>
@@ -1325,27 +1325,27 @@ export default function NetworkListView({ onSelectUnitFilter }) {
         )}
 
         {/* Pagination Footer */}
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">
-          <div className="text-xs text-slate-400">
-            Hiển thị <span className="font-bold text-white">{pageItems.length}</span> / <span className="font-bold text-white">{filteredItems.length}</span> bưu cục
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+          <div className="text-xs text-[var(--color-body)]">
+            Hiển thị <span className="font-bold text-[var(--color-title)]">{pageItems.length}</span> / <span className="font-bold text-[var(--color-title)]">{filteredItems.length}</span> bưu cục
           </div>
 
           <div className="flex items-center gap-2">
             <button
               disabled={currentPage <= 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-orange-300 transition-all flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Trang trước</span>
             </button>
-            <span className="text-xs text-slate-400 px-2 font-medium">
+            <span className="text-xs text-[var(--color-body)] px-2 font-medium">
               Trang {currentPage} / {totalPages}
             </span>
             <button
               disabled={currentPage >= totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-orange-300 transition-all flex items-center gap-1"
             >
               <span>Trang sau</span>
               <ChevronRight className="w-4 h-4" />

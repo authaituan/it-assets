@@ -255,18 +255,18 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-2xl rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden">
         {/* Modal Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+        <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-gray-50">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center font-bold">
+            <div className="w-10 h-10 rounded-xl bg-orange-50 text-[var(--color-primary)] border border-[var(--color-border)] flex items-center justify-center font-bold">
               <Monitor className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-base text-white font-mono">{detail?.asset_tag || equipment.asset_tag || 'Chưa có mã'}</h3>
-              <p className="text-xs text-slate-400">
-                {(detail?.hostname || equipment.hostname) && <span className="text-slate-300">{detail?.hostname || equipment.hostname} · </span>}
+              <h3 className="font-bold text-base text-[var(--color-title)] font-mono">{detail?.asset_tag || equipment.asset_tag || 'Chưa có mã'}</h3>
+              <p className="text-xs text-[var(--color-body)]">
+                {(detail?.hostname || equipment.hostname) && <span className="text-[var(--color-title)]">{detail?.hostname || equipment.hostname} · </span>}
                 {detail?.brand_name || equipment.brand_name || 'Hãng khác'} {detail?.model || equipment.model || ''}
               </p>
             </div>
@@ -274,7 +274,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
           <div className="flex items-center gap-2">
             {saveSuccess && (
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1">
+              <span className="px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold flex items-center gap-1">
                 <CheckCircle2 className="w-3.5 h-3.5" />
                 <span>Đã lưu!</span>
               </span>
@@ -285,11 +285,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               onClick={() => setIsEditing(!isEditing)}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
                 isEditing
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
+                  ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+                  : 'bg-gray-50 hover:bg-gray-100 text-[var(--color-title)] border border-[var(--color-border)]'
               }`}
             >
-              {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5 text-cyan-400" />}
+              {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5 text-[var(--color-primary)]" />}
               <span>{isEditing ? 'Xem Chi Tiết' : 'Chỉnh Sửa'}</span>
             </button>
 
@@ -297,7 +297,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               type="button"
               onClick={handleDelete}
               disabled={deleteLoading}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 disabled:opacity-50"
+              className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-red-50 text-red-600 border border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
             >
               {deleteLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               <span>{deleteLoading ? 'Đang Xoá...' : 'Xoá Thiết Bị'}</span>
@@ -305,7 +305,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
             <button
               onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all"
+              className="w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 text-[var(--color-body)] hover:text-gray-800 flex items-center justify-center transition-all"
             >
               <X className="w-5 h-5" />
             </button>
@@ -314,7 +314,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
         {/* Action error banner (401/403/lỗi khác từ save hoặc xoá) */}
         {actionError && (
-          <div className="mx-5 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+          <div className="mx-5 mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
             <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
             <span>{actionError}</span>
           </div>
@@ -322,8 +322,8 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
         {/* Modal Body */}
         {loading ? (
-          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
-            <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+          <div className="p-12 text-center text-[var(--color-body)] flex flex-col items-center justify-center gap-2">
+            <div className="w-6 h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
             <span className="text-xs">Đang nạp thông tin chi tiết CCDC...</span>
           </div>
         ) : isEditing ? (
@@ -331,21 +331,21 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
           <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Tên Máy / Hostname</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Tên Máy / Hostname</label>
                 <input
                   type="text"
                   value={hostname}
                   onChange={e => setHostname(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Trạng Thái Cấp Phát</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Trạng Thái Cấp Phát</label>
                 <select
                   value={status}
                   onChange={e => setStatus(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 >
                   <option value="IN_USE">Đang sử dụng</option>
                   <option value="IN_STOCK">Tồn kho / Dự phòng</option>
@@ -357,39 +357,39 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Địa Chỉ IP Tĩnh</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Địa Chỉ IP Tĩnh</label>
                 <input
                   type="text"
                   value={ipAddress}
                   onChange={e => setIpAddress(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Địa Chỉ MAC</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Địa Chỉ MAC</label>
                 <input
                   type="text"
                   value={macAddress}
                   onChange={e => setMacAddress(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Số Serial / Service TAG</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Số Serial / Service TAG</label>
                 <input
                   type="text"
                   value={serialNumber}
                   onChange={e => setSerialNumber(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
 
               <div className="relative">
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Người Sử Dụng Bàn Giao</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Người Sử Dụng Bàn Giao</label>
                 <input
                   type="text"
                   value={rawUserName}
@@ -398,19 +398,19 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                   onBlur={() => setTimeout(() => setShowPersonnelSuggestions(false), 150)}
                   placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
                   autoComplete="off"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
                 {assignedUserId && (
-                  <p className="text-[10px] text-emerald-400 mt-1">Đã gán liên kết với nhân sự (assigned_user_id).</p>
+                  <p className="text-[10px] text-green-700 mt-1">Đã gán liên kết với nhân sự (assigned_user_id).</p>
                 )}
                 {showPersonnelSuggestions && personnelSuggestions.length > 0 && (
-                  <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl divide-y divide-slate-800">
+                  <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-gray-50 shadow-xl divide-y divide-gray-100">
                     {personnelSuggestions.map((p) => (
                       <li
                         key={p.id}
                         onMouseDown={(e) => e.preventDefault()}
                         onClick={() => handleSelectPersonnel(p)}
-                        className="px-3 py-2 text-[11px] text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-300 cursor-pointer"
+                        className="px-3 py-2 text-[11px] text-[var(--color-title)] hover:bg-orange-50 hover:text-[var(--color-primary)] cursor-pointer"
                       >
                         {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
                       </li>
@@ -423,27 +423,27 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
             {/* Loại thiết bị + Hãng */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Loại Thiết Bị</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Loại Thiết Bị</label>
                 <select
                   value={deviceTypeId}
                   onChange={e => setDeviceTypeId(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 >
                   {deviceTypes.map(dt => (
                     <option key={dt.id} value={dt.id}>{dt.name}</option>
                   ))}
                 </select>
-                <p className="text-[10px] text-slate-500 mt-1">Đổi loại KHÔNG đổi lại mã CCDC đã có.</p>
+                <p className="text-[10px] text-[var(--color-subtext)] mt-1">Đổi loại KHÔNG đổi lại mã CCDC đã có.</p>
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Hãng Sản Xuất</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Hãng Sản Xuất</label>
                 <input
                   type="text"
                   value={brandName}
                   onChange={e => setBrandName(e.target.value)}
                   placeholder="Dell, HP, Posbank..."
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
             </div>
@@ -451,18 +451,18 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
             {/* Model + Năm Mua */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Dòng Máy / Model</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Dòng Máy / Model</label>
                 <input
                   type="text"
                   value={model}
                   onChange={e => setModel(e.target.value)}
                   placeholder="OptiPlex 3040 / ProDesk 600 G5"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Năm Mua</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Năm Mua</label>
                 <input
                   type="number"
                   value={purchaseYear}
@@ -470,21 +470,21 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                   min="1990"
                   max="2100"
                   placeholder="Chưa có"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Phân Loại Chi Tiết</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Phân Loại Chi Tiết</label>
                 <input
                   type="text"
                   list="edit-category-raw-options"
                   value={categoryRaw}
                   onChange={e => setCategoryRaw(e.target.value)}
                   placeholder="Ví dụ: Máy tính để bàn Dell"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 />
                 <datalist id="edit-category-raw-options">
                   {categoryRawOptions.map(opt => (
@@ -497,7 +497,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
             {/* Đổi Bưu cục (cascading BĐX -> Bưu cục) */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Điện Xã (BĐX)</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Bưu Điện Xã (BĐX)</label>
                 <select
                   value={communeId}
                   onChange={e => {
@@ -507,7 +507,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
                     const firstPo = allPostOffices.find(p => p.commune_id === newCommune);
                     setPostOfficeId(firstPo ? firstPo.id : '');
                   }}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 >
                   <option value="">-- Chọn BĐX --</option>
                   {communes.map(c => (
@@ -517,11 +517,11 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               </div>
 
               <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Cục (MBC)</label>
+                <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Bưu Cục (MBC)</label>
                 <select
                   value={postOfficeId}
                   onChange={e => setPostOfficeId(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className="w-full input-soft p-2.5 rounded-xl text-xs"
                 >
                   <option value="">-- Chọn Bưu cục --</option>
                   {postOfficesForCommune.map(po => (
@@ -532,38 +532,38 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
             </div>
 
             {/* Hardware Specs Edit */}
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-              <span className="text-[11px] font-bold text-cyan-400 uppercase">Cấu Hình Phần Cứng (Specs)</span>
+            <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)] space-y-3">
+              <span className="text-[11px] font-bold text-[var(--color-primary)] uppercase">Cấu Hình Phần Cứng (Specs)</span>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">CPU</label>
-                  <input type="text" value={cpu} onChange={e => setCpu(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
+                  <label className="block text-[10px] text-[var(--color-body)] mb-1">CPU</label>
+                  <input type="text" value={cpu} onChange={e => setCpu(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">RAM</label>
-                  <input type="text" value={ram} onChange={e => setRam(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
+                  <label className="block text-[10px] text-[var(--color-body)] mb-1">RAM</label>
+                  <input type="text" value={ram} onChange={e => setRam(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">Ổ Cứng Storage</label>
-                  <input type="text" value={storage} onChange={e => setStorage(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
+                  <label className="block text-[10px] text-[var(--color-body)] mb-1">Ổ Cứng Storage</label>
+                  <input type="text" value={storage} onChange={e => setStorage(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
                 </div>
 
                 <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">Hệ Điều Hành</label>
-                  <input type="text" value={os} onChange={e => setOs(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
+                  <label className="block text-[10px] text-[var(--color-body)] mb-1">Hệ Điều Hành</label>
+                  <input type="text" value={os} onChange={e => setOs(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Ghi Chú</label>
+              <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Ghi Chú</label>
               <textarea
                 rows={2}
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
-                className="w-full glass-input p-2.5 rounded-xl text-xs resize-none"
+                className="w-full input-soft p-2.5 rounded-xl text-xs resize-none"
               />
             </div>
 
@@ -571,7 +571,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               <button
                 type="button"
                 onClick={() => setIsEditing(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold"
+                className="px-4 py-2 rounded-xl btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800 text-xs font-semibold"
               >
                 Hủy bỏ
               </button>
@@ -579,7 +579,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               <button
                 type="submit"
                 disabled={saveLoading}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2"
+                className="px-5 py-2.5 rounded-xl btn btn-dark flex items-center gap-2"
               >
                 {saveLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                 <span>{saveLoading ? 'Đang Lưu...' : 'LƯU THAY ĐỔI'}</span>
@@ -591,80 +591,80 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
           <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
             {/* Asset Identity Card */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Địa chỉ IP</div>
-                <div className="font-mono font-bold text-cyan-400 text-xs mt-1">{detail.ip_address || 'N/A'}</div>
+              <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Địa chỉ IP</div>
+                <div className="font-mono font-bold text-[var(--color-primary)] text-xs mt-1">{detail.ip_address || 'N/A'}</div>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Địa chỉ MAC</div>
-                <div className="font-mono text-slate-200 text-[11px] mt-1">{detail.mac_address || 'N/A'}</div>
+              <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Địa chỉ MAC</div>
+                <div className="font-mono text-[var(--color-title)] text-[11px] mt-1">{detail.mac_address || 'N/A'}</div>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Số Serial / TAG</div>
-                <div className="font-mono text-slate-200 text-[11px] mt-1 truncate">{detail.serial_number || 'N/A'}</div>
+              <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Số Serial / TAG</div>
+                <div className="font-mono text-[var(--color-title)] text-[11px] mt-1 truncate">{detail.serial_number || 'N/A'}</div>
               </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Trạng thái</div>
-                <div className="font-semibold text-emerald-400 text-xs mt-1">{detail.status || 'Đang hoạt động'}</div>
+              <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Trạng thái</div>
+                <div className="font-semibold text-green-700 text-xs mt-1">{detail.status || 'Đang hoạt động'}</div>
               </div>
             </div>
 
             {/* Location & User Info */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl glass-card space-y-2">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
+              <div className="p-4 rounded-xl card-soft space-y-2">
+                <div className="flex items-center gap-2 text-[var(--color-primary)] text-xs font-bold uppercase tracking-wider">
                   <MapPin className="w-4 h-4" />
                   <span>Đơn Vị & Bưu Cục Quản Lý</span>
                 </div>
-                <div className="text-sm font-bold text-white">{detail.post_office_name} ({detail.post_office_code})</div>
-                <div className="text-xs text-slate-400">Trực thuộc: <span className="text-slate-200 font-semibold">{detail.commune_name} ({detail.commune_code})</span></div>
-                <div className="text-xs text-slate-400">Địa chỉ: {detail.post_office_address || 'Theo quản lý địa bàn xã'}</div>
+                <div className="text-sm font-bold text-[var(--color-title)]">{detail.post_office_name} ({detail.post_office_code})</div>
+                <div className="text-xs text-[var(--color-body)]">Trực thuộc: <span className="text-[var(--color-title)] font-semibold">{detail.commune_name} ({detail.commune_code})</span></div>
+                <div className="text-xs text-[var(--color-body)]">Địa chỉ: {detail.post_office_address || 'Theo quản lý địa bàn xã'}</div>
               </div>
 
-              <div className="p-4 rounded-xl glass-card space-y-2">
-                <div className="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
+              <div className="p-4 rounded-xl card-soft space-y-2">
+                <div className="flex items-center gap-2 text-sky-600 text-xs font-bold uppercase tracking-wider">
                   <User className="w-4 h-4" />
                   <span>Người Sử Dụng Được Bàn Giao</span>
                 </div>
-                <div className="text-sm font-bold text-white">{detail.assigned_user_name || detail.raw_user_name || 'Chưa bàn giao cụ thể'}</div>
+                <div className="text-sm font-bold text-[var(--color-title)]">{detail.assigned_user_name || detail.raw_user_name || 'Chưa bàn giao cụ thể'}</div>
                 {detail.assigned_user_hrm && (
-                  <div className="text-xs text-purple-300 font-mono">Mã HRM: {detail.assigned_user_hrm}</div>
+                  <div className="text-xs text-sky-600 font-mono">Mã HRM: {detail.assigned_user_hrm}</div>
                 )}
-                <div className="text-xs text-slate-400">Ghi nhận từ dữ liệu bưu điện</div>
+                <div className="text-xs text-[var(--color-body)]">Ghi nhận từ dữ liệu bưu điện</div>
               </div>
             </div>
 
             {/* Hardware Specs Section */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" />
+              <h4 className="text-xs font-bold text-[var(--color-title)] uppercase tracking-wider flex items-center gap-2">
+                <Cpu className="w-4 h-4 text-[var(--color-primary)]" />
                 <span>Thông Số Kỹ Thuật Chi Tiết (Hardware Specs)</span>
               </h4>
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">CPU</div>
-                  <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.cpu || 'N/A'}</div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-body)]">CPU</div>
+                  <div className="text-xs font-semibold text-[var(--color-title)] mt-0.5">{detail?.specs?.cpu || 'N/A'}</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Dung Lượng RAM</div>
-                  <div className="text-xs font-semibold text-cyan-400 mt-0.5">{detail?.specs?.ram || 'N/A'}</div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-body)]">Dung Lượng RAM</div>
+                  <div className="text-xs font-semibold text-[var(--color-primary)] mt-0.5">{detail?.specs?.ram || 'N/A'}</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Ổ Cứng Storage</div>
-                  <div className="text-xs font-semibold text-blue-400 mt-0.5">{detail?.specs?.storage || 'N/A'}</div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-body)]">Ổ Cứng Storage</div>
+                  <div className="text-xs font-semibold text-sky-600 mt-0.5">{detail?.specs?.storage || 'N/A'}</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Hệ Điều Hành</div>
-                  <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.os || 'N/A'}</div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-body)]">Hệ Điều Hành</div>
+                  <div className="text-xs font-semibold text-[var(--color-title)] mt-0.5">{detail?.specs?.os || 'N/A'}</div>
                 </div>
 
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Phân Loại Chi Tiết</div>
-                  <div className="text-xs font-semibold text-indigo-400 mt-0.5">{detail?.specs?.category_raw || 'N/A'}</div>
+                <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+                  <div className="text-[10px] text-[var(--color-body)]">Phân Loại Chi Tiết</div>
+                  <div className="text-xs font-semibold text-sky-600 mt-0.5">{detail?.specs?.category_raw || 'N/A'}</div>
                 </div>
 
               </div>
@@ -672,22 +672,22 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
 
             {/* Audit Logs */}
             <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <History className="w-4 h-4 text-amber-400" />
+              <h4 className="text-xs font-bold text-[var(--color-title)] uppercase tracking-wider flex items-center gap-2">
+                <History className="w-4 h-4 text-yellow-700" />
                 <span>Lịch Sử Luân Chuyển & Cập Nhật (Audit Logs)</span>
               </h4>
 
-              <div className="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
+              <div className="border border-[var(--color-border)] rounded-xl overflow-hidden divide-y divide-gray-100">
                 {detail.logs && detail.logs.map((log, idx) => (
-                  <div key={idx} className="p-3 bg-slate-900/40 flex items-center justify-between text-xs">
+                  <div key={idx} className="p-3 bg-gray-50 flex items-center justify-between text-xs">
                     <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
+                      <div className="w-2 h-2 rounded-full bg-orange-500"></div>
                       <div>
-                        <div className="font-semibold text-slate-200">{log.reason || log.action}</div>
-                        <div className="text-[11px] text-slate-400">{log.transferred_at}</div>
+                        <div className="font-semibold text-[var(--color-title)]">{log.reason || log.action}</div>
+                        <div className="text-[11px] text-[var(--color-body)]">{log.transferred_at}</div>
                       </div>
                     </div>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">
+                    <span className="px-2 py-0.5 rounded bg-gray-50 text-[10px] text-[var(--color-title)] font-mono">
                       {log.action}
                     </span>
                   </div>

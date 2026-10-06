@@ -117,46 +117,46 @@ export default function ExportEquipmentModal({ onClose, filters, filterSummary }
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Download className="w-5 h-5 text-cyan-400" />
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-2xl rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-gray-50 shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Download className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Export Danh Sách CCDC Ra Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
-          <p className="text-slate-400">
-            Dùng đúng bộ lọc đang áp dụng trên danh sách: <span className="text-slate-200">{filterSummary}</span>
+          <p className="text-[var(--color-body)]">
+            Dùng đúng bộ lọc đang áp dụng trên danh sách: <span className="text-[var(--color-title)]">{filterSummary}</span>
           </p>
 
           <div className="space-y-2">
-            <label className="flex items-start gap-3 p-3 rounded-xl glass-input cursor-pointer">
+            <label className="flex items-start gap-3 p-3 rounded-xl input-soft cursor-pointer">
               <input type="radio" checked={mode === 'full'} onChange={() => setMode('full')} className="mt-0.5" />
               <div>
-                <div className="font-semibold text-slate-200">Phương án 1 — Đầy đủ</div>
-                <div className="text-[11px] text-slate-400">Xuất toàn bộ 31 cột theo đúng thứ tự chuẩn (giống dulieu.xlsx gốc + 7 cột mới).</div>
+                <div className="font-semibold text-[var(--color-title)]">Phương án 1 — Đầy đủ</div>
+                <div className="text-[11px] text-[var(--color-body)]">Xuất toàn bộ 31 cột theo đúng thứ tự chuẩn (giống dulieu.xlsx gốc + 7 cột mới).</div>
               </div>
             </label>
-            <label className="flex items-start gap-3 p-3 rounded-xl glass-input cursor-pointer">
+            <label className="flex items-start gap-3 p-3 rounded-xl input-soft cursor-pointer">
               <input type="radio" checked={mode === 'custom'} onChange={() => setMode('custom')} className="mt-0.5" />
               <div>
-                <div className="font-semibold text-slate-200">Phương án 2 — Theo từng trường cần thiết</div>
-                <div className="text-[11px] text-slate-400">Tự chọn cột muốn xuất. Cột "Mã CCDC" luôn được xuất kèm (dùng để import lại đúng thiết bị).</div>
+                <div className="font-semibold text-[var(--color-title)]">Phương án 2 — Theo từng trường cần thiết</div>
+                <div className="text-[11px] text-[var(--color-body)]">Tự chọn cột muốn xuất. Cột "Mã CCDC" luôn được xuất kèm (dùng để import lại đúng thiết bị).</div>
               </div>
             </label>
           </div>
 
           {mode === 'custom' && (
-            <div className="border border-slate-800 rounded-xl p-3 max-h-[280px] overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="border border-[var(--color-border)] rounded-xl p-3 max-h-[280px] overflow-y-auto grid grid-cols-2 sm:grid-cols-3 gap-2">
               {EQUIPMENT_EXPORT_FIELDS.map((f) => (
                 <label
                   key={f.key}
-                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${f.required ? 'bg-cyan-500/10 border border-cyan-500/30' : 'hover:bg-slate-800/60'}`}
+                  className={`flex items-center gap-2 px-2 py-1.5 rounded-lg ${f.required ? 'bg-orange-50 border border-orange-200' : 'hover:bg-gray-50'}`}
                 >
                   <input
                     type="checkbox"
@@ -164,9 +164,9 @@ export default function ExportEquipmentModal({ onClose, filters, filterSummary }
                     disabled={f.required}
                     onChange={() => toggleKey(f.key)}
                   />
-                  <span className={f.required ? 'text-cyan-300 font-semibold' : 'text-slate-300'}>
+                  <span className={f.required ? 'text-[var(--color-primary)] font-semibold' : 'text-[var(--color-title)]'}>
                     {f.label}
-                    {f.required && <span className="block text-[10px] text-cyan-400 font-normal">(bắt buộc — dùng để cập nhật khi import lại)</span>}
+                    {f.required && <span className="block text-[10px] text-[var(--color-primary)] font-normal">(bắt buộc — dùng để cập nhật khi import lại)</span>}
                   </span>
                 </label>
               ))}
@@ -174,7 +174,7 @@ export default function ExportEquipmentModal({ onClose, filters, filterSummary }
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -183,7 +183,7 @@ export default function ExportEquipmentModal({ onClose, filters, filterSummary }
           <button
             onClick={handleExport}
             disabled={exporting}
-            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-3 rounded-xl btn btn-dark flex items-center justify-center gap-2 disabled:opacity-50"
           >
             {exporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckSquare className="w-4 h-4" />}
             <span>{exporting ? 'Đang xuất file...' : 'Xuất File Excel'}</span>

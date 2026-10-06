@@ -239,28 +239,28 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
   const previewRows = parsedRows.slice(0, 20);
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-5xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-5xl rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-gray-50 shrink-0">
+          <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
+            <Upload className="w-5 h-5 text-sky-600" />
             <span>Import CCDC Từ Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <p className="text-slate-400">
-              File <code className="text-purple-300">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột (sẽ bị bỏ qua khi đọc dữ liệu).
+            <p className="text-[var(--color-body)]">
+              File <code className="text-sky-600">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột (sẽ bị bỏ qua khi đọc dữ liệu).
               Mỗi dòng phải có <b>Mã MBC</b> VÀ (<b>Tên Máy</b> HOẶC <b>Mã CCDC</b>).
             </p>
             <button
               onClick={handleDownloadTemplate}
               disabled={generatingTemplate}
-              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 glass-input hover:border-purple-500/40 transition-all disabled:opacity-50"
+              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-sky-600 input-soft hover:border-sky-200 transition-all disabled:opacity-50"
             >
               {generatingTemplate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               <span>Tải Template Mẫu</span>
@@ -268,26 +268,26 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[var(--color-title)] uppercase mb-1">
               Chọn File Excel (.xlsx)
             </label>
             <input
               type="file"
               accept=".xlsx"
               onChange={handleFileChange}
-              className="w-full glass-input p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+              className="w-full input-soft p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-sky-50 file:text-sky-600 file:text-xs file:font-semibold"
             />
           </div>
 
           {parsing && (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-[var(--color-body)]">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Đang đọc file Excel...</span>
             </div>
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -296,37 +296,37 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
           {parsedRows.length > 0 && !importResult && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-200 flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                <h4 className="font-semibold text-[var(--color-title)] flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-sky-600" />
                   <span>
                     Xem Trước ({parsedRows.length} dòng từ "{fileName}"
                     {parsedRows.length > 20 ? ` — hiện 20 dòng đầu` : ''})
                   </span>
                 </h4>
                 {invalidRowCount > 0 && (
-                  <span className="text-rose-400 text-[11px] font-semibold">
+                  <span className="text-red-700 text-[11px] font-semibold">
                     {invalidRowCount} dòng thiếu Mã MBC hoặc (Tên Máy/Mã CCDC) — sẽ bị chặn khi Import
                   </span>
                 )}
               </div>
 
-              <div className="border border-slate-800 rounded-xl overflow-auto max-h-[320px]">
+              <div className="border border-[var(--color-border)] rounded-xl overflow-auto max-h-[320px]">
                 <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 sticky top-0">
+                  <thead className="bg-gray-50 text-[var(--color-body)] font-semibold border-b border-[var(--color-border)] sticky top-0">
                     <tr>
                       {headerFields.map((f) => (
                         <th key={f.key} className="py-2 px-3 whitespace-nowrap">{f.label}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                  <tbody className="divide-y divide-gray-100 font-mono">
                     {previewRows.map((r, idx) => {
                       const invalid = !r.maMbc || (!r.tenMay && !r.maCcdc);
                       return (
-                        <tr key={idx} className={invalid ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
+                        <tr key={idx} className={invalid ? 'bg-red-50' : 'hover:bg-gray-50'}>
                           {headerFields.map((f) => (
-                            <td key={f.key} className="py-1.5 px-3 text-slate-300 whitespace-nowrap">
-                              {r[f.key] || <span className="text-slate-600">—</span>}
+                            <td key={f.key} className="py-1.5 px-3 text-[var(--color-title)] whitespace-nowrap">
+                              {r[f.key] || <span className="text-[var(--color-subtext)]">—</span>}
                             </td>
                           ))}
                         </tr>
@@ -337,7 +337,7 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs space-y-2">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{importError}</span>
@@ -355,7 +355,7 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || invalidRowCount > 0}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl btn btn-dark w-full flex items-center justify-center gap-2 disabled:opacity-50"
                 title={invalidRowCount > 0 ? 'Sửa các dòng thiếu Mã MBC hoặc (Tên Máy/Mã CCDC) trong file rồi tải lại' : ''}
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -365,7 +365,7 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
@@ -380,15 +380,15 @@ export default function ImportEquipmentModal({ onClose, onSuccess }) {
                   ['Thiết Bị Tạo Mới', importResult.equipmentsCreated],
                   ['Thiết Bị Cập Nhật', importResult.equipmentsUpdated]
                 ].map(([label, value]) => (
-                  <div key={label} className="p-2.5 rounded-lg bg-slate-900/60 text-center">
-                    <div className="text-[10px] text-slate-400">{label}</div>
-                    <div className="text-lg font-bold text-emerald-400">{value ?? 0}</div>
+                  <div key={label} className="p-2.5 rounded-lg bg-gray-50 text-center">
+                    <div className="text-[10px] text-[var(--color-body)]">{label}</div>
+                    <div className="text-lg font-bold text-green-700">{value ?? 0}</div>
                   </div>
                 ))}
               </div>
               <button
                 onClick={onClose}
-                className="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all"
+                className="w-full mt-2 py-2.5 rounded-xl btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:text-gray-800 text-xs font-semibold transition-all"
               >
                 Đóng
               </button>
