@@ -568,7 +568,11 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu điện xã</label>
               <select
                 value={selectedCommuneId}
-                onChange={handleFilterChange(setSelectedCommuneId)}
+                onChange={(e) => {
+                  setSelectedCommuneId(e.target.value);
+                  setSelectedPostOfficeId('');
+                  setPagination(p => ({ ...p, page: 1 }));
+                }}
                 className="w-full glass-input px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả BĐX --</option>
