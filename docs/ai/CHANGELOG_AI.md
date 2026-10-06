@@ -6,9 +6,10 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ## [2026-10-06] - UI Quản lý email (feat/email-ui-list)
 
-- `src/components/Sidebar.jsx`: Thêm mục "Quản lý email" (icon Mail) vào thanh bên trên "Người sử dụng".
+- `src/components/Sidebar.jsx`: Thêm mục "Quản lý email" (icon Mail) vào thanh bên trên "Người sử dụng". Sửa nhãn "Danh Sách" thành "Danh sách".
 - `src/App.jsx`: Cập nhật logic điều hướng tab cho Quản lý email.
 - `src/components/EmailListView.jsx`: Tạo mới, danh sách email công vụ với các cột gộp, phân trang, và lọc kết hợp (Loại, Trạng thái, BĐ xã, Bưu cục); thêm modal Thêm/Sửa email; thêm modal Thu hồi/Kích hoạt lại. Tuân thủ phân quyền STAFF chỉ đọc.
+- Audit CTO: Sửa logic `todayLocalIso` để tránh lệch múi giờ, regex `formatDate`, fix reset filter về trang 1, sửa lỗi race condition khi fetch data, và xoá post office khi đổi BĐX trong form.
 
 ---
 

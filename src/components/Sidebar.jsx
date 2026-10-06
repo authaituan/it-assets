@@ -34,7 +34,7 @@ const NETWORK_SUBVIEWS = [
 ];
 
 const EMAIL_SUBVIEWS = [
-  { id: 'list', label: 'Danh Sách', icon: List }
+  { id: 'list', label: 'Danh sách', icon: List }
 ];
 
 export default function Sidebar({ activeTab, setActiveTab, authUser, activeInventoryDeviceTypeId, onSelectInventoryCategory, networkSubView, onSelectNetworkSubView, emailSubView, onSelectEmailSubView }) {

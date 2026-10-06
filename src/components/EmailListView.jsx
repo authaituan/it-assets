@@ -23,9 +23,16 @@ import { apiFetch, apiFetchJson } from '../utils/api';
 // ==========================================
 // Modal: Thêm / Sửa Email
 // ==========================================
+const todayLocalIso = () => {
+  const d = new Date();
+  const yyyy = d.getFullYear();
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
+};
+
 function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
   const isEdit = !!editing;
-  const todayISO = new Date().toISOString().split('T')[0];
 
   const [form, setForm] = useState({
     email: editing?.email || '',
@@ -36,7 +43,7 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
     job_title: editing?.job_title || '',
     commune_id: editing?.commune_id || '',
     post_office_id: editing?.post_office_id || '',
-    created_date: editing?.created_date ? editing.created_date.split('T')[0] : todayISO
+    created_date: editing?.created_date ? editing.created_date.substring(0, 10) : todayLocalIso()
   });
 
   const [postOffices, setPostOffices] = useState([]);
@@ -52,13 +59,19 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
         .catch(err => console.error(err));
     } else {
       setPostOffices([]);
-      if (form.post_office_id) {
-        setForm(prev => ({ ...prev, post_office_id: '' }));
-      }
     }
   }, [form.commune_id]);
 
-  const setField = (key) => (e) => setForm(prev => ({ ...prev, [key]: e.target.value }));
+  const setField = (key) => (e) => {
+    const val = e.target.value;
+    setForm(prev => {
+      const next = { ...prev, [key]: val };
+      if (key === 'commune_id') {
+        next.post_office_id = '';
+      }
+      return next;
+    });
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -255,8 +268,7 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
 // Modal: Thu Hồi Email
 // ==========================================
 function RevokeEmailModal({ emailItem, onClose, onSuccess }) {
-  const todayISO = new Date().toISOString().split('T')[0];
-  const [revokedDate, setRevokedDate] = useState(todayISO);
+  const [revokedDate, setRevokedDate] = useState(() => todayLocalIso());
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -355,18 +367,15 @@ export default function EmailListView({ authUser, search, setSearch }) {
 
   const debounceRef = useRef(null);
   const [debouncedSearch, setDebouncedSearch] = useState(search);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setDebouncedSearch(search);
+      setPagination(p => ({ ...p, page: 1 }));
     }, 300);
   }, [search]);
-
-  // Reset page to 1 when filters change
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, page: 1 }));
-  }, [debouncedSearch, selectedKind, selectedStatus, selectedCommuneId, selectedPostOfficeId]);
 
   useEffect(() => {
     apiFetch('/api/organization/communes')
@@ -387,7 +396,8 @@ export default function EmailListView({ authUser, search, setSearch }) {
     }
   }, [selectedCommuneId]);
 
-  const fetchEmails = () => {
+  useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     setError('');
 
@@ -402,6 +412,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
 
     apiFetchJson(`/api/emails?${params.toString()}`)
       .then(result => {
+        if (cancelled) return;
         setLoading(false);
         if (!result.ok) {
           setError(result.error);
@@ -409,21 +420,20 @@ export default function EmailListView({ authUser, search, setSearch }) {
         }
         setItems(result.data.items || []);
         if (result.data.pagination) {
-          setPagination(result.data.pagination);
+          setPagination(p => ({ ...p, total: result.data.pagination.total, totalPages: result.data.pagination.totalPages }));
         }
       })
       .catch(err => {
+        if (cancelled) return;
         setLoading(false);
         setError(err.message);
       });
-  };
 
-  useEffect(() => {
-    fetchEmails();
-  }, [debouncedSearch, selectedKind, selectedStatus, selectedCommuneId, selectedPostOfficeId, pagination.page, pagination.limit]);
+    return () => { cancelled = true; };
+  }, [debouncedSearch, selectedKind, selectedStatus, selectedCommuneId, selectedPostOfficeId, pagination.page, pagination.limit, refreshKey]);
 
   const handleMutationSuccess = (resultData) => {
-    fetchEmails();
+    setRefreshKey(prev => prev + 1);
     if (resultData) {
       let msgTexts = [];
       if (resultData.personnelCreated) {
@@ -449,12 +459,18 @@ export default function EmailListView({ authUser, search, setSearch }) {
     handleMutationSuccess(result.data);
   };
 
+  const handleFilterChange = (setter) => (e) => {
+    setter(e.target.value);
+    setPagination(p => ({ ...p, page: 1 }));
+  };
+
   const clearFilters = () => {
     setSearch('');
     setSelectedKind('');
     setSelectedStatus('');
     setSelectedCommuneId('');
     setSelectedPostOfficeId('');
+    setPagination(p => ({ ...p, page: 1 }));
   };
 
   const hasFilters = search || selectedKind || selectedStatus || selectedCommuneId || selectedPostOfficeId;
@@ -462,9 +478,11 @@ export default function EmailListView({ authUser, search, setSearch }) {
 
   const formatDate = (isoString) => {
     if (!isoString) return '';
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return isoString;
-    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return `${match[3]}/${match[2]}/${match[1]}`;
+    }
+    return isoString;
   };
 
   return (
@@ -526,7 +544,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Loại</label>
               <select
                 value={selectedKind}
-                onChange={(e) => setSelectedKind(e.target.value)}
+                onChange={handleFilterChange(setSelectedKind)}
                 className="w-full glass-input px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả --</option>
@@ -538,7 +556,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Trạng thái</label>
               <select
                 value={selectedStatus}
-                onChange={(e) => setSelectedStatus(e.target.value)}
+                onChange={handleFilterChange(setSelectedStatus)}
                 className="w-full glass-input px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả --</option>
@@ -550,7 +568,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu điện xã</label>
               <select
                 value={selectedCommuneId}
-                onChange={(e) => setSelectedCommuneId(e.target.value)}
+                onChange={handleFilterChange(setSelectedCommuneId)}
                 className="w-full glass-input px-3 py-2 rounded-xl text-xs"
               >
                 <option value="">-- Tất cả BĐX --</option>
@@ -563,7 +581,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu cục</label>
               <select
                 value={selectedPostOfficeId}
-                onChange={(e) => setSelectedPostOfficeId(e.target.value)}
+                onChange={handleFilterChange(setSelectedPostOfficeId)}
                 disabled={!selectedCommuneId}
                 className="w-full glass-input px-3 py-2 rounded-xl text-xs disabled:opacity-50"
               >
