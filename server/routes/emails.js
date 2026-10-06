@@ -436,7 +436,7 @@ router.post('/emails', authRequired, requireManager, (req, res) => {
 
 // ------------------------------------------
 // PUT /api/emails/:id/revoke  { revoked_date? } — mặc định ngày hôm nay
-// PUT /api/emails/:id/reactivate — xoá ngày thu hồi, KHÔNG tự tạo nhân sự
+// PUT /api/emails/:id/reactivate — xoá ngày thu hồi; email cá nhân có HRM chưa có nhân sự -> tạo
 // (đặt TRƯỚC PUT /emails/:id; khác độ sâu path nên không xung đột, giữ cho rõ)
 // ------------------------------------------
 router.put('/emails/:id/revoke', authRequired, requireManager, (req, res) => {
@@ -468,8 +468,18 @@ router.put('/emails/:id/reactivate', authRequired, requireManager, (req, res) =>
     if (!existing) return res.status(404).json({ error: 'Không tìm thấy email' });
     if (!existing.revoked_date) return res.status(400).json({ error: 'Email đang được sử dụng' });
 
-    db.prepare('UPDATE emails SET revoked_date = NULL WHERE id = ?').run(existing.id);
-    res.json({ message: 'Đã kích hoạt lại email', item: getById(existing.id) });
+    // Đưa về "đang dùng" -> cũng đảm bảo có nhân sự (cùng logic POST/import).
+    let person = { created: false, warning: null };
+    db.transaction(() => {
+      db.prepare('UPDATE emails SET revoked_date = NULL WHERE id = ?').run(existing.id);
+      person = ensurePersonnel({ ...existing, revoked_date: null });
+    })();
+    res.json({
+      message: 'Đã kích hoạt lại email',
+      item: getById(existing.id),
+      personnelCreated: person.created,
+      warnings: person.warning ? [person.warning] : []
+    });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -520,13 +530,24 @@ router.put('/emails/:id', authRequired, requireManager, (req, res) => {
       if (dup) return res.status(400).json({ error: 'Email này đã tồn tại trong hệ thống' });
     }
 
-    db.prepare(`
-      UPDATE emails SET email = ?, kind = ?, hrm_code = ?, full_name = ?, phone = ?, commune_id = ?,
-        post_office_id = ?, job_title = ?, created_date = ?
-      WHERE id = ?
-    `).run(f.email, f.kind, f.hrm_code, f.full_name, f.phone, f.commune_id, f.post_office_id, f.job_title, f.created_date, existing.id);
+    // Sau khi sửa mà là cá nhân + đang dùng + có HRM -> đảm bảo có nhân sự (ensurePersonnel
+    // tự bỏ qua nếu đã thu hồi / không phải PERSONAL).
+    let person = { created: false, warning: null };
+    db.transaction(() => {
+      db.prepare(`
+        UPDATE emails SET email = ?, kind = ?, hrm_code = ?, full_name = ?, phone = ?, commune_id = ?,
+          post_office_id = ?, job_title = ?, created_date = ?
+        WHERE id = ?
+      `).run(f.email, f.kind, f.hrm_code, f.full_name, f.phone, f.commune_id, f.post_office_id, f.job_title, f.created_date, existing.id);
+      person = ensurePersonnel(f);
+    })();
 
-    res.json({ message: 'Cập nhật email thành công', item: getById(existing.id) });
+    res.json({
+      message: 'Cập nhật email thành công',
+      item: getById(existing.id),
+      personnelCreated: person.created,
+      warnings: person.warning ? [person.warning] : []
+    });
   } catch (error) {
     console.error('Update email error:', error);
     res.status(500).json({ error: error.message });

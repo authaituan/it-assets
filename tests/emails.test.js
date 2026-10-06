@@ -167,7 +167,7 @@ test('PUT: sửa trường, đổi email trùng -> 400, kind UNIT mà còn HRM -
   assert.equal((await mgr('PUT', '/api/emails/khong-co', { phone: '1' })).status, 404);
 });
 
-test('revoke mặc định hôm nay, không thu hồi 2 lần; reactivate xoá ngày, không tạo nhân sự', async () => {
+test('revoke mặc định hôm nay, không thu hồi 2 lần; reactivate xoá ngày', async () => {
   const p = await mgr('POST', '/api/emails', { email: 'rv@test.vn', kind: 'PERSONAL', hrm_code: 'HRM_RV', full_name: 'RV' });
   const id = p.body.item.id;
   const rv = await mgr('PUT', `/api/emails/${id}/revoke`, {});
@@ -176,13 +176,10 @@ test('revoke mặc định hôm nay, không thu hồi 2 lần; reactivate xoá n
   assert.match(rv.body.item.revoked_date, /^\d{4}-\d{2}-\d{2}$/);
   assert.equal((await mgr('PUT', `/api/emails/${id}/revoke`, {})).status, 400);
 
-  ctx.db.prepare("DELETE FROM users WHERE hrm_code = 'HRM_RV'").run();
-  const usersBefore = count('users');
   const ra = await mgr('PUT', `/api/emails/${id}/reactivate`);
   assert.equal(ra.status, 200);
   assert.equal(ra.body.item.status, 'ACTIVE');
   assert.equal(ra.body.item.revoked_date, null);
-  assert.equal(count('users'), usersBefore, 'kích hoạt lại KHÔNG tự tạo nhân sự');
   assert.equal((await mgr('PUT', `/api/emails/${id}/reactivate`)).status, 400);
 });
 
@@ -368,4 +365,59 @@ test('import: kết quả export nhập lại được không lỗi (round-trip)
   const r = await imp(ex.body.items);
   assert.equal(r.status, 200, JSON.stringify(r.body));
   assert.equal(r.body.created, 0);
+});
+
+test('reactivate: email cá nhân thu hồi (HRM mới, chưa có nhân sự) -> kích hoạt lại tạo nhân sự', async () => {
+  const p = await mgr('POST', '/api/emails', { email: 'ra1@test.vn', kind: 'PERSONAL', hrm_code: 'HRM_RA1', full_name: 'Re Act', post_office_id: org.postOfficeId });
+  const id = p.body.item.id;
+  await mgr('PUT', `/api/emails/${id}/revoke`, {});
+  ctx.db.prepare("DELETE FROM users WHERE hrm_code = 'HRM_RA1'").run();
+  const ra = await mgr('PUT', `/api/emails/${id}/reactivate`);
+  assert.equal(ra.status, 200);
+  assert.equal(ra.body.personnelCreated, true);
+  assert.deepEqual(ra.body.warnings, []);
+  const u = ctx.db.prepare("SELECT * FROM users WHERE hrm_code = 'HRM_RA1'").get();
+  assert.equal(u.full_name, 'Re Act');
+  assert.equal(u.post_office_code, org.postOfficeCode);
+});
+
+test('PUT: sửa email đơn vị thành cá nhân kèm HRM mới -> tạo nhân sự', async () => {
+  const a = (await mgr('POST', '/api/emails', unitEmail({ email: 'u2p@test.vn', full_name: 'Đơn Vị Thành Người' }))).body.item;
+  const r = await mgr('PUT', `/api/emails/${a.id}`, { kind: 'PERSONAL', hrm_code: 'HRM_U2P' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.personnelCreated, true);
+  assert.deepEqual(r.body.warnings, []);
+  const u = ctx.db.prepare("SELECT * FROM users WHERE hrm_code = 'HRM_U2P'").get();
+  assert.equal(u.full_name, 'Đơn Vị Thành Người');
+  assert.equal(u.post_office_code, org.postOfficeCode);
+});
+
+test('PUT: email cá nhân đã thu hồi sửa thông tin KHÔNG tạo nhân sự', async () => {
+  const a = (await mgr('POST', '/api/emails', { email: 'rv-put@test.vn', kind: 'PERSONAL', hrm_code: 'HRM_RVPUT', full_name: 'X' })).body.item;
+  await mgr('PUT', `/api/emails/${a.id}/revoke`, {});
+  ctx.db.prepare("DELETE FROM users WHERE hrm_code = 'HRM_RVPUT'").run();
+  const r = await mgr('PUT', `/api/emails/${a.id}`, { phone: '123' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.personnelCreated, false);
+  assert.equal(ctx.db.prepare("SELECT 1 FROM users WHERE hrm_code = 'HRM_RVPUT'").get(), undefined);
+});
+
+test('reactivate / PUT: HRM đã có trong nhân sự thì giữ nguyên, lệch tên -> warnings', async () => {
+  ctx.db.prepare("INSERT INTO users (id, hrm_code, full_name, post_office_code, commune_code) VALUES (?, 'HRM_KEEP', 'Tên Gốc Giữ', ?, ?)")
+    .run(uid(), org.postOfficeCode, org.communeCode);
+  const a = (await mgr('POST', '/api/emails', { email: 'keep1@test.vn', kind: 'PERSONAL', hrm_code: 'HRM_KEEP', full_name: 'Tên Gốc Giữ', post_office_id: org.postOfficeId })).body.item;
+  await mgr('PUT', `/api/emails/${a.id}/revoke`, {});
+  await mgr('PUT', `/api/emails/${a.id}`, { full_name: 'Tên Mới Khác' });
+  const ra = await mgr('PUT', `/api/emails/${a.id}/reactivate`);
+  assert.equal(ra.status, 200);
+  assert.equal(ra.body.personnelCreated, false);
+  assert.equal(ra.body.warnings.length, 1);
+
+  const b = (await mgr('POST', '/api/emails', unitEmail({ email: 'keep2@test.vn', full_name: 'Tên Khác Nữa' }))).body.item;
+  const r = await mgr('PUT', `/api/emails/${b.id}`, { kind: 'PERSONAL', hrm_code: 'HRM_KEEP' });
+  assert.equal(r.status, 200);
+  assert.equal(r.body.personnelCreated, false);
+  assert.equal(r.body.warnings.length, 1);
+  const u = ctx.db.prepare("SELECT * FROM users WHERE hrm_code = 'HRM_KEEP'").get();
+  assert.equal(u.full_name, 'Tên Gốc Giữ');
 });

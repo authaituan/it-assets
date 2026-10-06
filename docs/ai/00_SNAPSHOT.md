@@ -17,7 +17,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - **Backend**: Node.js + Express (`server/index.js` chỉ bootstrap ~77 dòng; route ở `server/routes/*`, hàm dùng chung ở `server/lib/*`), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
-- **Test**: `node:test` built-in, **154 test case** trong `tests/*.test.js`, chạy
+- **Test**: `node:test` built-in, **158 test case** trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -116,7 +116,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   `postOfficeId`; trả kèm `status` suy ra + `commune_*`/`post_office_*`.
 - Ghi/import/export cần token + quản lý: `POST /api/emails`, `PUT /api/emails/:id`,
   `PUT /api/emails/:id/revoke` (`revoked_date` tuỳ chọn, mặc định hôm nay),
-  `PUT /api/emails/:id/reactivate` (xoá ngày, KHÔNG tự tạo nhân sự), `POST /api/emails/import`
+  `PUT /api/emails/:id/reactivate` (xoá ngày thu hồi), `POST /api/emails/import`
   (`{rows}`: email, loai, maHrm, hoTen, soDienThoai, maBdx, maBuuCuc, chucDanh, trangThai,
   ngayKhoiTao, ngayThuHoi), `GET /api/emails/export-data` (cùng bộ lọc, key Excel). Không xoá cứng.
 - Quy tắc: email lowercase+trim, đúng định dạng, duy nhất; UNIT không HRM, PERSONAL bắt buộc
@@ -125,7 +125,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   1 transaction; cập nhật theo email, ô trống = giữ cũ. Mã BĐX/bưu cục lạ → lỗi, KHÔNG BAO GIỜ
   tạo tổ chức (04_DECISIONS #14). Email cá nhân đang dùng có HRM chưa có → tạo `users`
   (không mật khẩu); HRM đã có → giữ nguyên + `warnings`; dòng đã thu hồi → không tạo nhân sự.
-  `POST /api/emails` dùng cùng logic. Trả `{created, updated, personnelCreated, warnings}`.
+  `POST /api/emails`, `PUT /api/emails/:id` (khi sau sửa là cá nhân đang dùng có HRM) và `reactivate` dùng cùng logic (trả `personnelCreated` + `warnings`). Import trả `{created, updated, personnelCreated, warnings}`.
 
 **Dashboard & Organization**
 - `GET /api/dashboard/stats` — cần token. Toàn bộ 9 chỗ đếm/lọc đều có `deleted_at IS NULL`.
