@@ -19,7 +19,8 @@ import {
   ChevronRight,
   List,
   FolderTree,
-  Map
+  Map,
+  Mail
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 
@@ -32,10 +33,15 @@ const NETWORK_SUBVIEWS = [
   { id: 'map', label: 'Bản Đồ Điểm Phục Vụ', icon: Map }
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, authUser, activeInventoryDeviceTypeId, onSelectInventoryCategory, networkSubView, onSelectNetworkSubView }) {
+const EMAIL_SUBVIEWS = [
+  { id: 'list', label: 'Danh Sách', icon: List }
+];
+
+export default function Sidebar({ activeTab, setActiveTab, authUser, activeInventoryDeviceTypeId, onSelectInventoryCategory, networkSubView, onSelectNetworkSubView, emailSubView, onSelectEmailSubView }) {
   const [deviceTypes, setDeviceTypes] = useState([]);
   const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
   const [isNetworkExpanded, setIsNetworkExpanded] = useState(false);
+  const [isEmailExpanded, setIsEmailExpanded] = useState(false);
 
   useEffect(() => {
     apiFetch('/api/device-types')
@@ -59,6 +65,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
     { id: 'dashboard', label: 'Tổng quan KPI', icon: LayoutDashboard },
     { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor },
     { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network },
+    { id: 'emails', label: 'Quản lý email', icon: Mail },
     { id: 'personnel', label: 'Người sử dụng', icon: Users },
   ];
 
@@ -201,6 +208,71 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                           <button
                             key={sub.id}
                             onClick={() => onSelectNetworkSubView(sub.id)}
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                              isSubActive
+                                ? 'bg-cyan-500/10 text-cyan-300'
+                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                            }`}
+                          >
+                            <SubIcon className="w-4 h-4" />
+                            <span className="truncate leading-tight">{sub.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            if (item.id === 'emails') {
+              const handleEmailClick = () => {
+                if (isActive) {
+                  setIsEmailExpanded(!isEmailExpanded);
+                } else {
+                  setActiveTab('emails');
+                  setIsEmailExpanded(true);
+                }
+              };
+
+              return (
+                <div key={item.id} className="flex flex-col">
+                  <div className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
+                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                  }`}>
+                    <button
+                      onClick={handleEmailClick}
+                      className="flex items-center gap-3 flex-1 text-left"
+                    >
+                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <span>{item.label}</span>
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEmailExpanded(!isEmailExpanded);
+                      }}
+                      className="p-1 hover:bg-slate-700/50 rounded-lg transition-colors ml-2"
+                    >
+                      {isEmailExpanded ? (
+                        <ChevronDown className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      ) : (
+                        <ChevronRight className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      )}
+                    </button>
+                  </div>
+
+                  {isEmailExpanded && (
+                    <div className="mt-1.5 ml-4 pl-3.5 border-l border-slate-700/50 space-y-1">
+                      {EMAIL_SUBVIEWS.map((sub) => {
+                        const SubIcon = sub.icon;
+                        const isSubActive = isActive && emailSubView === sub.id;
+                        return (
+                          <button
+                            key={sub.id}
+                            onClick={() => onSelectEmailSubView(sub.id)}
                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
                               isSubActive
                                 ? 'bg-cyan-500/10 text-cyan-300'

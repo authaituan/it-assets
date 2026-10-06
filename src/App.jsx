@@ -7,6 +7,7 @@ import InventoryView from './components/InventoryView';
 import NetworkListView from './components/NetworkListView';
 import NetworkTreeView from './components/NetworkTreeView';
 import NetworkMapView from './components/NetworkMapView';
+import EmailListView from './components/EmailListView';
 import PersonnelView from './components/PersonnelView';
 import UserAdminView from './components/UserAdminView';
 import CategoryAdminView from './components/CategoryAdminView';
@@ -42,6 +43,7 @@ export default function App() {
   // Submenu TĨNH của "Quản Lý Mạng Lưới" (feat/network-submenu-restructure):
   // 'list' | 'tree' | 'map', mặc định 'list' nếu chưa chọn gì.
   const [networkSubView, setNetworkSubView] = useState('list');
+  const [emailSubView, setEmailSubView] = useState('list');
 
   // Bất kỳ request ghi nào (qua src/utils/api.js) nhận 401 từ backend sẽ tự
   // xoá token + phát event này -> quay về LoginView, không để lộ lỗi JSON thô.
@@ -107,6 +109,11 @@ export default function App() {
               setActiveTab('unittree');
               setNetworkSubView(subView);
             }}
+            emailSubView={emailSubView}
+            onSelectEmailSubView={(subView) => {
+              setActiveTab('emails');
+              setEmailSubView(subView);
+            }}
           />
 
           {/* Main Content Area */}
@@ -115,7 +122,9 @@ export default function App() {
               search={search}
               setSearch={(val) => {
                 setSearch(val);
-                if (val && activeTab !== 'inventory') {
+                if (val && activeTab !== 'inventory' && activeTab !== 'emails') {
+                  // Keep it on inventory or emails if already there, otherwise maybe default to inventory?
+                  // Currently it defaults to inventory if not there. Let's keep existing logic.
                   setActiveTab('inventory');
                 }
               }}
@@ -167,6 +176,15 @@ export default function App() {
                 <NetworkMapView 
                   key={`net-map-${refreshKey}`} 
                   onSelectUnitFilter={handleSelectUnitFromTree}
+                />
+              )}
+
+              {activeTab === 'emails' && emailSubView === 'list' && (
+                <EmailListView
+                  key={`emails-list-${refreshKey}`}
+                  authUser={authUser}
+                  search={search}
+                  setSearch={setSearch}
                 />
               )}
 
