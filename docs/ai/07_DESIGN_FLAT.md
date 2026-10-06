@@ -40,3 +40,16 @@ Tương phản: chữ trắng chỉ đặt trên `primary`, `danger`; chữ `ink
 | `shadow-*`, `backdrop-blur*`, `bg-gradient-*`, `rounded-xl/2xl/lg` | bỏ (phẳng, vuông) |
 
 Icon: giữ bộ lucide-react hiện có; trong menu/thao tác đặt icon trong ô vuông 32px nền `success`/`accent`/`sky`, nét `ink` 18px, stroke 2.
+
+## 4. Mẫu thành phần dùng chung
+- **Thẻ**: `bg-surface border-2 border-info`, padding 24px.
+- **Tiêu đề trang**: h1 30px/800 `ink`, mô tả 14px `text-muted`.
+- **Nút chính**: `bg-accent text-ink font-bold h-10 px-4`, hover `hover:bg-accent-hover`. **Nút phụ**: `bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky`. **Nút nguy hiểm**: `bg-danger text-white font-bold h-10 px-4`. Disabled: `opacity-50 cursor-not-allowed`.
+- **Ô nhập / select / textarea**: `bg-surface-alt text-ink text-[14px] h-10 px-3 w-full`, không viền, placeholder `text-muted`, focus `outline-2 outline-primary`. Nhãn: 12px/800 viết hoa tracking 0.05em `text-muted`, cách ô nhập 6px. Ô lỗi: thêm `outline-2 outline-danger`; dòng lỗi dưới ô: 13px/700 `text-danger`.
+- **Khối thông báo**: lỗi `bg-danger text-white`; thành công `bg-success text-ink`; cảnh báo `bg-accent text-ink`; thông tin `bg-sky text-ink`; padding 12px, 13px/700, kèm icon lucide 18px.
+- **Modal**: lớp phủ `bg-ink/50` (KHÔNG blur); hộp `bg-surface border-2 border-info`, `max-w` như hiện tại; thanh tiêu đề: tiêu đề 18px/800 `ink` + nút đóng vuông 32px `bg-surface-alt hover:bg-sky` icon X; đường kẻ dưới tiêu đề 2px `surface-alt`; chân modal: nút phụ "Hủy/Đóng" trái, nút chính bên phải, đường kẻ trên 2px `surface-alt`.
+- **Bảng**: hàng đầu `bg-surface-alt`, chữ 12px/800 viết hoa tracking 0.05em `muted`, padding 12px 20px; hàng dữ liệu `border-t-2 border-surface-alt`, padding 14px 20px, chữ 14px `ink`; hover `bg-sidebar`; chữ phụ 12px `muted`. Không dùng `divide-slate-*`.
+- **Huy hiệu trạng thái** (ô chữ nhật, không bo): 12px/800, padding 2px 10px — tốt/Đang dùng `bg-success text-ink`; thu hồi/lỗi `bg-danger text-white`; loại "Cá nhân" `bg-accent text-ink`; "Đơn vị" `bg-sky text-ink`.
+- **Nút thao tác trong hàng**: ô vuông 32px `bg-success` (sửa) / `bg-surface-alt` (thu hồi/khôi phục), icon lucide 16px stroke `ink`, hover `bg-sky`; giữ nguyên `title` hiện có.
+- **Phân trang / tổng số**: chữ 13px/700 `muted`, số in đậm `ink`; nút trang vuông `bg-surface-alt`, trang hiện tại `bg-primary text-white`.
+

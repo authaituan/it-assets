@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import {
   Mail,
   Search,
@@ -134,97 +134,96 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            {isEdit ? <Edit className="w-5 h-5 text-cyan-400" /> : <Plus className="w-5 h-5 text-cyan-400" />}
+    <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4">
+      <div className="bg-surface border-2 border-info w-full max-w-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b-2 border-surface-alt flex items-center justify-between shrink-0">
+          <h3 className="font-extrabold text-[18px] text-ink flex items-center gap-2">
             <span>{isEdit ? `Sửa Email — ${editing.email}` : 'Thêm Email Mới'}</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky text-ink transition-colors">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
+        <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 bg-danger text-white flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span className="text-[13px] font-bold">{error}</span>
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Email <span className="text-rose-400">*</span></label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Email <span className="text-danger">*</span></label>
               <input
                 type="email"
                 value={form.email}
                 onChange={setField('email')}
                 placeholder="example@hue.vnpost.vn"
-                className="w-full glass-input p-2.5 rounded-xl text-xs"
+                className={`bg-surface-alt text-ink text-[14px] h-10 px-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary ${error && !form.email.trim() ? 'outline-2 outline-danger' : ''}`}
                 required
-                disabled={isEdit} // Thường không cho đổi email gốc
+                disabled={isEdit}
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Loại <span className="text-rose-400">*</span></label>
-              <select value={form.kind} onChange={setField('kind')} className="w-full glass-input p-2.5 rounded-xl text-xs">
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Loại <span className="text-danger">*</span></label>
+              <select value={form.kind} onChange={setField('kind')} className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary">
                 <option value="PERSONAL">Cá nhân</option>
                 <option value="UNIT">Đơn vị</option>
               </select>
             </div>
 
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Họ tên / Tên đơn vị <span className="text-rose-400">*</span></label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Họ tên / Tên đơn vị <span className="text-danger">*</span></label>
               <input
                 type="text"
                 value={form.full_name}
                 onChange={setField('full_name')}
                 placeholder="Nguyễn Văn A"
-                className="w-full glass-input p-2.5 rounded-xl text-xs"
+                className={`bg-surface-alt text-ink text-[14px] h-10 px-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary ${error && !form.full_name.trim() ? 'outline-2 outline-danger' : ''}`}
                 required
               />
             </div>
 
             {form.kind === 'PERSONAL' && (
               <div className="col-span-2 sm:col-span-1">
-                <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Mã HRM <span className="text-rose-400">*</span></label>
+                <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Mã HRM <span className="text-danger">*</span></label>
                 <input
                   type="text"
                   value={form.hrm_code}
                   onChange={setField('hrm_code')}
                   placeholder="Mã HRM"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
+                  className={`bg-surface-alt text-ink text-[14px] h-10 px-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary ${error && !form.hrm_code.trim() ? 'outline-2 outline-danger' : ''}`}
                   required
                 />
               </div>
             )}
 
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Số điện thoại</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Số điện thoại</label>
               <input
                 type="text"
                 value={form.phone}
                 onChange={setField('phone')}
                 placeholder="0912345678"
-                className="w-full glass-input p-2.5 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary"
               />
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Chức danh</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Chức danh</label>
               <input
                 type="text"
                 value={form.job_title}
                 onChange={setField('job_title')}
                 placeholder="Chuyên viên"
-                className="w-full glass-input p-2.5 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary"
               />
             </div>
 
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Bưu điện xã</label>
-              <select value={form.commune_id} onChange={setField('commune_id')} className="w-full glass-input p-2.5 rounded-xl text-xs">
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Bưu điện xã</label>
+              <select value={form.commune_id} onChange={setField('commune_id')} className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary">
                 <option value="">-- Chọn BĐX --</option>
                 {communes.map((c) => (
                   <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
@@ -232,8 +231,8 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
               </select>
             </div>
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Bưu cục</label>
-              <select value={form.post_office_id} onChange={setField('post_office_id')} className="w-full glass-input p-2.5 rounded-xl text-xs" disabled={!form.commune_id}>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Bưu cục</label>
+              <select value={form.post_office_id} onChange={setField('post_office_id')} className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary disabled:opacity-50" disabled={!form.commune_id}>
                 <option value="">-- Chọn Bưu cục --</option>
                 {postOffices.map((p) => (
                   <option key={p.id} value={p.id}>{p.code} - {p.name}</option>
@@ -242,21 +241,29 @@ function AddEditEmailModal({ editing, communes, onClose, onSuccess }) {
             </div>
 
             <div className="col-span-2 sm:col-span-1">
-              <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">Ngày khởi tạo</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Ngày khởi tạo</label>
               <input
                 type="date"
                 value={form.created_date}
                 onChange={setField('created_date')}
-                className="w-full glass-input p-2.5 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary"
               />
             </div>
           </div>
 
-          <div className="pt-2">
+          <div className="pt-4 border-t-2 border-surface-alt flex justify-end gap-3 mt-6">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Hủy
+            </button>
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="bg-accent text-ink font-bold h-10 px-4 hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               <span>{loading ? 'Đang Xử Lý...' : (isEdit ? 'LƯU THAY ĐỔI' : 'THÊM EMAIL')}</span>
@@ -296,45 +303,47 @@ function RevokeEmailModal({ emailItem, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-sm rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
-        <div className="p-5 border-b border-slate-800 bg-slate-900/60">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <PowerOff className="w-5 h-5 text-rose-400" />
+    <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4">
+      <div className="bg-surface border-2 border-info w-full max-w-sm overflow-hidden">
+        <div className="p-5 border-b-2 border-surface-alt flex items-center justify-between">
+          <h3 className="font-extrabold text-[18px] text-ink flex items-center gap-2">
             <span>Thu Hồi Email</span>
           </h3>
+          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky text-ink transition-colors">
+            <X className="w-5 h-5" />
+          </button>
         </div>
-        <div className="p-5 space-y-4 text-xs">
-          <p className="text-slate-300 text-sm">
-            Xác nhận thu hồi email <strong className="text-white">{emailItem.email}</strong>?
+        <div className="p-6 space-y-5">
+          <p className="text-[14px] text-ink">
+            Xác nhận thu hồi email <strong className="font-extrabold">{emailItem.email}</strong>?
           </p>
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 flex items-start gap-2">
+            <div className="p-3 bg-danger text-white flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>{error}</span>
+              <span className="text-[13px] font-bold">{error}</span>
             </div>
           )}
           <div>
-            <label className="block font-semibold text-slate-300 uppercase mb-1">Ngày thu hồi</label>
+            <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Ngày thu hồi</label>
             <input
               type="date"
               value={revokedDate}
               onChange={(e) => setRevokedDate(e.target.value)}
-              className="w-full glass-input p-2.5 rounded-xl"
+              className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary"
             />
           </div>
-          <div className="flex gap-3 pt-2">
+          <div className="flex justify-end gap-3 pt-4 border-t-2 border-surface-alt mt-6">
             <button
               onClick={onClose}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold transition-colors"
+              className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Hủy
             </button>
             <button
               onClick={handleRevoke}
               disabled={loading}
-              className="flex-1 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold shadow-lg shadow-rose-500/25 transition-all flex items-center justify-center gap-2"
+              className="bg-danger text-white font-bold h-10 px-4 flex items-center justify-center gap-2 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : 'Xác nhận thu hồi'}
             </button>
@@ -495,24 +504,21 @@ export default function EmailListView({ authUser, search, setSearch }) {
     <div className="p-6 space-y-6">
       {/* Messages */}
       {message && (
-        <div className="p-4 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-200 text-sm flex items-start gap-3 shadow-lg shadow-yellow-500/5 transition-all">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5 text-yellow-400" />
-          <div className="whitespace-pre-line">{message}</div>
-          <button onClick={() => setMessage(null)} className="ml-auto text-yellow-400 hover:text-yellow-300">
-            <X className="w-4 h-4" />
+        <div className="p-3 bg-accent text-ink flex items-start gap-2">
+          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+          <div className="whitespace-pre-line text-[13px] font-bold">{message}</div>
+          <button onClick={() => setMessage(null)} className="ml-auto hover:text-white transition-colors">
+            <X className="w-5 h-5" />
           </button>
         </div>
       )}
 
       {/* Header & Filters */}
-      <div className="glass-panel p-5 rounded-2xl space-y-4">
+      <div className="bg-surface border-2 border-info p-6 space-y-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Mail className="w-5 h-5 text-cyan-400" />
-              <span>Quản Lý Email</span>
-            </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <h1 className="text-[30px] font-extrabold text-ink tracking-wide">Quản Lý Email</h1>
+            <p className="text-[14px] text-muted mt-1">
               Danh sách email công vụ của Đơn vị và Cá nhân
             </p>
           </div>
@@ -524,7 +530,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
                   setEditingEmail(null);
                   setIsFormOpen(true);
                 }}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
+                className="bg-accent text-ink font-bold h-10 px-4 hover:bg-accent-hover transition-colors flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 <span>Thêm Email</span>
@@ -535,14 +541,14 @@ export default function EmailListView({ authUser, search, setSearch }) {
               <>
                 <button
                   onClick={() => setShowImportModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all shadow-md shadow-purple-500/20"
+                  className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors flex items-center gap-2"
                 >
                   <Upload className="w-4 h-4" />
                   <span>Import Excel</span>
                 </button>
                 <button
                   onClick={() => setShowExportModal(true)}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-cyan-400 glass-input hover:border-cyan-500/40 transition-all"
+                  className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors flex items-center gap-2"
                 >
                   <Download className="w-4 h-4" />
                   <span>Export Excel</span>
@@ -552,25 +558,28 @@ export default function EmailListView({ authUser, search, setSearch }) {
           </div>
         </div>
 
-        <div className="pt-2 border-t border-slate-800 space-y-3">
+        <div className="pt-6 border-t-2 border-surface-alt space-y-4">
           <div className="relative">
-            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Tìm theo email, họ tên, mã HRM, số điện thoại..."
-              className="w-full glass-input pl-9 pr-3 py-2 rounded-xl text-xs"
-            />
+            <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Tìm kiếm</label>
+            <div className="relative">
+              <Search className="w-4 h-4 text-muted absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Tìm theo email, họ tên, mã HRM, số điện thoại..."
+                className="bg-surface-alt text-ink text-[14px] h-10 pl-9 pr-3 w-full placeholder:text-muted focus:outline-2 focus:outline-primary"
+              />
+            </div>
           </div>
 
-          <div className="flex items-end gap-3 flex-wrap">
+          <div className="flex items-end gap-4 flex-wrap">
             <div className="flex-1 min-w-[150px]">
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Loại</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Loại</label>
               <select
                 value={selectedKind}
                 onChange={handleFilterChange(setSelectedKind)}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary"
               >
                 <option value="">-- Tất cả --</option>
                 <option value="PERSONAL">Cá nhân</option>
@@ -578,11 +587,11 @@ export default function EmailListView({ authUser, search, setSearch }) {
               </select>
             </div>
             <div className="flex-1 min-w-[150px]">
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Trạng thái</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Trạng thái</label>
               <select
                 value={selectedStatus}
                 onChange={handleFilterChange(setSelectedStatus)}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary"
               >
                 <option value="">-- Tất cả --</option>
                 <option value="ACTIVE">Đang sử dụng</option>
@@ -590,7 +599,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
               </select>
             </div>
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu điện xã</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Bưu điện xã</label>
               <select
                 value={selectedCommuneId}
                 onChange={(e) => {
@@ -598,7 +607,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
                   setSelectedPostOfficeId('');
                   setPagination(p => ({ ...p, page: 1 }));
                 }}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary"
               >
                 <option value="">-- Tất cả BĐX --</option>
                 {communes.map((c) => (
@@ -607,12 +616,12 @@ export default function EmailListView({ authUser, search, setSearch }) {
               </select>
             </div>
             <div className="flex-1 min-w-[180px]">
-              <label className="block text-[11px] font-semibold text-slate-400 mb-1 uppercase tracking-wider">Bưu cục</label>
+              <label className="block text-[12px] font-extrabold text-muted uppercase tracking-[0.05em] mb-1.5">Bưu cục</label>
               <select
                 value={selectedPostOfficeId}
                 onChange={handleFilterChange(setSelectedPostOfficeId)}
                 disabled={!selectedCommuneId}
-                className="w-full glass-input px-3 py-2 rounded-xl text-xs disabled:opacity-50"
+                className="bg-surface-alt text-ink text-[14px] h-10 px-3 w-full focus:outline-2 focus:outline-primary disabled:opacity-50"
               >
                 <option value="">-- Tất cả bưu cục --</option>
                 {postOffices.map((p) => (
@@ -623,7 +632,7 @@ export default function EmailListView({ authUser, search, setSearch }) {
             {hasFilters && (
               <button
                 onClick={clearFilters}
-                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-300 hover:text-white glass-input hover:border-slate-500 transition-all"
+                className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors shrink-0"
               >
                 Xoá bộ lọc
               </button>
@@ -633,108 +642,103 @@ export default function EmailListView({ authUser, search, setSearch }) {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs">
-          {error}
+        <div className="p-3 bg-danger text-white flex items-start gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+          <span className="text-[13px] font-bold">{error}</span>
         </div>
       )}
 
       {/* Table */}
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="bg-surface border-2 border-info">
         {loading && items.length === 0 ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-400">Đang nạp danh sách email...</p>
+            <div className="w-10 h-10 border-4 border-surface-alt border-t-primary rounded-full animate-spin"></div>
+            <p className="text-[14px] text-muted">Đang nạp danh sách email...</p>
           </div>
         ) : items.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <Mail className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <p className="font-semibold text-sm text-slate-300">Không có email phù hợp</p>
-            <p className="text-xs text-slate-500 mt-1">Chưa có email nào trong hệ thống hoặc không khớp bộ lọc.</p>
+          <div className="p-12 text-center text-muted">
+            <Mail className="w-12 h-12 mx-auto mb-3" />
+            <p className="font-extrabold text-[16px] text-ink">Không có email phù hợp</p>
+            <p className="text-[14px] mt-1">Chưa có email nào trong hệ thống hoặc không khớp bộ lọc.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
-                  <th className="py-3.5 px-4">Email & Loại</th>
-                  <th className="py-3.5 px-4">Họ Tên & HRM</th>
-                  <th className="py-3.5 px-4">Liên Hệ & Chức Danh</th>
-                  <th className="py-3.5 px-4">BĐ Xã & Bưu Cục</th>
-                  <th className="py-3.5 px-4">Trạng Thái & Ngày</th>
-                  {canEdit && <th className="py-3.5 px-4 text-right">Thao Tác</th>}
+            <table className="w-full text-left">
+              <thead className="bg-surface-alt">
+                <tr>
+                  <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap">Email & Loại</th>
+                  <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap">Họ Tên & HRM</th>
+                  <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap">Liên Hệ & Chức Danh</th>
+                  <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap">BĐ Xã & Bưu Cục</th>
+                  <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap">Trạng Thái & Ngày</th>
+                  {canEdit && <th className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] text-muted whitespace-nowrap text-right">Thao Tác</th>}
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody>
                 {items.map((em) => {
                   const isRevoked = !!em.revoked_date;
                   return (
-                    <tr key={em.id} className="hover:bg-slate-800/40 transition-colors align-top">
+                    <tr key={em.id} className="hover:bg-sidebar transition-colors align-top border-t-2 border-surface-alt">
                       {/* Cột 1: Email & Loại */}
-                      <td className="py-3.5 px-4">
-                        <div className="font-bold text-slate-100">{em.email}</div>
-                        <div className="mt-1">
+                      <td className="py-3.5 px-5">
+                        <div className="font-bold text-[14px] text-ink">{em.email}</div>
+                        <div className="mt-1.5">
                           {em.kind === 'UNIT' ? (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[10px] font-semibold">
-                              <Building2 className="w-3 h-3" /> Đơn vị
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-sky text-ink text-[12px] font-extrabold">
+                              Đơn vị
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 text-[10px] font-semibold">
-                              <User className="w-3 h-3" /> Cá nhân
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-accent text-ink text-[12px] font-extrabold">
+                              Cá nhân
                             </span>
                           )}
                         </div>
                       </td>
 
                       {/* Cột 2: Họ tên & HRM */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-200 font-semibold">{em.full_name}</div>
+                      <td className="py-3.5 px-5 text-[14px]">
+                        <div className="text-ink font-bold">{em.full_name}</div>
                         {em.kind === 'PERSONAL' && (
-                          <div className="text-[10px] text-slate-500 mt-0.5 font-mono">
+                          <div className="text-[12px] text-muted mt-0.5 font-mono">
                             HRM: {em.hrm_code || '—'}
                           </div>
                         )}
                       </td>
 
                       {/* Cột 3: Liên hệ & Chức danh */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-300 font-mono">{em.phone || '—'}</div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">{em.job_title || '—'}</div>
+                      <td className="py-3.5 px-5 text-[14px]">
+                        <div className="text-ink font-mono font-bold">{em.phone || '—'}</div>
+                        <div className="text-[12px] text-muted mt-0.5">{em.job_title || '—'}</div>
                       </td>
 
                       {/* Cột 4: BĐ xã & Bưu cục */}
-                      <td className="py-3.5 px-4">
-                        <div className="text-slate-300">
+                      <td className="py-3.5 px-5 text-[14px]">
+                        <div className="text-ink font-bold">
                           {em.commune_code ? `${em.commune_code} — ${em.commune_name}` : '—'}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-0.5">
+                        <div className="text-[12px] text-muted mt-0.5">
                           {em.post_office_code ? `${em.post_office_code} — ${em.post_office_name}` : '—'}
                         </div>
                       </td>
 
                       {/* Cột 5: Trạng thái & Ngày */}
-                      <td className="py-3.5 px-4">
+                      <td className="py-3.5 px-5">
                         <div className="flex items-center gap-1.5">
                           {isRevoked ? (
-                            <>
-                              <XCircle className="w-3.5 h-3.5 text-rose-400/80" />
-                              <span className="text-rose-400/80 font-semibold text-[11px]">Đã thu hồi</span>
-                            </>
+                            <span className="inline-block px-2.5 py-0.5 bg-danger text-white font-extrabold text-[12px]">Đã thu hồi</span>
                           ) : (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                              <span className="text-emerald-400 font-semibold text-[11px]">Đang sử dụng</span>
-                            </>
+                            <span className="inline-block px-2.5 py-0.5 bg-success text-ink font-extrabold text-[12px]">Đang sử dụng</span>
                           )}
                         </div>
-                        <div className="text-[10px] text-slate-500 mt-1 flex flex-col gap-0.5">
+                        <div className="text-[12px] text-muted mt-1.5 flex flex-col gap-0.5">
                           {em.created_date && <span>Khởi tạo: {formatDate(em.created_date)}</span>}
-                          {isRevoked && <span className="text-rose-400/70">Thu hồi: {formatDate(em.revoked_date)}</span>}
+                          {isRevoked && <span className="text-danger font-bold">Thu hồi: {formatDate(em.revoked_date)}</span>}
                         </div>
                       </td>
 
                       {/* Cột 6: Thao tác */}
                       {canEdit && (
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-5">
                           <div className="flex justify-end gap-2">
                             <button
                               onClick={() => {
@@ -742,25 +746,25 @@ export default function EmailListView({ authUser, search, setSearch }) {
                                 setIsFormOpen(true);
                               }}
                               title="Sửa"
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-colors"
+                              className="w-8 h-8 flex items-center justify-center bg-success hover:bg-sky transition-colors"
                             >
-                              <Edit className="w-4 h-4" />
+                              <Edit className="w-4 h-4 text-ink" strokeWidth={2} />
                             </button>
                             {isRevoked ? (
                               <button
                                 onClick={() => handleReactivate(em)}
                                 title="Kích hoạt lại"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky transition-colors"
                               >
-                                <Power className="w-4 h-4" />
+                                <Power className="w-4 h-4 text-ink" strokeWidth={2} />
                               </button>
                             ) : (
                               <button
                                 onClick={() => setRevokingEmail(em)}
                                 title="Thu hồi"
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky transition-colors"
                               >
-                                <PowerOff className="w-4 h-4" />
+                                <PowerOff className="w-4 h-4 text-ink" strokeWidth={2} />
                               </button>
                             )}
                           </div>
@@ -776,29 +780,27 @@ export default function EmailListView({ authUser, search, setSearch }) {
 
         {/* Pagination */}
         {pagination.total > 0 && (
-          <div className="p-4 border-t border-slate-800 bg-slate-950/40 flex items-center justify-between">
-            <div className="text-xs text-slate-400">
-              Tổng số <span className="font-bold text-white">{pagination.total}</span> email
+          <div className="p-4 border-t-2 border-surface-alt flex items-center justify-between bg-surface">
+            <div className="text-[13px] font-bold text-muted">
+              Tổng số <span className="font-extrabold text-ink">{pagination.total}</span> bản ghi
             </div>
 
             <div className="flex items-center gap-2">
               <button
                 disabled={pagination.page <= 1}
                 onClick={() => setPagination(p => ({ ...p, page: p.page - 1 }))}
-                className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+                className="w-8 h-8 flex items-center justify-center bg-surface-alt text-ink hover:bg-sky disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 <ChevronLeft className="w-4 h-4" />
-                <span>Trang trước</span>
               </button>
-              <span className="text-xs text-slate-400 px-2 font-medium">
-                Trang {pagination.page} / {pagination.totalPages}
+              <span className="w-8 h-8 flex items-center justify-center bg-primary text-white font-bold text-[13px]">
+                {pagination.page}
               </span>
               <button
                 disabled={pagination.page >= pagination.totalPages}
                 onClick={() => setPagination(p => ({ ...p, page: p.page + 1 }))}
-                className="px-3 py-1.5 rounded-lg glass-input text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+                className="w-8 h-8 flex items-center justify-center bg-surface-alt text-ink hover:bg-sky disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                <span>Trang sau</span>
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
