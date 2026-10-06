@@ -292,4 +292,33 @@ try {
   console.error('[db] Lỗi migration responsible_user_id:', err.message);
 }
 
+// ==========================================
+// Bảng emails (module Quản lý email). Idempotent. KHÔNG có cột status: trạng thái
+// suy ra từ revoked_date (NULL = Đang sử dụng, có ngày = Đã thu hồi). KHÔNG có FK
+// sang users — liên kết lỏng qua hrm_code (giống assigned_user_id).
+// Ngày lưu dạng ISO yyyy-mm-dd.
+// ==========================================
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS emails (
+      id TEXT PRIMARY KEY,
+      email TEXT NOT NULL UNIQUE COLLATE NOCASE,
+      kind TEXT NOT NULL CHECK (kind IN ('UNIT', 'PERSONAL')),
+      hrm_code TEXT,
+      full_name TEXT NOT NULL,
+      phone TEXT,
+      commune_id TEXT,
+      post_office_id TEXT,
+      job_title TEXT,
+      created_date TEXT,
+      revoked_date TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY(commune_id) REFERENCES commune_post_offices(id),
+      FOREIGN KEY(post_office_id) REFERENCES post_offices(id)
+    );
+  `);
+} catch (err) {
+  console.error('[db] Lỗi tạo bảng emails:', err.message);
+}
+
 module.exports = db;

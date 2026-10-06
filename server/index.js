@@ -13,6 +13,7 @@ const equipmentsRoutes = require('./routes/equipments');
 const networkRoutes = require('./routes/network');
 const organizationRoutes = require('./routes/organization');
 const personnelRoutes = require('./routes/personnel');
+const emailsRoutes = require('./routes/emails');
 const usersRoutes = require('./routes/users');
 
 const app = express();
@@ -49,6 +50,7 @@ app.use('/api', equipmentsRoutes);
 app.use('/api', networkRoutes);
 app.use('/api', organizationRoutes);
 app.use('/api', personnelRoutes);
+app.use('/api', emailsRoutes);
 
 app.use('/api', usersRoutes);
 
