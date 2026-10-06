@@ -14,7 +14,7 @@ export default function Header({
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   return (
-    <header className="h-16 bg-surface border-b-2 border-info px-6 flex items-center justify-between sticky top-0 z-10">
+    <header className="h-16 bg-surface border-b-2 border-info px-6 flex items-center justify-between sticky top-0 z-10 gap-4">
       {/* Global Search Bar */}
       <div className="relative flex-1 max-w-md">
         <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-muted" />
