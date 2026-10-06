@@ -4,6 +4,13 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-06] - Backend Quản lý email (feat/email-backend)
+
+- Thêm bảng `emails` (`server/db.js`), `server/routes/emails.js` (list/export-data/import/POST/PUT/revoke/reactivate, không xoá cứng, trạng thái suy từ `revoked_date`, import kiểm tra toàn bộ rồi 1 transaction, không bao giờ tạo tổ chức, tự tạo nhân sự cho email cá nhân đang dùng), mount ở `index.js`, `tests/emails.test.js` (21 test, thêm vào script test); `network.js`: thông báo xoá bưu cục nhắc "thiết bị/nhân sự/email". `npm test` 154/154, `npm run build` OK.
+- Audit sửa: `reactivate` và `PUT /emails/:id` (sau sửa là cá nhân + đang dùng + có HRM) cũng gọi `ensurePersonnel` trong transaction, response thêm `personnelCreated`/`warnings`; thêm 4 test. `npm test` 158/158.
+
+---
+
 ## [2026-10-06] - Tách server/index.js giai đoạn C — hoàn tất (refactor/split-index-C)
 
 - Chỉ di chuyển code: thêm `server/routes/{network,organization,personnel}.js` (organization gồm cả device-types); `index.js` 798 → 77 dòng, chỉ còn bootstrap; 34 route đối chiếu khớp, giữ nguyên requireManager các route GET; `npm test` 133/133, `npm run build` OK. Đóng việc tách index.js.
