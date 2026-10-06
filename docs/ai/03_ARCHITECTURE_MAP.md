@@ -22,12 +22,15 @@
 ## File map
 | File | Vai trò |
 |------|---------|
-| `server/index.js` | Entry: middleware toàn cục (security → json → cổng token), mount router, static, 404, `app.listen`. Còn chứa route network/organization/device-types/personnel (giai đoạn C sẽ tách). |
+| `server/index.js` | Entry: middleware toàn cục (security → json → cổng token), mount router, static, 404, `app.listen`. Chỉ bootstrap (~77 dòng), không còn route trực tiếp. |
 | `server/routes/auth.js` | `POST /auth/login` + rate-limit đăng nhập (router mount `/api`; ghi log qua `req.app.locals.security`). |
 | `server/routes/dashboard.js` | `GET /dashboard/stats`. |
 | `server/routes/users.js` | Quản trị tài khoản `/users*` (kể cả `/users/me/password`), giữ nguyên thứ tự. |
 | `server/routes/equipments.js` | 8 route `/equipments*` (list, category-raw-options, export-data, `:id`, POST, PUT, DELETE, import); mount sau cổng token, 2 route tĩnh đứng trước `:id`. |
-| `server/lib/orgImport.js` | `resolveOrCreateOrgChain` (dùng bởi network import ở index.js), `requireExistingPostOffice` (Equipment Import). |
+| `server/routes/network.js` | 5 route `/network*` (list, import, export-data trước `post-offices/:id`). |
+| `server/routes/organization.js` | 3 route `/organization/*` + 3 route `/device-types*`. |
+| `server/routes/personnel.js` | 6 route `/personnel*` (`search` đứng trước `:id`). |
+| `server/lib/orgImport.js` | `resolveOrCreateOrgChain` (dùng bởi routes/network.js), `requireExistingPostOffice` (Equipment Import). |
 | `server/lib/helpers.js` | `parseSpecs`, `parseFloatOrNull`, `normalizeStr`, `ASSET_PREFIX_REGEX`. |
 | `server/db.js` | Khởi tạo SQLite, schema (CREATE TABLE IF NOT EXISTS), migration `password_hash`. |
 | `server/auth.js` | JWT sign/verify, hash/verify password (scrypt), middleware `authRequired`/`requireManager`, helper `isManager`. |
