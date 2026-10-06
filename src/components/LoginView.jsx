@@ -39,7 +39,7 @@ export default function LoginView({ onLoginSuccess }) {
   };
 
   return (
-    <div className="min-h-screen login-bg relative overflow-hidden flex items-center justify-center p-[16px] min-[860px]:p-0">
+    <div className="flex-1 w-full min-h-screen login-bg relative overflow-hidden flex items-center justify-center p-[16px] min-[860px]:p-0">
       {/* Background SVGs */}
       <svg className="absolute inset-0 w-full h-full" preserveAspectRatio="none" viewBox="0 0 100 100" aria-hidden="true">
         <polygon points="0,0 40,0 0,60" fill="#FB923C" opacity="0.55" />
@@ -57,7 +57,7 @@ export default function LoginView({ onLoginSuccess }) {
           <img 
             src="/login-hero.jpg" 
             alt="Ly cà phê espresso trên bàn đá" 
-            className="absolute inset-0 w-full h-full object-cover object-[50%_78%] min-[860px]:object-[50%_70%]"
+            className="absolute inset-0 w-full h-full object-cover object-center"
           />
           <div 
             className="absolute inset-0"
@@ -85,7 +85,7 @@ export default function LoginView({ onLoginSuccess }) {
         {/* Form Card */}
         <div className="login-card-form bg-white rounded-[8px] relative z-20
           -mt-[18px] mx-auto w-[calc(100%-32px)] max-w-[580px] p-[28px_24px_32px] 
-          min-[860px]:absolute min-[860px]:m-0 min-[860px]:left-[360px] min-[860px]:top-[75px] min-[860px]:w-[580px] min-[860px]:h-[430px] min-[860px]:p-[40px_56px]
+          min-[860px]:absolute min-[860px]:m-0 min-[860px]:left-[360px] min-[860px]:top-[75px] min-[860px]:w-[580px] min-[860px]:min-h-[430px] min-[860px]:p-[40px_56px]
           flex flex-col gap-[22px]">
           
           <div>
