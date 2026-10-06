@@ -4,9 +4,6 @@ import {
   Monitor,
   Network,
   Users,
-  FileSpreadsheet,
-  ShieldCheck,
-  Cpu,
   Layers,
   UserCog,
   Printer,
@@ -52,46 +49,46 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
 
   const getDeviceIcon = (code) => {
     switch (code) {
-      case 'PRINTER': return <Printer className="w-4 h-4 text-purple-400" />;
-      case 'SCANNER': return <QrCode className="w-4 h-4 text-emerald-400" />;
-      case 'NETWORK': return <Wifi className="w-4 h-4 text-amber-400" />;
-      case 'UPS': return <Zap className="w-4 h-4 text-yellow-400" />;
-      case 'CAMERA': return <Camera className="w-4 h-4 text-rose-400" />;
-      case 'SCALE': return <Scale className="w-4 h-4 text-blue-400" />;
-      default: return <Monitor className="w-4 h-4 text-cyan-400" />;
+      case 'PRINTER': return <Printer className="w-4 h-4 text-ink" />;
+      case 'SCANNER': return <QrCode className="w-4 h-4 text-ink" />;
+      case 'NETWORK': return <Wifi className="w-4 h-4 text-ink" />;
+      case 'UPS': return <Zap className="w-4 h-4 text-ink" />;
+      case 'CAMERA': return <Camera className="w-4 h-4 text-ink" />;
+      case 'SCALE': return <Scale className="w-4 h-4 text-ink" />;
+      default: return <Monitor className="w-4 h-4 text-ink" />;
     }
   };
   const navItems = [
-    { id: 'dashboard', label: 'Tổng quan KPI', icon: LayoutDashboard },
-    { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor },
-    { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network },
-    { id: 'emails', label: 'Quản lý email', icon: Mail },
-    { id: 'personnel', label: 'Người sử dụng', icon: Users },
+    { id: 'dashboard', label: 'Tổng quan KPI', icon: LayoutDashboard, bgColor: 'bg-success' },
+    { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor, bgColor: 'bg-accent' },
+    { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network, bgColor: 'bg-sky' },
+    { id: 'emails', label: 'Quản lý email', icon: Mail, bgColor: 'bg-success' },
+    { id: 'personnel', label: 'Người sử dụng', icon: Users, bgColor: 'bg-accent' },
   ];
 
   // Chỉ role quản lý (khác STAFF) mới thấy mục Quản Lý Danh Mục + Quản Lý Người Dùng.
   if (authUser?.role !== 'STAFF') {
-    navItems.push({ id: 'categoryadmin', label: 'Quản lý danh mục', icon: Layers });
-    navItems.push({ id: 'useradmin', label: 'Quản lý người dùng', icon: UserCog });
+    navItems.push({ id: 'categoryadmin', label: 'Quản lý danh mục', icon: Layers, bgColor: 'bg-sky' });
+    navItems.push({ id: 'useradmin', label: 'Quản lý người dùng', icon: UserCog, bgColor: 'bg-success' });
   }
 
   return (
-    <aside className="w-64 bg-slate-900/80 border-r border-slate-800 flex flex-col justify-between h-screen sticky top-0 backdrop-blur-xl z-20">
+    <aside className="w-64 bg-sidebar flex flex-col justify-between h-screen sticky top-0 z-20 text-ink">
       <div>
         {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center gap-3 border-b border-slate-800/80">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-white shadow-lg shadow-cyan-500/20">
-            <Cpu className="w-6 h-6" />
+        <div className="h-16 px-6 flex items-center gap-3 border-b-2 border-surface-alt">
+          <div className="w-[36px] h-[36px] bg-success flex items-center justify-center text-ink font-extrabold text-[18px]">
+            H
           </div>
           <div>
-            <h1 className="font-bold text-lg text-white leading-tight tracking-wide">Hệ Thống Quản Lý CCDC</h1>
-            <p className="text-xs text-cyan-400 font-medium">Bưu Điện Thành Phố Huế</p>
+            <h1 className="font-extrabold text-[15px] text-ink leading-tight tracking-wide">CCDC Huế</h1>
+            <p className="text-[12px] text-muted">Bưu điện Thành phố</p>
           </div>
         </div>
 
         {/* Navigation Items */}
         <nav className="p-4 space-y-1.5">
-          <div className="px-3 py-2 text-[11px] font-semibold text-slate-400 tracking-wider uppercase">Danh Mục Chính</div>
+          <div className="px-3 py-2 text-[12px] font-extrabold text-muted tracking-wider uppercase">Danh Mục Chính</div>
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;
@@ -108,16 +105,18 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
 
               return (
                 <div key={item.id} className="flex flex-col">
-                  <div className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  <div className={`w-full flex items-center justify-between px-2.5 py-2 font-bold text-[14px] transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      ? 'bg-success text-ink font-extrabold'
+                      : 'text-ink hover:bg-surface-alt'
                   }`}>
                     <button
                       onClick={handleInventoryClick}
                       className="flex items-center gap-3 flex-1 text-left"
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <div className={`w-8 h-8 flex items-center justify-center ${isActive ? 'bg-white' : item.bgColor}`}>
+                        <Icon className="w-[18px] h-[18px] text-ink" strokeWidth={2} />
+                      </div>
                       <span>{item.label}</span>
                     </button>
                     <button
@@ -125,28 +124,28 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                         e.stopPropagation();
                         setIsInventoryExpanded(!isInventoryExpanded);
                       }}
-                      className="p-1 hover:bg-slate-700/50 rounded-lg transition-colors ml-2"
+                      className="p-1 hover:bg-surface-alt transition-colors ml-2"
                     >
                       {isInventoryExpanded ? (
-                        <ChevronDown className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronDown className="w-4 h-4 text-ink" />
                       ) : (
-                        <ChevronRight className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronRight className="w-4 h-4 text-ink" />
                       )}
                     </button>
                   </div>
 
                   {isInventoryExpanded && (
-                    <div className="mt-1.5 ml-4 pl-3.5 border-l border-slate-700/50 space-y-1">
+                    <div className="mt-1 ml-5 pl-3 border-l-2 border-info flex flex-col">
                       {deviceTypes.map((dt) => {
                         const isSubActive = isActive && activeInventoryDeviceTypeId === dt.id;
                         return (
                           <button
                             key={dt.id}
                             onClick={() => onSelectInventoryCategory(dt.id)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-semibold transition-all text-left ${
                               isSubActive 
-                                ? 'bg-cyan-500/10 text-cyan-300' 
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                ? 'bg-white font-bold border-l-4 border-primary text-ink' 
+                                : 'text-ink hover:bg-surface-alt border-l-4 border-transparent'
                             }`}
                           >
                             {getDeviceIcon(dt.code)}
@@ -172,16 +171,18 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
 
               return (
                 <div key={item.id} className="flex flex-col">
-                  <div className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  <div className={`w-full flex items-center justify-between px-2.5 py-2 font-bold text-[14px] transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      ? 'bg-success text-ink font-extrabold'
+                      : 'text-ink hover:bg-surface-alt'
                   }`}>
                     <button
                       onClick={handleNetworkClick}
                       className="flex items-center gap-3 flex-1 text-left"
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <div className={`w-8 h-8 flex items-center justify-center ${isActive ? 'bg-white' : item.bgColor}`}>
+                        <Icon className="w-[18px] h-[18px] text-ink" strokeWidth={2} />
+                      </div>
                       <span>{item.label}</span>
                     </button>
                     <button
@@ -189,18 +190,18 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                         e.stopPropagation();
                         setIsNetworkExpanded(!isNetworkExpanded);
                       }}
-                      className="p-1 hover:bg-slate-700/50 rounded-lg transition-colors ml-2"
+                      className="p-1 hover:bg-surface-alt transition-colors ml-2"
                     >
                       {isNetworkExpanded ? (
-                        <ChevronDown className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronDown className="w-4 h-4 text-ink" />
                       ) : (
-                        <ChevronRight className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronRight className="w-4 h-4 text-ink" />
                       )}
                     </button>
                   </div>
 
                   {isNetworkExpanded && (
-                    <div className="mt-1.5 ml-4 pl-3.5 border-l border-slate-700/50 space-y-1">
+                    <div className="mt-1 ml-5 pl-3 border-l-2 border-info flex flex-col">
                       {NETWORK_SUBVIEWS.map((sub) => {
                         const SubIcon = sub.icon;
                         const isSubActive = isActive && networkSubView === sub.id;
@@ -208,13 +209,13 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                           <button
                             key={sub.id}
                             onClick={() => onSelectNetworkSubView(sub.id)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-semibold transition-all text-left ${
                               isSubActive
-                                ? 'bg-cyan-500/10 text-cyan-300'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                ? 'bg-white font-bold border-l-4 border-primary text-ink'
+                                : 'text-ink hover:bg-surface-alt border-l-4 border-transparent'
                             }`}
                           >
-                            <SubIcon className="w-4 h-4" />
+                            <SubIcon className="w-4 h-4 text-ink" />
                             <span className="truncate leading-tight">{sub.label}</span>
                           </button>
                         );
@@ -237,16 +238,18 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
 
               return (
                 <div key={item.id} className="flex flex-col">
-                  <div className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                  <div className={`w-full flex items-center justify-between px-2.5 py-2 font-bold text-[14px] transition-all cursor-pointer ${
                     isActive
-                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
-                      : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                      ? 'bg-success text-ink font-extrabold'
+                      : 'text-ink hover:bg-surface-alt'
                   }`}>
                     <button
                       onClick={handleEmailClick}
                       className="flex items-center gap-3 flex-1 text-left"
                     >
-                      <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                      <div className={`w-8 h-8 flex items-center justify-center ${isActive ? 'bg-white' : item.bgColor}`}>
+                        <Icon className="w-[18px] h-[18px] text-ink" strokeWidth={2} />
+                      </div>
                       <span>{item.label}</span>
                     </button>
                     <button
@@ -254,18 +257,18 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                         e.stopPropagation();
                         setIsEmailExpanded(!isEmailExpanded);
                       }}
-                      className="p-1 hover:bg-slate-700/50 rounded-lg transition-colors ml-2"
+                      className="p-1 hover:bg-surface-alt transition-colors ml-2"
                     >
                       {isEmailExpanded ? (
-                        <ChevronDown className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronDown className="w-4 h-4 text-ink" />
                       ) : (
-                        <ChevronRight className={`w-4 h-4 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                        <ChevronRight className="w-4 h-4 text-ink" />
                       )}
                     </button>
                   </div>
 
                   {isEmailExpanded && (
-                    <div className="mt-1.5 ml-4 pl-3.5 border-l border-slate-700/50 space-y-1">
+                    <div className="mt-1 ml-5 pl-3 border-l-2 border-info flex flex-col">
                       {EMAIL_SUBVIEWS.map((sub) => {
                         const SubIcon = sub.icon;
                         const isSubActive = isActive && emailSubView === sub.id;
@@ -273,13 +276,13 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
                           <button
                             key={sub.id}
                             onClick={() => onSelectEmailSubView(sub.id)}
-                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all text-left ${
+                            className={`w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-semibold transition-all text-left ${
                               isSubActive
-                                ? 'bg-cyan-500/10 text-cyan-300'
-                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                                ? 'bg-white font-bold border-l-4 border-primary text-ink'
+                                : 'text-ink hover:bg-surface-alt border-l-4 border-transparent'
                             }`}
                           >
-                            <SubIcon className="w-4 h-4" />
+                            <SubIcon className="w-4 h-4 text-ink" />
                             <span className="truncate leading-tight">{sub.label}</span>
                           </button>
                         );
@@ -294,13 +297,15 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
               <button
                 key={item.id}
                 onClick={() => setActiveTab(item.id)}
-                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl font-medium text-sm transition-all duration-200 ${
+                className={`w-full flex items-center gap-3 px-2.5 py-2 font-bold text-[14px] transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-gradient-to-r from-cyan-500/20 to-blue-500/10 text-cyan-300 border border-cyan-500/30 shadow-md shadow-cyan-500/10'
-                    : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/50'
+                    ? 'bg-success text-ink font-extrabold'
+                    : 'text-ink hover:bg-surface-alt'
                 }`}
               >
-                <Icon className={`w-5 h-5 ${isActive ? 'text-cyan-400' : 'text-slate-400'}`} />
+                <div className={`w-8 h-8 flex items-center justify-center ${isActive ? 'bg-white' : item.bgColor}`}>
+                  <Icon className="w-[18px] h-[18px] text-ink" strokeWidth={2} />
+                </div>
                 <span>{item.label}</span>
               </button>
             );
@@ -309,12 +314,12 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
       </div>
 
       {/* System info badge */}
-      <div className="p-4 border-t border-slate-800/80">
-        <div className="glass-card p-3 rounded-xl flex items-center gap-3">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
+      <div className="p-4 border-t-2 border-surface-alt">
+        <div className="flex items-center gap-3">
+          <div className="w-2.5 h-2.5 rounded-full bg-success"></div>
           <div>
-            <div className="text-xs font-semibold text-slate-200">Hệ Thống CCDC Online</div>
-            <div className="text-[11px] text-slate-400">Database SQLite / Prisma 3NF</div>
+            <div className="text-[12px] font-bold text-ink">Hệ thống CCDC online</div>
+            <div className="text-[11px] text-muted">Bưu điện TP Huế</div>
           </div>
         </div>
       </div>

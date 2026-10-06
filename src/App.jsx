@@ -80,7 +80,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen flex font-sans">
+    <div className="min-h-screen flex font-sans bg-surface text-ink">
       {!authUser ? (
         <LoginView onLoginSuccess={handleLoginSuccess} />
       ) : (
@@ -117,7 +117,7 @@ export default function App() {
           />
 
           {/* Main Content Area */}
-          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+          <div className="flex-1 flex flex-col min-w-0 overflow-y-auto bg-surface">
             <Header
               search={search}
               setSearch={(val) => {
