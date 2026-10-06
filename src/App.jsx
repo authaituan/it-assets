@@ -34,7 +34,7 @@ export default function App() {
   const [selectedEquipment, setSelectedEquipment] = useState(null);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [theme, setTheme] = useState('cyberpunk');
+
   const [refreshKey, setRefreshKey] = useState(0);
   const [authUser, setAuthUser] = useState(getInitialAuthUser);
   const [inventoryDeviceTypeId, setInventoryDeviceTypeId] = useState(null);
@@ -80,7 +80,7 @@ export default function App() {
   };
 
   return (
-    <div className={`theme-${theme} min-h-screen flex font-sans`}>
+    <div className="min-h-screen flex font-sans">
       {!authUser ? (
         <LoginView onLoginSuccess={handleLoginSuccess} />
       ) : (
@@ -131,8 +131,7 @@ export default function App() {
               onOpenAddModal={() => setIsAddModalOpen(true)}
               onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
               onOpenHrmModal={() => setActiveTab('personnel')}
-              theme={theme}
-              setTheme={setTheme}
+
               authUser={authUser}
               onLogout={handleLogout}
             />
