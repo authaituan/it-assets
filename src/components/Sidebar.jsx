@@ -174,7 +174,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
           <div className="w-8 h-8 bg-[var(--color-page)] rounded-lg flex items-center justify-center mb-3">
             <Hexagon className="w-4 h-4 text-[var(--color-dark)]" />
           </div>
-          <h6 className="text-[14px] font-bold text-[var(--color-title)] mb-1">Hệ thống CCDC online</h6>
+          <h6 className="text-[14px] font-bold text-[var(--color-title)] mb-1 line-clamp-2">Quản lý Danh mục và Tài nguyên CNTT</h6>
           <p className="text-[12px] text-[var(--color-body)] mb-4">Database SQLite / Prisma 3NF</p>
           <a href="#" className="btn btn-dark w-full">TÀI LIỆU HƯỚNG DẪN</a>
         </div>
