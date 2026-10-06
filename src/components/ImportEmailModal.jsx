@@ -129,74 +129,74 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
   const previewRows = parsedRows.slice(0, 20);
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4">
-      <div className="bg-surface border-2 border-info w-full max-w-5xl overflow-hidden max-h-[92vh] flex flex-col">
-        <div className="p-5 border-b-2 border-surface-alt flex items-center justify-between shrink-0">
-          <h3 className="font-extrabold text-[18px] text-ink">
-            Import Email Từ Excel
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="glass-panel w-full max-w-5xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
+          <h3 className="font-bold text-base text-white flex items-center gap-2">
+            <Upload className="w-5 h-5 text-purple-400" />
+            <span>Import Email Từ Excel</span>
           </h3>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky text-ink transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-4 overflow-y-auto">
+        <div className="p-6 space-y-4 text-xs overflow-y-auto">
           {!importResult && (
             <>
           {hasExampleWarnings && (
-            <div className="p-3 bg-accent text-ink flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="text-[13px] font-bold">Cảnh báo: Phát hiện các dòng ví dụ nền vàng trong template (chứa vidu.*@example.com). Các dòng này phải xoá trước khi import để tránh lỗi hoặc dữ liệu rác.</span>
+              <span>Cảnh báo: Phát hiện các dòng ví dụ nền vàng trong template (chứa vidu.*@example.com). Các dòng này phải xoá trước khi import để tránh lỗi hoặc dữ liệu rác.</span>
             </div>
           )}
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-sky p-3 text-ink">
-            <p className="text-[13px] font-bold">
-              File .xlsx sheet "Dữ liệu", dòng 1 là tiêu đề cột. Mỗi dòng phải có Email. Email đã có → cập nhật; email chưa có → tạo mới.
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <p className="text-slate-400">
+              File <code className="text-purple-300">.xlsx</code> sheet "Dữ liệu", dòng 1 là tiêu đề cột.
+              Mỗi dòng phải có <b>Email</b>. Email đã có → cập nhật; email chưa có → tạo mới.
             </p>
             <button
               onClick={handleDownloadTemplate}
               disabled={generatingTemplate}
-              className="shrink-0 flex items-center gap-2 px-4 h-10 font-bold bg-surface-alt text-ink hover:bg-sky disabled:opacity-50 disabled:cursor-not-allowed border-2 border-info"
+              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 glass-input hover:border-purple-500/40 transition-all disabled:opacity-50"
             >
               {generatingTemplate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               <span>Tải template</span>
             </button>
           </div>
 
-          <div className="border-2 border-dashed border-info bg-surface-alt hover:bg-sky/30 transition-colors p-6 flex flex-col items-center justify-center relative cursor-pointer">
-            <label className="absolute inset-0 w-full h-full cursor-pointer opacity-0">
-              <input
-                type="file"
-                accept=".xlsx"
-                onChange={handleFileChange}
-                className="w-full h-full cursor-pointer"
-              />
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+              Chọn File Excel (.xlsx)
             </label>
-            <Upload className="w-8 h-8 text-primary mb-2" />
-            <span className="text-[14px] font-bold text-ink">Bấm hoặc Kéo thả File Excel (.xlsx) vào đây</span>
-            <span className="text-[12px] text-muted mt-1">{fileName ? `Đã chọn: ${fileName}` : 'Chưa chọn file'}</span>
+            <input
+              type="file"
+              accept=".xlsx"
+              onChange={handleFileChange}
+              className="w-full glass-input p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+            />
           </div>
 
           {parsing && (
-            <div className="flex items-center gap-2 text-primary font-bold text-[13px]">
+            <div className="flex items-center gap-2 text-slate-400">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Đang đọc file Excel...</span>
             </div>
           )}
 
           {parseError && (
-            <div className="p-3 bg-danger text-white flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="text-[13px] font-bold">{parseError}</span>
+              <span>{parseError}</span>
             </div>
           )}
 
           {parsedRows.length > 0 && !importResult && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-extrabold text-[16px] text-ink flex items-center gap-2">
-                  <FileSpreadsheet className="w-5 h-5 text-primary" />
+                <h4 className="font-semibold text-slate-200 flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
                   <span>
                     Xem trước ({parsedRows.length} dòng từ "{fileName}"
                     {parsedRows.length > 20 ? ` — hiện 20 dòng đầu` : ''})
@@ -204,21 +204,21 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
                 </h4>
               </div>
 
-              <div className="overflow-auto max-h-[320px] border-2 border-info">
-                <table className="w-full text-left">
-                  <thead className="bg-surface-alt text-muted sticky top-0">
+              <div className="border border-slate-800 rounded-xl overflow-auto max-h-[320px]">
+                <table className="w-full text-left text-[11px]">
+                  <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 sticky top-0">
                     <tr>
                       {EMAIL_FIELDS.map((f) => (
-                        <th key={f.key} className="py-3 px-5 text-[12px] font-extrabold uppercase tracking-[0.05em] whitespace-nowrap border-b-2 border-info">{f.label}</th>
+                        <th key={f.key} className="py-2 px-3 whitespace-nowrap">{f.label}</th>
                       ))}
                     </tr>
                   </thead>
-                  <tbody>
+                  <tbody className="divide-y divide-slate-800/60 font-mono">
                     {previewRows.map((r, idx) => (
-                      <tr key={idx} className="hover:bg-sidebar border-t-2 border-surface-alt">
+                      <tr key={idx} className="hover:bg-slate-800/40">
                         {EMAIL_FIELDS.map((f) => (
-                          <td key={f.key} className="py-3.5 px-5 text-[14px] text-ink whitespace-nowrap">
-                            {r[f.key] || <span className="text-muted">—</span>}
+                          <td key={f.key} className="py-1.5 px-3 text-slate-300 whitespace-nowrap">
+                            {r[f.key] || <span className="text-slate-600">—</span>}
                           </td>
                         ))}
                       </tr>
@@ -228,82 +228,69 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 bg-white border-l-4 border-danger space-y-2">
-                  <div className="flex items-start gap-2 text-danger">
+                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs space-y-2">
+                  <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-                    <span className="text-[13px] font-bold">Lỗi: {importError} — Chưa có dữ liệu nào được ghi.</span>
+                    <span>Lỗi: {importError} — Chưa có dữ liệu nào được ghi.</span>
                   </div>
                   {importErrorRows && (
-                    <div className="space-y-1">
+                    <ul className="list-disc list-inside space-y-0.5 pl-5">
                       {importErrorRows.map((e, idx) => (
-                        <div key={idx} className="p-2 bg-danger text-white text-[13px] font-bold">
-                          Dòng {e.row}: {e.message}
-                        </div>
+                        <li key={idx}>Dòng {e.row}: {e.message}</li>
                       ))}
-                      {isTruncated && <div className="p-2 bg-danger text-white text-[13px] font-bold">…và còn nhiều lỗi khác (chỉ hiện 100 lỗi đầu).</div>}
-                    </div>
+                      {isTruncated && <li>…và còn nhiều lỗi khác (chỉ hiện 100 lỗi đầu).</li>}
+                    </ul>
                   )}
                 </div>
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t-2 border-surface-alt">
-                <button
-                  onClick={onClose}
-                  disabled={importing}
-                  className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  Hủy
-                </button>
-                <button
-                  onClick={handleImport}
-                  disabled={importing || !!parseError}
-                  className="bg-accent text-ink font-bold h-10 px-4 hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                  <span>{importing ? 'Đang Import...' : `Import ${parsedRows.length} Email`}</span>
-                </button>
-              </div>
+              <button
+                onClick={handleImport}
+                disabled={importing || !!parseError}
+                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                <span>{importing ? 'Đang Import...' : `Import ${parsedRows.length} Email`}</span>
+              </button>
             </div>
           )}
           </>
           )}
 
           {importResult && (
-            <div className="p-6 border-2 border-info bg-surface space-y-4">
-              <div className="p-3 bg-success text-ink flex items-center gap-2">
-                <CheckCircle2 className="w-5 h-5" />
-                <span className="text-[14px] font-extrabold">Import thành công!</span>
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+              <div className="flex items-center gap-2 font-semibold">
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Import thành công!</span>
               </div>
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-3 gap-2">
                 {[
                   ['Tạo mới', importResult.created],
                   ['Cập nhật', importResult.updated],
                   ['Người sử dụng', importResult.personnelCreated]
                 ].map(([label, value]) => (
-                  <div key={label} className="p-4 bg-surface-alt text-center border-2 border-info">
-                    <div className="text-[12px] font-bold text-muted uppercase">{label}</div>
-                    <div className="text-[24px] font-extrabold text-ink mt-1">{value ?? 0}</div>
+                  <div key={label} className="p-2.5 rounded-lg bg-slate-900/60 text-center">
+                    <div className="text-[10px] text-slate-400">{label}</div>
+                    <div className="text-lg font-bold text-emerald-400">{value ?? 0}</div>
                   </div>
                 ))}
               </div>
               {importResult.warnings && importResult.warnings.length > 0 && (
-                <div className="p-3 bg-accent text-ink mt-4">
-                  <div className="font-bold mb-1 text-[13px] flex items-center gap-1"><AlertCircle className="w-4 h-4" /> Cảnh báo:</div>
-                  <ul className="list-disc list-inside space-y-1">
+                <div className="mt-2 text-yellow-400">
+                  <div className="font-semibold mb-1 text-[11px]">Cảnh báo:</div>
+                  <ul className="list-disc list-inside">
                     {importResult.warnings.map((w, idx) => (
-                      <li key={idx} className="text-[12px] font-bold">{w}</li>
+                      <li key={idx} className="text-[10px]">{w}</li>
                     ))}
                   </ul>
                 </div>
               )}
-              <div className="flex justify-end pt-4">
-                <button
-                  onClick={onClose}
-                  className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors"
-                >
-                  Đóng
-                </button>
-              </div>
+              <button
+                onClick={onClose}
+                className="w-full mt-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all"
+              >
+                Đóng
+              </button>
             </div>
           )}
         </div>

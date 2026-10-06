@@ -4,18 +4,6 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
-## [2026-10-06] - Redesign Flat · PR1 (feat/flat-pr1-foundation)
-
-- `docs/ai/07_DESIGN_FLAT.md`: Tạo tài liệu quy chuẩn Design Tokens (Màu sắc, Typography) và bảng ánh xạ class cho thiết kế Flat (Phương án 12).
-- `package.json` & `src/main.jsx`: Cài đặt và import font `Be Vietnam Pro` (thay thế Inter/Outfit).
-- `index.html`: Cập nhật class nền `body` theo chuẩn Flat token.
-- `src/index.css`: Xoá bộ 4 theme cũ (cyberpunk, postal-gold, obsidian-emerald, nordic-light), định nghĩa các biến màu CSS bằng Tailwind v4 `@theme`. Xoá các thuộc tính glass/shadow/gradient.
-- `src/App.jsx`: Gỡ bỏ state `theme`.
-- `src/components/Header.jsx`: Xoá nút và dropdown đổi theme giao diện.
-- `src/components/LoginView.jsx`: Áp dụng thiết kế Flat mới hoàn toàn (chia đôi màn hình, sử dụng font Be Vietnam Pro, màu token mới), giữ nguyên logic gọi API.
-
----
-
 ## [2026-10-06] - Import/Export Email Excel (feat/email-import-export)
 
 - `src/utils/emailExcel.js`: Xây dựng module xuất/nhập Excel cho quản lý email, đảm bảo ngày tháng múi giờ UTC, map columns chuẩn JSON và UI.
