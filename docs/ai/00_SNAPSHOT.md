@@ -17,7 +17,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 - **Backend**: Node.js + Express (`server/index.js` chỉ bootstrap ~77 dòng; route ở `server/routes/*`, hàm dùng chung ở `server/lib/*`), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
-- **Test**: `node:test` built-in, **133 test case** trong `tests/*.test.js`, chạy
+- **Test**: `node:test` built-in, **154 test case** trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -37,6 +37,10 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   `deleted_at` soft-delete, `purchase_year`, `assigned_user_id` liên kết `users` không
   FK cứng), `asset_transfer_logs` (lịch sử, KHÔNG có soft-delete — xoá cứng equipment
   phải xoá log trước để tránh lỗi FK).
+- `emails` (module Quản lý email): `email` UNIQUE NOCASE, `kind` UNIT|PERSONAL, `hrm_code`
+  (liên kết LỎNG tới `users`, không FK), `full_name`, `phone`, `commune_id`/`post_office_id`
+  (FK, NULL được), `job_title`, `created_date`, `revoked_date` (ISO). KHÔNG có cột status:
+  `revoked_date` NULL = Đang sử dụng, có ngày = Đã thu hồi.
 
 ## API hiện có (`server/routes/*`, mount ở `server/index.js`) — theo module
 
@@ -103,8 +107,25 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   cục (duy nhất route có quyền này). 21 field (20 cột gốc + `maHrmNguoiPhuTrach`).
 - `GET /api/network/export-data`, `PUT /api/network/post-offices/:id`,
   `DELETE /api/network/post-offices/:id` — cần token + quản lý. DELETE xoá CỨNG, bắt lỗi
-  FK nếu còn thiết bị/nhân sự liên kết (không có cột soft-delete riêng).
+  FK nếu còn thiết bị/nhân sự/email liên kết (không có cột soft-delete riêng).
 - Bảng 21 field đầy đủ: `03_ARCHITECTURE_MAP.md`.
+
+**Emails (Quản lý email — `server/routes/emails.js`)**
+- `GET /api/emails` — mọi tài khoản đăng nhập (kể cả STAFF). `page/limit`, `search`
+  (chuẩn hoá email/họ tên/HRM/SĐT, đ=d), `kind`, `status=ACTIVE|REVOKED`, `communeId`,
+  `postOfficeId`; trả kèm `status` suy ra + `commune_*`/`post_office_*`.
+- Ghi/import/export cần token + quản lý: `POST /api/emails`, `PUT /api/emails/:id`,
+  `PUT /api/emails/:id/revoke` (`revoked_date` tuỳ chọn, mặc định hôm nay),
+  `PUT /api/emails/:id/reactivate` (xoá ngày, KHÔNG tự tạo nhân sự), `POST /api/emails/import`
+  (`{rows}`: email, loai, maHrm, hoTen, soDienThoai, maBdx, maBuuCuc, chucDanh, trangThai,
+  ngayKhoiTao, ngayThuHoi), `GET /api/emails/export-data` (cùng bộ lọc, key Excel). Không xoá cứng.
+- Quy tắc: email lowercase+trim, đúng định dạng, duy nhất; UNIT không HRM, PERSONAL bắt buộc
+  HRM; ngày dd/mm/yyyy hoặc yyyy-mm-dd phải thật; thu hồi không trước khởi tạo.
+- Import: kiểm tra toàn bộ trước (lỗi gom theo dòng, tối đa 100) → có lỗi thì không ghi gì →
+  1 transaction; cập nhật theo email, ô trống = giữ cũ. Mã BĐX/bưu cục lạ → lỗi, KHÔNG BAO GIỜ
+  tạo tổ chức (04_DECISIONS #14). Email cá nhân đang dùng có HRM chưa có → tạo `users`
+  (không mật khẩu); HRM đã có → giữ nguyên + `warnings`; dòng đã thu hồi → không tạo nhân sự.
+  `POST /api/emails` dùng cùng logic. Trả `{created, updated, personnelCreated, warnings}`.
 
 **Dashboard & Organization**
 - `GET /api/dashboard/stats` — cần token. Toàn bộ 9 chỗ đếm/lọc đều có `deleted_at IS NULL`.

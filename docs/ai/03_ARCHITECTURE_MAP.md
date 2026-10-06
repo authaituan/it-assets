@@ -30,6 +30,7 @@
 | `server/routes/network.js` | 5 route `/network*` (list, import, export-data trước `post-offices/:id`). |
 | `server/routes/organization.js` | 3 route `/organization/*` + 3 route `/device-types*`. |
 | `server/routes/personnel.js` | 6 route `/personnel*` (`search` đứng trước `:id`). |
+| `server/routes/emails.js` | Quản lý email: `/emails*` (list, export-data, import, POST, revoke, reactivate, PUT `:id`); bảng `emails` ở `db.js`. Test `tests/emails.test.js` (port 5908). |
 | `server/lib/orgImport.js` | `resolveOrCreateOrgChain` (dùng bởi routes/network.js), `requireExistingPostOffice` (Equipment Import). |
 | `server/lib/helpers.js` | `parseSpecs`, `parseFloatOrNull`, `normalizeStr`, `ASSET_PREFIX_REGEX`. |
 | `server/db.js` | Khởi tạo SQLite, schema (CREATE TABLE IF NOT EXISTS), migration `password_hash`. |

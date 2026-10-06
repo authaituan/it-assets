@@ -274,7 +274,7 @@ router.delete('/network/post-offices/:id', authRequired, requireManager, (req, r
       db.prepare("DELETE FROM post_offices WHERE id = ?").run(req.params.id);
     } catch (fkErr) {
       if (fkErr.code === 'SQLITE_CONSTRAINT_FOREIGNKEY' || /FOREIGN KEY/i.test(fkErr.message || '')) {
-        return res.status(400).json({ error: 'Bưu cục này đang có thiết bị/nhân sự liên kết, không thể xoá.' });
+        return res.status(400).json({ error: 'Bưu cục này đang có thiết bị/nhân sự/email liên kết, không thể xoá.' });
       }
       throw fkErr;
     }
