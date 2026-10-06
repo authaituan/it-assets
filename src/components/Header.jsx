@@ -30,19 +30,19 @@ export default function Header({
   return (
     <header className="h-[72px] px-6 flex items-center justify-between sticky top-0 z-10 bg-transparent">
       {/* Left side: Breadcrumbs & Title */}
-      <div>
+      <div className="min-w-0 shrink flex-1 mr-4">
         <nav aria-label="breadcrumb">
-          <ol className="flex items-center space-x-2 text-[14px] text-[var(--color-subtext)]">
+          <ol className="flex items-center space-x-2 text-[14px] text-[var(--color-subtext)] whitespace-nowrap">
             <li>Trang</li>
             <li>/</li>
-            <li className="text-[var(--color-title)]" aria-current="page">{getScreenName()}</li>
+            <li className="text-[var(--color-title)] truncate" aria-current="page">{getScreenName()}</li>
           </ol>
         </nav>
-        <h6 className="font-bold text-[var(--color-title)] mt-0.5 text-base capitalize">{getScreenName()}</h6>
+        <h6 className="font-bold text-[var(--color-title)] mt-0.5 text-base capitalize whitespace-nowrap truncate">{getScreenName()}</h6>
       </div>
 
       {/* Right side: Actions */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 xl:gap-4 shrink-0">
         {/* Search */}
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
@@ -51,7 +51,7 @@ export default function Header({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Tìm kiếm..."
-            className="input-soft w-56 pl-9 pr-4 py-2"
+            className="input-soft w-32 xl:w-56 pl-9 pr-4 py-2"
           />
         </div>
 
@@ -60,35 +60,38 @@ export default function Header({
           {activeTab === 'inventory' && (
             <button
               onClick={onOpenCategoryModal}
-              className="btn btn-outline-primary flex items-center gap-1.5"
+              className="btn btn-outline-primary flex items-center gap-1.5 px-3 xl:px-6"
             >
               <FolderPlus className="w-4 h-4" />
-              <span>Thêm Danh Mục CCDC</span>
+              <span className="hidden xl:inline">Thêm Danh Mục CCDC</span>
             </button>
           )}
 
           <button
             onClick={() => setIsChangePasswordOpen(true)}
             className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
+            title="Đổi mật khẩu"
           >
             <Lock className="w-4 h-4" />
-            <span className="hidden sm:inline">Đổi mật khẩu</span>
+            <span className="hidden xl:inline">Đổi mật khẩu</span>
           </button>
 
           <button
             onClick={onOpenHrmModal}
             className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
+            title="Upload File HRM"
           >
             <UserCheck className="w-4 h-4" />
-            <span className="hidden sm:inline">Upload File HRM</span>
+            <span className="hidden xl:inline">Upload File HRM</span>
           </button>
 
           <button
             onClick={onLogout}
             className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
+            title="Đăng xuất"
           >
             <LogOut className="w-4 h-4" />
-            <span className="hidden sm:inline">Đăng xuất</span>
+            <span className="hidden xl:inline">Đăng xuất</span>
           </button>
         </div>
 

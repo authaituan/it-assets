@@ -127,7 +127,7 @@ export default function DashboardView({ onSelectCommune }) {
           </div>
           <div className="flex-1 w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stats.charts.assetsByCommune} margin={{ top: 10, right: 10, left: -20, bottom: 60 }}>
+              <BarChart data={stats.charts.assetsByCommune} margin={{ top: 10, right: 10, left: 10, bottom: 80 }}>
                 <CartesianGrid vertical={false} strokeDasharray="3 3" stroke="var(--color-border)" />
                 <XAxis 
                   dataKey="name" 
@@ -135,7 +135,7 @@ export default function DashboardView({ onSelectCommune }) {
                   tickLine={false}
                   axisLine={false}
                   interval={0}
-                  angle={-30}
+                  angle={-35}
                   textAnchor="end"
                   tickFormatter={(val) => val.length > 15 ? val.substring(0, 15) + '...' : val}
                 />
@@ -167,9 +167,9 @@ export default function DashboardView({ onSelectCommune }) {
             <div className="space-y-6">
               {/* Review item 1 */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-[var(--color-title)]">Thiếu địa chỉ MAC / Khai báo thô</span>
-                  <span className="font-bold text-[var(--color-primary)]">{stats.warnings.missingMac} máy</span>
+                <div className="flex justify-between text-sm mb-1 gap-2">
+                  <span className="font-semibold text-[var(--color-title)] truncate">Thiếu địa chỉ MAC / Khai báo thô</span>
+                  <span className="font-bold text-[var(--color-primary)] whitespace-nowrap">{stats.warnings.missingMac} máy</span>
                 </div>
                 <div className="progress-soft">
                   <div className="progress-bar-soft" style={{ width: `${Math.min((stats.warnings.missingMac/stats.summary.totalAssets)*100, 100)}%` }}></div>
@@ -178,9 +178,9 @@ export default function DashboardView({ onSelectCommune }) {
 
               {/* Review item 2 */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-[var(--color-title)]">Thiếu địa chỉ IP tĩnh</span>
-                  <span className="font-bold text-[var(--color-info)]">{stats.warnings.missingIp} máy</span>
+                <div className="flex justify-between text-sm mb-1 gap-2">
+                  <span className="font-semibold text-[var(--color-title)] truncate">Thiếu địa chỉ IP tĩnh</span>
+                  <span className="font-bold text-[var(--color-info)] whitespace-nowrap">{stats.warnings.missingIp} máy</span>
                 </div>
                 <div className="progress-soft">
                   <div className="progress-bar-soft bg-[var(--color-info)]" style={{ width: `${Math.min((stats.warnings.missingIp/stats.summary.totalAssets)*100, 100)}%` }}></div>
@@ -189,9 +189,9 @@ export default function DashboardView({ onSelectCommune }) {
 
               {/* Review item 3 */}
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-[var(--color-title)]">Máy dùng Windows 7</span>
-                  <span className="font-bold text-[var(--color-dark)]">{stats.warnings.win7Count} máy</span>
+                <div className="flex justify-between text-sm mb-1 gap-2">
+                  <span className="font-semibold text-[var(--color-title)] truncate">Máy dùng Windows 7</span>
+                  <span className="font-bold text-[var(--color-dark)] whitespace-nowrap">{stats.warnings.win7Count} máy</span>
                 </div>
                 <div className="progress-soft">
                   <div className="progress-bar-soft bg-[var(--color-dark)]" style={{ width: `${Math.min((stats.warnings.win7Count/stats.summary.totalAssets)*100, 100)}%` }}></div>

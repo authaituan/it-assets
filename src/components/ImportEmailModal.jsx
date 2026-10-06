@@ -247,7 +247,7 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || !!parseError}
-                className="btn btn-primary w-full py-3 text-[14px]"
+                className="btn btn-primary w-full py-3 text-[14px] flex items-center justify-center gap-2"
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
                 <span>{importing ? 'Đang Import...' : `Import ${parsedRows.length} Email`}</span>
