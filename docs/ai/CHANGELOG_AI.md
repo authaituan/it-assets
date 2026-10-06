@@ -4,6 +4,15 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-06] - Import/Export Email Excel (feat/email-import-export)
+
+- `src/utils/emailExcel.js`: Xây dựng module xuất/nhập Excel cho quản lý email, đảm bảo ngày tháng múi giờ UTC, map columns chuẩn JSON và UI.
+- `src/components/ImportEmailModal.jsx`: Thêm Modal Import Email từ file Excel mẫu, xử lý file, báo lỗi theo dòng trực quan trên UI.
+- `src/components/ExportEmailModal.jsx`: Thêm Modal Export Email ra Excel với tuỳ chọn toàn bộ hoặc theo bộ lọc hiện tại.
+- `src/components/EmailListView.jsx`: Bổ sung 2 nút Import Excel và Export Excel trên thanh công cụ; tích hợp 2 Modal tương ứng.
+
+---
+
 ## [2026-10-06] - UI Quản lý email (feat/email-ui-list)
 
 - `src/components/Sidebar.jsx`: Thêm mục "Quản lý email" (icon Mail) vào thanh bên trên "Người sử dụng". Sửa nhãn "Danh Sách" thành "Danh sách".

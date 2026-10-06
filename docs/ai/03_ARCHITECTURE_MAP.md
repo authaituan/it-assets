@@ -40,7 +40,7 @@
 | `src/components/NetworkListView.jsx` | (`feat/network-submenu-restructure`, đổi tên từ `UnitTreeView.jsx`) Submenu "Danh Sách" của "Quản Lý Mạng Lưới" — bảng CRUD 5 cột gộp cell + Export/Import Excel + autocomplete "Người Phụ Trách". |
 | `src/components/NetworkTreeView.jsx` | (mới, `feat/network-submenu-restructure`) Submenu "Cây Thư Mục" — cây tổ chức READ-ONLY (BĐT/TP→BĐX→Bưu cục), khôi phục nguyên vẹn từ commit lịch sử `93cc342`. |
 | `src/components/NetworkMapView.jsx` | (mới, `feat/network-submenu-restructure`) Submenu "Bản Đồ Điểm Phục Vụ" — PLACEHOLDER, hạng mục thật làm sau (chỉ thay nội dung file này). |
-| `src/components/EmailListView.jsx` | (mới, `feat/email-ui-list`) Danh sách Quản lý email, thêm/sửa/thu hồi/kích hoạt lại, có bộ lọc theo trạng thái/loại/BĐX/Bưu cục. |
+| `src/components/EmailListView.jsx` | (mới, `feat/email-ui-list`) Danh sách Quản lý email, thêm/sửa/thu hồi/kích hoạt lại, có bộ lọc theo trạng thái/loại/BĐX/Bưu cục + Import/Export Excel. |
 
 ## Luồng phân quyền (RBAC) — hiện tại
 1. Client `POST /api/auth/login` với `{ hrm_code, password }`.
