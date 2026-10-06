@@ -1,702 +1,702 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  X,
-  Monitor,
-  MapPin,
-  User,
-  Cpu,
-  History,
-  Edit3,
-  Save,
-  Eye,
-  CheckCircle2,
-  AlertTriangle,
-  AlertCircle,
-  Building2,
-  RefreshCw,
-  Trash2
+ X,
+ Monitor,
+ MapPin,
+ User,
+ Cpu,
+ History,
+ Edit3,
+ Save,
+ Eye,
+ CheckCircle2,
+ AlertTriangle,
+ AlertCircle,
+ Building2,
+ RefreshCw,
+ Trash2
 } from 'lucide-react';
 import { apiFetch, apiFetchJson } from '../utils/api';
 
 export default function EquipmentDetailModal({ equipment, onClose, onUpdated, onDeleted }) {
-  const [detail, setDetail] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [isEditing, setIsEditing] = useState(false);
-  const [saveLoading, setSaveLoading] = useState(false);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [actionError, setActionError] = useState('');
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  // Form edit states
-  const [hostname, setHostname] = useState('');
-  const [ipAddress, setIpAddress] = useState('');
-  const [macAddress, setMacAddress] = useState('');
-  const [serialNumber, setSerialNumber] = useState('');
-  const [rawUserName, setRawUserName] = useState('');
-  // Gán Người Sử Dụng qua autocomplete (feat/personnel-autocomplete):
-  // assignedUserId đi kèm rawUserName (chuỗi hiển thị trong ô). Gõ tự do
-  // (không chọn gợi ý) sẽ tự gỡ assignedUserId về null — chỉ set lại khi
-  // người dùng chọn đúng 1 gợi ý từ GET /api/personnel/search.
-  const [assignedUserId, setAssignedUserId] = useState(null);
-  const [personnelSuggestions, setPersonnelSuggestions] = useState([]);
-  const [showPersonnelSuggestions, setShowPersonnelSuggestions] = useState(false);
-  const personnelDebounceRef = useRef(null);
-  const [status, setStatus] = useState('IN_USE');
-  const [notes, setNotes] = useState('');
-  const [model, setModel] = useState('');
-  const [purchaseYear, setPurchaseYear] = useState('');
-  const [deviceTypeId, setDeviceTypeId] = useState('');
-  const [brandName, setBrandName] = useState('');
-  const [communeId, setCommuneId] = useState('');
-  const [postOfficeId, setPostOfficeId] = useState('');
-  const [cpu, setCpu] = useState('');
-  const [ram, setRam] = useState('');
-  const [storage, setStorage] = useState('');
-  const [os, setOs] = useState('');
-  const [categoryRaw, setCategoryRaw] = useState('');
-  const [categoryRawOptions, setCategoryRawOptions] = useState([]);
-
-  // Dropdown data (load 1 lần) — dùng cho các ô đổi loại thiết bị / bưu cục.
-  const [deviceTypes, setDeviceTypes] = useState([]);
-  const [communes, setCommunes] = useState([]);
-  const [allPostOffices, setAllPostOffices] = useState([]);
-  const [communeInitialized, setCommuneInitialized] = useState(false);
-
-  const eqId = equipment?.id;
-
-  useEffect(() => {
-    apiFetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
-    apiFetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
-    apiFetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
-    apiFetch('/api/equipments/category-raw-options').then(r => r.json()).then(data => setCategoryRawOptions(data || [])).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!eqId) return;
-    let isMounted = true;
-    setLoading(true);
-    setCommuneInitialized(false);
-
-    apiFetch(`/api/equipments/${eqId}`)
-      .then(res => res.json())
-      .then(data => {
-        if (!isMounted) return;
-        setDetail(data);
-
-        // Populate edit form states
-        setHostname(data.hostname || '');
-        setIpAddress(data.ip_address || '');
-        setMacAddress(data.mac_address || '');
-        setSerialNumber(data.serial_number || '');
-        setRawUserName(data.assigned_user_name || data.raw_user_name || '');
-        setAssignedUserId(data.assigned_user_id || null);
-        setStatus(data.status || 'IN_USE');
-        setNotes(data.notes || '');
-        setModel(data.model || '');
-        setPurchaseYear(data.purchase_year || '');
-        setDeviceTypeId(data.device_type_id || '');
-        setBrandName(data.brand_name || '');
-        setPostOfficeId(data.post_office_id || '');
-
-        const specs = data.specs || {};
-        setCpu(specs.cpu || '');
-        setRam(specs.ram || '');
-        setStorage(specs.storage || '');
-        setOs(specs.os || '');
-        setCategoryRaw(specs.category_raw || '');
-
-        setLoading(false);
-      })
-      .catch(err => {
-        console.error(err);
-        if (isMounted) setLoading(false);
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [eqId]);
-
-  // Suy ra BĐX (commune) hiện tại của thiết bị từ bưu cục đang gán, để preselect
-  // dropdown — chỉ chạy 1 lần sau khi cả detail lẫn danh sách bưu cục đã sẵn sàng.
-  useEffect(() => {
-    if (communeInitialized) return;
-    if (!postOfficeId || allPostOffices.length === 0) return;
-    const po = allPostOffices.find(p => p.id === postOfficeId);
-    if (po) {
-      setCommuneId(po.commune_id);
-      setCommuneInitialized(true);
-    }
-  }, [postOfficeId, allPostOffices, communeInitialized]);
-
-  const postOfficesForCommune = allPostOffices.filter(p => p.commune_id === communeId);
-
-  // Autocomplete "Người Sử Dụng": debounce ~300ms rồi gọi GET /api/personnel/search
-  // (route yêu cầu token + role quản lý -> apiFetchJson, không phải fetch thường).
-  const handlePersonnelSearchChange = (val) => {
-    setRawUserName(val);
-    setAssignedUserId(null); // gõ tự do -> huỷ liên kết với gợi ý đã chọn trước đó
-    setShowPersonnelSuggestions(true);
-
-    if (personnelDebounceRef.current) clearTimeout(personnelDebounceRef.current);
-
-    if (!val || !val.trim()) {
-      setPersonnelSuggestions([]);
-      return;
-    }
-
-    personnelDebounceRef.current = setTimeout(async () => {
-      const result = await apiFetchJson(`/api/personnel/search?q=${encodeURIComponent(val.trim())}`);
-      if (result.ok) {
-        setPersonnelSuggestions(Array.isArray(result.data) ? result.data : []);
-      }
-    }, 300);
-  };
-
-  const handleSelectPersonnel = (p) => {
-    setAssignedUserId(p.id);
-    setRawUserName(p.full_name);
-    setPersonnelSuggestions([]);
-    setShowPersonnelSuggestions(false);
-  };
-
-  if (!equipment) return null;
-
-  const handleSave = async (e) => {
-    e.preventDefault();
-    setSaveLoading(true);
-    setSaveSuccess(false);
-    setActionError('');
-
-    const updatedSpecs = {
-      ...(detail?.specs || {}),
-      cpu,
-      ram,
-      storage,
-      os
-    };
-
-    const result = await apiFetchJson(`/api/equipments/${eqId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        hostname,
-        ip_address: ipAddress,
-        mac_address: macAddress,
-        serial_number: serialNumber,
-        raw_user_name: rawUserName,
-        assigned_user_id: assignedUserId || null,
-        status,
-        notes,
-        model,
-        purchase_year: purchaseYear,
-        category_raw: categoryRaw,
-        device_type_id: deviceTypeId,
-        brand_name: brandName,
-        post_office_id: postOfficeId,
-        specs: updatedSpecs
-      })
-    });
-
-    setSaveLoading(false);
-
-    if (!result.ok) {
-      setActionError(result.error);
-      return;
-    }
-
-    setSaveSuccess(true);
-    setIsEditing(false);
-
-    // Update local detail view. Đổi loại thiết bị/bưu cục/hãng: nạp lại từ server
-    // để hiển thị tên mới (post_office_name, device_type_name...) cho đúng, tránh
-    // hiển thị dữ liệu cũ. Gọi onUpdated để danh sách ngoài cũng refresh.
-    setDetail(prev => ({
-      ...prev,
-      hostname,
-      ip_address: ipAddress,
-      mac_address: macAddress,
-      serial_number: serialNumber,
-      raw_user_name: rawUserName,
-      assigned_user_id: assignedUserId || null,
-      status,
-      notes,
-      model,
-      purchase_year: purchaseYear,
-      device_type_id: deviceTypeId,
-      brand_name: brandName,
-      post_office_id: postOfficeId,
-      specs: updatedSpecs
-    }));
-
-    if (onUpdated) onUpdated();
-    setTimeout(() => setSaveSuccess(false), 3000);
-  };
-
-  const handleDelete = async () => {
-    if (!window.confirm(`Xác nhận xoá thiết bị "${detail?.hostname || equipment.hostname || equipment.asset_tag}"? Thao tác này có thể khôi phục lại từ lịch sử nếu cần.`)) {
-      return;
-    }
-
-    setDeleteLoading(true);
-    setActionError('');
-
-    const result = await apiFetchJson(`/api/equipments/${eqId}`, { method: 'DELETE' });
-
-    setDeleteLoading(false);
-
-    if (!result.ok) {
-      setActionError(result.error);
-      return;
-    }
-
-    if (onDeleted) onDeleted();
-    onClose();
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-2xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
-        {/* Modal Header */}
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center font-bold">
-              <Monitor className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-bold text-base text-white font-mono">{detail?.asset_tag || equipment.asset_tag || 'Chưa có mã'}</h3>
-              <p className="text-xs text-slate-400">
-                {(detail?.hostname || equipment.hostname) && <span className="text-slate-300">{detail?.hostname || equipment.hostname} · </span>}
-                {detail?.brand_name || equipment.brand_name || 'Hãng khác'} {detail?.model || equipment.model || ''}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {saveSuccess && (
-              <span className="px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Đã lưu!</span>
-              </span>
-            )}
-
-            <button
-              type="button"
-              onClick={() => setIsEditing(!isEditing)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
-                isEditing
-                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                  : 'bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700'
-              }`}
-            >
-              {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5 text-cyan-400" />}
-              <span>{isEditing ? 'Xem Chi Tiết' : 'Chỉnh Sửa'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleteLoading}
-              className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20 disabled:opacity-50"
-            >
-              {deleteLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
-              <span>{deleteLoading ? 'Đang Xoá...' : 'Xoá Thiết Bị'}</span>
-            </button>
-
-            <button
-              onClick={onClose}
-              className="w-8 h-8 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-        </div>
-
-        {/* Action error banner (401/403/lỗi khác từ save hoặc xoá) */}
-        {actionError && (
-          <div className="mx-5 mt-4 p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <span>{actionError}</span>
-          </div>
-        )}
-
-        {/* Modal Body */}
-        {loading ? (
-          <div className="p-12 text-center text-slate-400 flex flex-col items-center justify-center gap-2">
-            <div className="w-6 h-6 border-2 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-            <span className="text-xs">Đang nạp thông tin chi tiết CCDC...</span>
-          </div>
-        ) : isEditing ? (
-          /* EDIT FORM MODE */
-          <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Tên Máy / Hostname</label>
-                <input
-                  type="text"
-                  value={hostname}
-                  onChange={e => setHostname(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Trạng Thái Cấp Phát</label>
-                <select
-                  value={status}
-                  onChange={e => setStatus(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                >
-                  <option value="IN_USE">Đang sử dụng</option>
-                  <option value="IN_STOCK">Tồn kho / Dự phòng</option>
-                  <option value="MAINTENANCE">Bảo trì / Sửa chữa</option>
-                  <option value="BROKEN">Hỏng / Chờ thanh lý</option>
-                </select>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Địa Chỉ IP Tĩnh</label>
-                <input
-                  type="text"
-                  value={ipAddress}
-                  onChange={e => setIpAddress(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Địa Chỉ MAC</label>
-                <input
-                  type="text"
-                  value={macAddress}
-                  onChange={e => setMacAddress(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Số Serial / Service TAG</label>
-                <input
-                  type="text"
-                  value={serialNumber}
-                  onChange={e => setSerialNumber(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-
-              <div className="relative">
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Người Sử Dụng Bàn Giao</label>
-                <input
-                  type="text"
-                  value={rawUserName}
-                  onChange={e => handlePersonnelSearchChange(e.target.value)}
-                  onFocus={() => { if (personnelSuggestions.length > 0) setShowPersonnelSuggestions(true); }}
-                  onBlur={() => setTimeout(() => setShowPersonnelSuggestions(false), 150)}
-                  placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
-                  autoComplete="off"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-                {assignedUserId && (
-                  <p className="text-[10px] text-emerald-400 mt-1">Đã gán liên kết với nhân sự (assigned_user_id).</p>
-                )}
-                {showPersonnelSuggestions && personnelSuggestions.length > 0 && (
-                  <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-slate-700 bg-slate-900 shadow-xl divide-y divide-slate-800">
-                    {personnelSuggestions.map((p) => (
-                      <li
-                        key={p.id}
-                        onMouseDown={(e) => e.preventDefault()}
-                        onClick={() => handleSelectPersonnel(p)}
-                        className="px-3 py-2 text-[11px] text-slate-200 hover:bg-cyan-500/10 hover:text-cyan-300 cursor-pointer"
-                      >
-                        {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            </div>
-
-            {/* Loại thiết bị + Hãng */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Loại Thiết Bị</label>
-                <select
-                  value={deviceTypeId}
-                  onChange={e => setDeviceTypeId(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                >
-                  {deviceTypes.map(dt => (
-                    <option key={dt.id} value={dt.id}>{dt.name}</option>
-                  ))}
-                </select>
-                <p className="text-[10px] text-slate-500 mt-1">Đổi loại KHÔNG đổi lại mã CCDC đã có.</p>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Hãng Sản Xuất</label>
-                <input
-                  type="text"
-                  value={brandName}
-                  onChange={e => setBrandName(e.target.value)}
-                  placeholder="Dell, HP, Posbank..."
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-            </div>
-
-            {/* Model + Năm Mua */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Dòng Máy / Model</label>
-                <input
-                  type="text"
-                  value={model}
-                  onChange={e => setModel(e.target.value)}
-                  placeholder="OptiPlex 3040 / ProDesk 600 G5"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Năm Mua</label>
-                <input
-                  type="number"
-                  value={purchaseYear}
-                  onChange={e => setPurchaseYear(e.target.value)}
-                  min="1990"
-                  max="2100"
-                  placeholder="Chưa có"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Phân Loại Chi Tiết</label>
-                <input
-                  type="text"
-                  list="edit-category-raw-options"
-                  value={categoryRaw}
-                  onChange={e => setCategoryRaw(e.target.value)}
-                  placeholder="Ví dụ: Máy tính để bàn Dell"
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                />
-                <datalist id="edit-category-raw-options">
-                  {categoryRawOptions.map(opt => (
-                    <option key={opt.label} value={opt.label} />
-                  ))}
-                </datalist>
-              </div>
-            </div>
-
-            {/* Đổi Bưu cục (cascading BĐX -> Bưu cục) */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Điện Xã (BĐX)</label>
-                <select
-                  value={communeId}
-                  onChange={e => {
-                    const newCommune = e.target.value;
-                    setCommuneId(newCommune);
-                    // Người dùng đổi BĐX -> chọn lại bưu cục đầu tiên của BĐX đó.
-                    const firstPo = allPostOffices.find(p => p.commune_id === newCommune);
-                    setPostOfficeId(firstPo ? firstPo.id : '');
-                  }}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                >
-                  <option value="">-- Chọn BĐX --</option>
-                  {communes.map(c => (
-                    <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-300 mb-1">Bưu Cục (MBC)</label>
-                <select
-                  value={postOfficeId}
-                  onChange={e => setPostOfficeId(e.target.value)}
-                  className="w-full glass-input p-2.5 rounded-xl text-xs"
-                >
-                  <option value="">-- Chọn Bưu cục --</option>
-                  {postOfficesForCommune.map(po => (
-                    <option key={po.id} value={po.id}>{po.code} - {po.name}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Hardware Specs Edit */}
-            <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 space-y-3">
-              <span className="text-[11px] font-bold text-cyan-400 uppercase">Cấu Hình Phần Cứng (Specs)</span>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">CPU</label>
-                  <input type="text" value={cpu} onChange={e => setCpu(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">RAM</label>
-                  <input type="text" value={ram} onChange={e => setRam(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">Ổ Cứng Storage</label>
-                  <input type="text" value={storage} onChange={e => setStorage(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
-                </div>
-
-                <div>
-                  <label className="block text-[10px] text-slate-400 mb-1">Hệ Điều Hành</label>
-                  <input type="text" value={os} onChange={e => setOs(e.target.value)} className="w-full glass-input p-2 rounded-lg text-xs" />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-semibold text-slate-300 mb-1">Ghi Chú</label>
-              <textarea
-                rows={2}
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                className="w-full glass-input p-2.5 rounded-xl text-xs resize-none"
-              />
-            </div>
-
-            <div className="pt-2 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setIsEditing(false)}
-                className="px-4 py-2 rounded-xl bg-slate-800 text-slate-300 hover:bg-slate-700 text-xs font-semibold"
-              >
-                Hủy bỏ
-              </button>
-
-              <button
-                type="submit"
-                disabled={saveLoading}
-                className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/20 flex items-center gap-2"
-              >
-                {saveLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                <span>{saveLoading ? 'Đang Lưu...' : 'LƯU THAY ĐỔI'}</span>
-              </button>
-            </div>
-          </form>
-        ) : (
-          /* READONLY DETAIL MODE */
-          <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
-            {/* Asset Identity Card */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Địa chỉ IP</div>
-                <div className="font-mono font-bold text-cyan-400 text-xs mt-1">{detail.ip_address || 'N/A'}</div>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Địa chỉ MAC</div>
-                <div className="font-mono text-slate-200 text-[11px] mt-1">{detail.mac_address || 'N/A'}</div>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Số Serial / TAG</div>
-                <div className="font-mono text-slate-200 text-[11px] mt-1 truncate">{detail.serial_number || 'N/A'}</div>
-              </div>
-              <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800">
-                <div className="text-[10px] text-slate-400 uppercase font-semibold">Trạng thái</div>
-                <div className="font-semibold text-emerald-400 text-xs mt-1">{detail.status || 'Đang hoạt động'}</div>
-              </div>
-            </div>
-
-            {/* Location & User Info */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl glass-card space-y-2">
-                <div className="flex items-center gap-2 text-cyan-400 text-xs font-bold uppercase tracking-wider">
-                  <MapPin className="w-4 h-4" />
-                  <span>Đơn Vị & Bưu Cục Quản Lý</span>
-                </div>
-                <div className="text-sm font-bold text-white">{detail.post_office_name} ({detail.post_office_code})</div>
-                <div className="text-xs text-slate-400">Trực thuộc: <span className="text-slate-200 font-semibold">{detail.commune_name} ({detail.commune_code})</span></div>
-                <div className="text-xs text-slate-400">Địa chỉ: {detail.post_office_address || 'Theo quản lý địa bàn xã'}</div>
-              </div>
-
-              <div className="p-4 rounded-xl glass-card space-y-2">
-                <div className="flex items-center gap-2 text-purple-400 text-xs font-bold uppercase tracking-wider">
-                  <User className="w-4 h-4" />
-                  <span>Người Sử Dụng Được Bàn Giao</span>
-                </div>
-                <div className="text-sm font-bold text-white">{detail.assigned_user_name || detail.raw_user_name || 'Chưa bàn giao cụ thể'}</div>
-                {detail.assigned_user_hrm && (
-                  <div className="text-xs text-purple-300 font-mono">Mã HRM: {detail.assigned_user_hrm}</div>
-                )}
-                <div className="text-xs text-slate-400">Ghi nhận từ dữ liệu bưu điện</div>
-              </div>
-            </div>
-
-            {/* Hardware Specs Section */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <Cpu className="w-4 h-4 text-cyan-400" />
-                <span>Thông Số Kỹ Thuật Chi Tiết (Hardware Specs)</span>
-              </h4>
-
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">CPU</div>
-                  <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.cpu || 'N/A'}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Dung Lượng RAM</div>
-                  <div className="text-xs font-semibold text-cyan-400 mt-0.5">{detail?.specs?.ram || 'N/A'}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Ổ Cứng Storage</div>
-                  <div className="text-xs font-semibold text-blue-400 mt-0.5">{detail?.specs?.storage || 'N/A'}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Hệ Điều Hành</div>
-                  <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.os || 'N/A'}</div>
-                </div>
-
-                <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800">
-                  <div className="text-[10px] text-slate-400">Phân Loại Chi Tiết</div>
-                  <div className="text-xs font-semibold text-indigo-400 mt-0.5">{detail?.specs?.category_raw || 'N/A'}</div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Audit Logs */}
-            <div className="space-y-3">
-              <h4 className="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-2">
-                <History className="w-4 h-4 text-amber-400" />
-                <span>Lịch Sử Luân Chuyển & Cập Nhật (Audit Logs)</span>
-              </h4>
-
-              <div className="border border-slate-800 rounded-xl overflow-hidden divide-y divide-slate-800">
-                {detail.logs && detail.logs.map((log, idx) => (
-                  <div key={idx} className="p-3 bg-slate-900/40 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className="w-2 h-2 rounded-full bg-cyan-400"></div>
-                      <div>
-                        <div className="font-semibold text-slate-200">{log.reason || log.action}</div>
-                        <div className="text-[11px] text-slate-400">{log.transferred_at}</div>
-                      </div>
-                    </div>
-                    <span className="px-2 py-0.5 rounded bg-slate-800 text-[10px] text-slate-300 font-mono">
-                      {log.action}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+ const [detail, setDetail] = useState(null);
+ const [loading, setLoading] = useState(true);
+ const [isEditing, setIsEditing] = useState(false);
+ const [saveLoading, setSaveLoading] = useState(false);
+ const [saveSuccess, setSaveSuccess] = useState(false);
+ const [actionError, setActionError] = useState('');
+ const [deleteLoading, setDeleteLoading] = useState(false);
+
+ // Form edit states
+ const [hostname, setHostname] = useState('');
+ const [ipAddress, setIpAddress] = useState('');
+ const [macAddress, setMacAddress] = useState('');
+ const [serialNumber, setSerialNumber] = useState('');
+ const [rawUserName, setRawUserName] = useState('');
+ // Gán Người Sử Dụng qua autocomplete (feat/personnel-autocomplete):
+ // assignedUserId đi kèm rawUserName (chuỗi hiển thị trong ô). Gõ tự do
+ // (không chọn gợi ý) sẽ tự gỡ assignedUserId về null — chỉ set lại khi
+ // người dùng chọn đúng 1 gợi ý từ GET /api/personnel/search.
+ const [assignedUserId, setAssignedUserId] = useState(null);
+ const [personnelSuggestions, setPersonnelSuggestions] = useState([]);
+ const [showPersonnelSuggestions, setShowPersonnelSuggestions] = useState(false);
+ const personnelDebounceRef = useRef(null);
+ const [status, setStatus] = useState('IN_USE');
+ const [notes, setNotes] = useState('');
+ const [model, setModel] = useState('');
+ const [purchaseYear, setPurchaseYear] = useState('');
+ const [deviceTypeId, setDeviceTypeId] = useState('');
+ const [brandName, setBrandName] = useState('');
+ const [communeId, setCommuneId] = useState('');
+ const [postOfficeId, setPostOfficeId] = useState('');
+ const [cpu, setCpu] = useState('');
+ const [ram, setRam] = useState('');
+ const [storage, setStorage] = useState('');
+ const [os, setOs] = useState('');
+ const [categoryRaw, setCategoryRaw] = useState('');
+ const [categoryRawOptions, setCategoryRawOptions] = useState([]);
+
+ // Dropdown data (load 1 lần) — dùng cho các ô đổi loại thiết bị / bưu cục.
+ const [deviceTypes, setDeviceTypes] = useState([]);
+ const [communes, setCommunes] = useState([]);
+ const [allPostOffices, setAllPostOffices] = useState([]);
+ const [communeInitialized, setCommuneInitialized] = useState(false);
+
+ const eqId = equipment?.id;
+
+ useEffect(() => {
+ apiFetch('/api/device-types').then(r => r.json()).then(setDeviceTypes).catch(() => {});
+ apiFetch('/api/organization/communes').then(r => r.json()).then(setCommunes).catch(() => {});
+ apiFetch('/api/organization/post-offices').then(r => r.json()).then(setAllPostOffices).catch(() => {});
+ apiFetch('/api/equipments/category-raw-options').then(r => r.json()).then(data => setCategoryRawOptions(data || [])).catch(() => {});
+ }, []);
+
+ useEffect(() => {
+ if (!eqId) return;
+ let isMounted = true;
+ setLoading(true);
+ setCommuneInitialized(false);
+
+ apiFetch(`/api/equipments/${eqId}`)
+ .then(res => res.json())
+ .then(data => {
+ if (!isMounted) return;
+ setDetail(data);
+
+ // Populate edit form states
+ setHostname(data.hostname || '');
+ setIpAddress(data.ip_address || '');
+ setMacAddress(data.mac_address || '');
+ setSerialNumber(data.serial_number || '');
+ setRawUserName(data.assigned_user_name || data.raw_user_name || '');
+ setAssignedUserId(data.assigned_user_id || null);
+ setStatus(data.status || 'IN_USE');
+ setNotes(data.notes || '');
+ setModel(data.model || '');
+ setPurchaseYear(data.purchase_year || '');
+ setDeviceTypeId(data.device_type_id || '');
+ setBrandName(data.brand_name || '');
+ setPostOfficeId(data.post_office_id || '');
+
+ const specs = data.specs || {};
+ setCpu(specs.cpu || '');
+ setRam(specs.ram || '');
+ setStorage(specs.storage || '');
+ setOs(specs.os || '');
+ setCategoryRaw(specs.category_raw || '');
+
+ setLoading(false);
+ })
+ .catch(err => {
+ console.error(err);
+ if (isMounted) setLoading(false);
+ });
+
+ return () => {
+ isMounted = false;
+ };
+ }, [eqId]);
+
+ // Suy ra BĐX (commune) hiện tại của thiết bị từ bưu cục đang gán, để preselect
+ // dropdown — chỉ chạy 1 lần sau khi cả detail lẫn danh sách bưu cục đã sẵn sàng.
+ useEffect(() => {
+ if (communeInitialized) return;
+ if (!postOfficeId || allPostOffices.length === 0) return;
+ const po = allPostOffices.find(p => p.id === postOfficeId);
+ if (po) {
+ setCommuneId(po.commune_id);
+ setCommuneInitialized(true);
+ }
+ }, [postOfficeId, allPostOffices, communeInitialized]);
+
+ const postOfficesForCommune = allPostOffices.filter(p => p.commune_id === communeId);
+
+ // Autocomplete "Người Sử Dụng": debounce ~300ms rồi gọi GET /api/personnel/search
+ // (route yêu cầu token + role quản lý -> apiFetchJson, không phải fetch thường).
+ const handlePersonnelSearchChange = (val) => {
+ setRawUserName(val);
+ setAssignedUserId(null); // gõ tự do -> huỷ liên kết với gợi ý đã chọn trước đó
+ setShowPersonnelSuggestions(true);
+
+ if (personnelDebounceRef.current) clearTimeout(personnelDebounceRef.current);
+
+ if (!val || !val.trim()) {
+ setPersonnelSuggestions([]);
+ return;
+ }
+
+ personnelDebounceRef.current = setTimeout(async () => {
+ const result = await apiFetchJson(`/api/personnel/search?q=${encodeURIComponent(val.trim())}`);
+ if (result.ok) {
+ setPersonnelSuggestions(Array.isArray(result.data) ? result.data : []);
+ }
+ }, 300);
+ };
+
+ const handleSelectPersonnel = (p) => {
+ setAssignedUserId(p.id);
+ setRawUserName(p.full_name);
+ setPersonnelSuggestions([]);
+ setShowPersonnelSuggestions(false);
+ };
+
+ if (!equipment) return null;
+
+ const handleSave = async (e) => {
+ e.preventDefault();
+ setSaveLoading(true);
+ setSaveSuccess(false);
+ setActionError('');
+
+ const updatedSpecs = {
+ ...(detail?.specs || {}),
+ cpu,
+ ram,
+ storage,
+ os
+ };
+
+ const result = await apiFetchJson(`/api/equipments/${eqId}`, {
+ method: 'PUT',
+ headers: { 'Content-Type': 'application/json' },
+ body: JSON.stringify({
+ hostname,
+ ip_address: ipAddress,
+ mac_address: macAddress,
+ serial_number: serialNumber,
+ raw_user_name: rawUserName,
+ assigned_user_id: assignedUserId || null,
+ status,
+ notes,
+ model,
+ purchase_year: purchaseYear,
+ category_raw: categoryRaw,
+ device_type_id: deviceTypeId,
+ brand_name: brandName,
+ post_office_id: postOfficeId,
+ specs: updatedSpecs
+ })
+ });
+
+ setSaveLoading(false);
+
+ if (!result.ok) {
+ setActionError(result.error);
+ return;
+ }
+
+ setSaveSuccess(true);
+ setIsEditing(false);
+
+ // Update local detail view. Đổi loại thiết bị/bưu cục/hãng: nạp lại từ server
+ // để hiển thị tên mới (post_office_name, device_type_name...) cho đúng, tránh
+ // hiển thị dữ liệu cũ. Gọi onUpdated để danh sách ngoài cũng refresh.
+ setDetail(prev => ({
+ ...prev,
+ hostname,
+ ip_address: ipAddress,
+ mac_address: macAddress,
+ serial_number: serialNumber,
+ raw_user_name: rawUserName,
+ assigned_user_id: assignedUserId || null,
+ status,
+ notes,
+ model,
+ purchase_year: purchaseYear,
+ device_type_id: deviceTypeId,
+ brand_name: brandName,
+ post_office_id: postOfficeId,
+ specs: updatedSpecs
+ }));
+
+ if (onUpdated) onUpdated();
+ setTimeout(() => setSaveSuccess(false), 3000);
+ };
+
+ const handleDelete = async () => {
+ if (!window.confirm(`Xác nhận xoá thiết bị "${detail?.hostname || equipment.hostname || equipment.asset_tag}"? Thao tác này có thể khôi phục lại từ lịch sử nếu cần.`)) {
+ return;
+ }
+
+ setDeleteLoading(true);
+ setActionError('');
+
+ const result = await apiFetchJson(`/api/equipments/${eqId}`, { method: 'DELETE' });
+
+ setDeleteLoading(false);
+
+ if (!result.ok) {
+ setActionError(result.error);
+ return;
+ }
+
+ if (onDeleted) onDeleted();
+ onClose();
+ };
+
+ return (
+ <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
+ <div className="card-soft w-full max-w-2xl rounded-2xl border border-[var(--color-border)] shadow-2xl overflow-hidden">
+ {/* Modal Header */}
+ <div className="p-5 border-b border-[var(--color-border)] flex items-center justify-between bg-gray-50">
+ <div className="flex items-center gap-3">
+ <div className="w-10 h-10 rounded-xl bg-orange-50 text-[var(--color-primary)] border border-[var(--color-border)] flex items-center justify-center font-bold">
+ <Monitor className="w-5 h-5" />
+ </div>
+ <div>
+ <h3 className="font-bold text-base text-white font-mono">{detail?.asset_tag || equipment.asset_tag || 'Chưa có mã'}</h3>
+ <p className="text-xs text-[var(--color-body)]">
+ {(detail?.hostname || equipment.hostname) && <span className="text-[var(--color-title)]">{detail?.hostname || equipment.hostname} · </span>}
+ {detail?.brand_name || equipment.brand_name || 'Hãng khác'} {detail?.model || equipment.model || ''}
+ </p>
+ </div>
+ </div>
+
+ <div className="flex items-center gap-2">
+ {saveSuccess && (
+ <span className="px-2.5 py-1 rounded-full bg-green-50 border border-green-200 text-green-700 text-xs font-semibold flex items-center gap-1">
+ <CheckCircle2 className="w-3.5 h-3.5" />
+ <span>Đã lưu!</span>
+ </span>
+ )}
+
+ <button
+ type="button"
+ onClick={() => setIsEditing(!isEditing)}
+ className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all ${
+ isEditing
+ ? 'bg-yellow-50 text-yellow-700 border border-yellow-200'
+ : 'bg-gray-50 hover:bg-gray-100 text-[var(--color-title)] border border-[var(--color-border)]'
+ }`}
+ >
+ {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5 text-[var(--color-primary)]" />}
+ <span>{isEditing ? 'Xem Chi Tiết' : 'Chỉnh Sửa'}</span>
+ </button>
+
+ <button
+ type="button"
+ onClick={handleDelete}
+ disabled={deleteLoading}
+ className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all bg-red-50 text-red-600 border border-red-200 hover:bg-red-50 hover:text-red-700 disabled:opacity-50"
+ >
+ {deleteLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+ <span>{deleteLoading ? 'Đang Xoá...' : 'Xoá Thiết Bị'}</span>
+ </button>
+
+ <button
+ onClick={onClose}
+ className="w-8 h-8 rounded-lg bg-gray-50 hover:bg-gray-100 text-[var(--color-body)] hover:text-gray-800 flex items-center justify-center transition-all"
+ >
+ <X className="w-5 h-5" />
+ </button>
+ </div>
+ </div>
+
+ {/* Action error banner (401/403/lỗi khác từ save hoặc xoá) */}
+ {actionError && (
+ <div className="mx-5 mt-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-start gap-2">
+ <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+ <span>{actionError}</span>
+ </div>
+ )}
+
+ {/* Modal Body */}
+ {loading ? (
+ <div className="p-12 text-center text-[var(--color-body)] flex flex-col items-center justify-center gap-2">
+ <div className="w-6 h-6 border-2 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+ <span className="text-xs">Đang nạp thông tin chi tiết CCDC...</span>
+ </div>
+ ) : isEditing ? (
+ /* EDIT FORM MODE */
+ <form onSubmit={handleSave} className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Tên Máy / Hostname</label>
+ <input
+ type="text"
+ value={hostname}
+ onChange={e => setHostname(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Trạng Thái Cấp Phát</label>
+ <select
+ value={status}
+ onChange={e => setStatus(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ >
+ <option value="IN_USE">Đang sử dụng</option>
+ <option value="IN_STOCK">Tồn kho / Dự phòng</option>
+ <option value="MAINTENANCE">Bảo trì / Sửa chữa</option>
+ <option value="BROKEN">Hỏng / Chờ thanh lý</option>
+ </select>
+ </div>
+ </div>
+
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Địa Chỉ IP Tĩnh</label>
+ <input
+ type="text"
+ value={ipAddress}
+ onChange={e => setIpAddress(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Địa Chỉ MAC</label>
+ <input
+ type="text"
+ value={macAddress}
+ onChange={e => setMacAddress(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+ </div>
+
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Số Serial / Service TAG</label>
+ <input
+ type="text"
+ value={serialNumber}
+ onChange={e => setSerialNumber(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+
+ <div className="relative">
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Người Sử Dụng Bàn Giao</label>
+ <input
+ type="text"
+ value={rawUserName}
+ onChange={e => handlePersonnelSearchChange(e.target.value)}
+ onFocus={() => { if (personnelSuggestions.length > 0) setShowPersonnelSuggestions(true); }}
+ onBlur={() => setTimeout(() => setShowPersonnelSuggestions(false), 150)}
+ placeholder="Gõ Mã HRM hoặc Họ Tên để tìm..."
+ autoComplete="off"
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ {assignedUserId && (
+ <p className="text-[10px] text-green-700 mt-1">Đã gán liên kết với nhân sự (assigned_user_id).</p>
+ )}
+ {showPersonnelSuggestions && personnelSuggestions.length > 0 && (
+ <ul className="absolute z-10 mt-1 w-full max-h-48 overflow-y-auto rounded-xl border border-[var(--color-border)] bg-gray-50 shadow-xl divide-y divide-gray-100">
+ {personnelSuggestions.map((p) => (
+ <li
+ key={p.id}
+ onMouseDown={(e) => e.preventDefault()}
+ onClick={() => handleSelectPersonnel(p)}
+ className="px-3 py-2 text-[11px] text-[var(--color-title)] hover:bg-orange-50 hover:text-[var(--color-primary)] cursor-pointer"
+ >
+ {p.hrm_code || '—'}-{p.full_name}-{p.post_office_code || '—'}-{p.commune_code || '—'}
+ </li>
+ ))}
+ </ul>
+ )}
+ </div>
+ </div>
+
+ {/* Loại thiết bị + Hãng */}
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Loại Thiết Bị</label>
+ <select
+ value={deviceTypeId}
+ onChange={e => setDeviceTypeId(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ >
+ {deviceTypes.map(dt => (
+ <option key={dt.id} value={dt.id}>{dt.name}</option>
+ ))}
+ </select>
+ <p className="text-[10px] text-[var(--color-subtext)] mt-1">Đổi loại KHÔNG đổi lại mã CCDC đã có.</p>
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Hãng Sản Xuất</label>
+ <input
+ type="text"
+ value={brandName}
+ onChange={e => setBrandName(e.target.value)}
+ placeholder="Dell, HP, Posbank..."
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+ </div>
+
+ {/* Model + Năm Mua */}
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Dòng Máy / Model</label>
+ <input
+ type="text"
+ value={model}
+ onChange={e => setModel(e.target.value)}
+ placeholder="OptiPlex 3040 / ProDesk 600 G5"
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Năm Mua</label>
+ <input
+ type="number"
+ value={purchaseYear}
+ onChange={e => setPurchaseYear(e.target.value)}
+ min="1990"
+ max="2100"
+ placeholder="Chưa có"
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ </div>
+ </div>
+
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Phân Loại Chi Tiết</label>
+ <input
+ type="text"
+ list="edit-category-raw-options"
+ value={categoryRaw}
+ onChange={e => setCategoryRaw(e.target.value)}
+ placeholder="Ví dụ: Máy tính để bàn Dell"
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ />
+ <datalist id="edit-category-raw-options">
+ {categoryRawOptions.map(opt => (
+ <option key={opt.label} value={opt.label} />
+ ))}
+ </datalist>
+ </div>
+ </div>
+
+ {/* Đổi Bưu cục (cascading BĐX -> Bưu cục) */}
+ <div className="grid grid-cols-2 gap-3">
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Bưu Điện Xã (BĐX)</label>
+ <select
+ value={communeId}
+ onChange={e => {
+ const newCommune = e.target.value;
+ setCommuneId(newCommune);
+ // Người dùng đổi BĐX -> chọn lại bưu cục đầu tiên của BĐX đó.
+ const firstPo = allPostOffices.find(p => p.commune_id === newCommune);
+ setPostOfficeId(firstPo ? firstPo.id : '');
+ }}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ >
+ <option value="">-- Chọn BĐX --</option>
+ {communes.map(c => (
+ <option key={c.id} value={c.id}>{c.code} - {c.name}</option>
+ ))}
+ </select>
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Bưu Cục (MBC)</label>
+ <select
+ value={postOfficeId}
+ onChange={e => setPostOfficeId(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs"
+ >
+ <option value="">-- Chọn Bưu cục --</option>
+ {postOfficesForCommune.map(po => (
+ <option key={po.id} value={po.id}>{po.code} - {po.name}</option>
+ ))}
+ </select>
+ </div>
+ </div>
+
+ {/* Hardware Specs Edit */}
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)] space-y-3">
+ <span className="text-[11px] font-bold text-[var(--color-primary)] uppercase">Cấu Hình Phần Cứng (Specs)</span>
+ <div className="grid grid-cols-2 gap-2">
+ <div>
+ <label className="block text-[10px] text-[var(--color-body)] mb-1">CPU</label>
+ <input type="text" value={cpu} onChange={e => setCpu(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
+ </div>
+
+ <div>
+ <label className="block text-[10px] text-[var(--color-body)] mb-1">RAM</label>
+ <input type="text" value={ram} onChange={e => setRam(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
+ </div>
+
+ <div>
+ <label className="block text-[10px] text-[var(--color-body)] mb-1">Ổ Cứng Storage</label>
+ <input type="text" value={storage} onChange={e => setStorage(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
+ </div>
+
+ <div>
+ <label className="block text-[10px] text-[var(--color-body)] mb-1">Hệ Điều Hành</label>
+ <input type="text" value={os} onChange={e => setOs(e.target.value)} className="w-full input-soft p-2 rounded-lg text-xs" />
+ </div>
+ </div>
+ </div>
+
+ <div>
+ <label className="block text-[11px] font-semibold text-[var(--color-title)] mb-1">Ghi Chú</label>
+ <textarea
+ rows={2}
+ value={notes}
+ onChange={e => setNotes(e.target.value)}
+ className="w-full input-soft p-2.5 rounded-xl text-xs resize-none"
+ />
+ </div>
+
+ <div className="pt-2 flex items-center justify-end gap-3">
+ <button
+ type="button"
+ onClick={() => setIsEditing(false)}
+ className="px-4 py-2 rounded-xl bg-gray-50 text-[var(--color-title)] hover:bg-gray-100 text-xs font-semibold"
+ >
+ Hủy bỏ
+ </button>
+
+ <button
+ type="submit"
+ disabled={saveLoading}
+ className="px-5 py-2.5 rounded-xl btn btn-primary text-white font-bold text-xs shadow-lg flex items-center gap-2"
+ >
+ {saveLoading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+ <span>{saveLoading ? 'Đang Lưu...' : 'LƯU THAY ĐỔI'}</span>
+ </button>
+ </div>
+ </form>
+ ) : (
+ /* READONLY DETAIL MODE */
+ <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
+ {/* Asset Identity Card */}
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Địa chỉ IP</div>
+ <div className="font-mono font-bold text-[var(--color-primary)] text-xs mt-1">{detail.ip_address || 'N/A'}</div>
+ </div>
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Địa chỉ MAC</div>
+ <div className="font-mono text-[var(--color-title)] text-[11px] mt-1">{detail.mac_address || 'N/A'}</div>
+ </div>
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Số Serial / TAG</div>
+ <div className="font-mono text-[var(--color-title)] text-[11px] mt-1 truncate">{detail.serial_number || 'N/A'}</div>
+ </div>
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)] uppercase font-semibold">Trạng thái</div>
+ <div className="font-semibold text-green-700 text-xs mt-1">{detail.status || 'Đang hoạt động'}</div>
+ </div>
+ </div>
+
+ {/* Location & User Info */}
+ <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+ <div className="p-4 rounded-xl card-soft space-y-2">
+ <div className="flex items-center gap-2 text-[var(--color-primary)] text-xs font-bold uppercase tracking-wider">
+ <MapPin className="w-4 h-4" />
+ <span>Đơn Vị & Bưu Cục Quản Lý</span>
+ </div>
+ <div className="text-sm font-bold text-white">{detail.post_office_name} ({detail.post_office_code})</div>
+ <div className="text-xs text-[var(--color-body)]">Trực thuộc: <span className="text-[var(--color-title)] font-semibold">{detail.commune_name} ({detail.commune_code})</span></div>
+ <div className="text-xs text-[var(--color-body)]">Địa chỉ: {detail.post_office_address || 'Theo quản lý địa bàn xã'}</div>
+ </div>
+
+ <div className="p-4 rounded-xl card-soft space-y-2">
+ <div className="flex items-center gap-2 text-sky-600 text-xs font-bold uppercase tracking-wider">
+ <User className="w-4 h-4" />
+ <span>Người Sử Dụng Được Bàn Giao</span>
+ </div>
+ <div className="text-sm font-bold text-white">{detail.assigned_user_name || detail.raw_user_name || 'Chưa bàn giao cụ thể'}</div>
+ {detail.assigned_user_hrm && (
+ <div className="text-xs text-sky-600 font-mono">Mã HRM: {detail.assigned_user_hrm}</div>
+ )}
+ <div className="text-xs text-[var(--color-body)]">Ghi nhận từ dữ liệu bưu điện</div>
+ </div>
+ </div>
+
+ {/* Hardware Specs Section */}
+ <div className="space-y-3">
+ <h4 className="text-xs font-bold text-[var(--color-title)] uppercase tracking-wider flex items-center gap-2">
+ <Cpu className="w-4 h-4 text-[var(--color-primary)]" />
+ <span>Thông Số Kỹ Thuật Chi Tiết (Hardware Specs)</span>
+ </h4>
+
+ <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)]">CPU</div>
+ <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.cpu || 'N/A'}</div>
+ </div>
+
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)]">Dung Lượng RAM</div>
+ <div className="text-xs font-semibold text-[var(--color-primary)] mt-0.5">{detail?.specs?.ram || 'N/A'}</div>
+ </div>
+
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)]">Ổ Cứng Storage</div>
+ <div className="text-xs font-semibold text-sky-600 mt-0.5">{detail?.specs?.storage || 'N/A'}</div>
+ </div>
+
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)]">Hệ Điều Hành</div>
+ <div className="text-xs font-semibold text-white mt-0.5">{detail?.specs?.os || 'N/A'}</div>
+ </div>
+
+ <div className="p-3 rounded-xl bg-gray-50 border border-[var(--color-border)]">
+ <div className="text-[10px] text-[var(--color-body)]">Phân Loại Chi Tiết</div>
+ <div className="text-xs font-semibold text-sky-600 mt-0.5">{detail?.specs?.category_raw || 'N/A'}</div>
+ </div>
+
+ </div>
+ </div>
+
+ {/* Audit Logs */}
+ <div className="space-y-3">
+ <h4 className="text-xs font-bold text-[var(--color-title)] uppercase tracking-wider flex items-center gap-2">
+ <History className="w-4 h-4 text-yellow-700" />
+ <span>Lịch Sử Luân Chuyển & Cập Nhật (Audit Logs)</span>
+ </h4>
+
+ <div className="border border-[var(--color-border)] rounded-xl overflow-hidden divide-y divide-gray-100">
+ {detail.logs && detail.logs.map((log, idx) => (
+ <div key={idx} className="p-3 bg-gray-50 flex items-center justify-between text-xs">
+ <div className="flex items-center gap-3">
+ <div className="w-2 h-2 rounded-full bg-orange-500"></div>
+ <div>
+ <div className="font-semibold text-[var(--color-title)]">{log.reason || log.action}</div>
+ <div className="text-[11px] text-[var(--color-body)]">{log.transferred_at}</div>
+ </div>
+ </div>
+ <span className="px-2 py-0.5 rounded bg-gray-50 text-[10px] text-[var(--color-title)] font-mono">
+ {log.action}
+ </span>
+ </div>
+ ))}
+ </div>
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ );
 }

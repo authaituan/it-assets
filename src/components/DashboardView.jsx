@@ -295,7 +295,7 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
         <div className="bg-white rounded-[12px] shadow-[0_20px_27px_rgba(0,0,0,.05)] p-5 min-h-[300px]">
           <h6 className="font-bold text-gray-800 text-base mb-4">Theo loại thiết bị</h6>
           {donutData.length > 0 ? (
-            <div className="h-[220px]">
+            <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -334,7 +334,7 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
                     <span className="font-semibold text-gray-900">{s.count}</span>
                   </div>
                   <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500" style={{ width: `${p}%` }}></div>
+                    <div className={`h-full ${s.status === 'IN_USE' ? 'bg-[#22C55E]' : s.status === 'IN_STOCK' ? 'bg-[#0EA5E9]' : s.status === 'MAINTENANCE' ? 'bg-[#EAB308]' : s.status === 'BROKEN' ? 'bg-[#EF4444]' : s.status === 'LIQUIDATED' ? 'bg-[#A1A1AA]' : 'bg-gray-400'}`} style={{ width: `${p}%` }}></div>
                   </div>
                 </div>
               );
@@ -417,7 +417,11 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
                       {act.assetTag || act.hostname || 'Thiết bị'}
                       {(act.fromPostOffice || act.toPostOffice) && (
                         <span className="text-gray-400 mx-1">
-                          từ {act.fromPostOffice || '?'} &rarr; {act.toPostOffice || '?'}
+                          {act.fromPostOffice && act.toPostOffice 
+                            ? `từ ${act.fromPostOffice} \u2192 ${act.toPostOffice}` 
+                            : act.fromPostOffice 
+                              ? `từ ${act.fromPostOffice}` 
+                              : `\u2192 ${act.toPostOffice}`}
                         </span>
                       )}
                     </p>
