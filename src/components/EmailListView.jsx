@@ -16,9 +16,13 @@ import {
   User,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Upload,
+  Download
 } from 'lucide-react';
 import { apiFetch, apiFetchJson } from '../utils/api';
+import ImportEmailModal from './ImportEmailModal';
+import ExportEmailModal from './ExportEmailModal';
 
 // ==========================================
 // Modal: Thêm / Sửa Email
@@ -363,6 +367,8 @@ export default function EmailListView({ authUser, search, setSearch }) {
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingEmail, setEditingEmail] = useState(null);
   const [revokingEmail, setRevokingEmail] = useState(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showExportModal, setShowExportModal] = useState(false);
   const [message, setMessage] = useState(null);
 
   const debounceRef = useRef(null);
@@ -523,6 +529,25 @@ export default function EmailListView({ authUser, search, setSearch }) {
                 <Plus className="w-4 h-4" />
                 <span>Thêm Email</span>
               </button>
+            )}
+            
+            {canEdit && (
+              <>
+                <button
+                  onClick={() => setShowImportModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 transition-all shadow-md shadow-purple-500/20"
+                >
+                  <Upload className="w-4 h-4" />
+                  <span>Import Excel</span>
+                </button>
+                <button
+                  onClick={() => setShowExportModal(true)}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-cyan-400 glass-input hover:border-cyan-500/40 transition-all"
+                >
+                  <Download className="w-4 h-4" />
+                  <span>Export Excel</span>
+                </button>
+              </>
             )}
           </div>
         </div>
@@ -799,6 +824,23 @@ export default function EmailListView({ authUser, search, setSearch }) {
           emailItem={revokingEmail}
           onClose={() => setRevokingEmail(null)}
           onSuccess={handleMutationSuccess}
+        />
+      )}
+
+      {showImportModal && (
+        <ImportEmailModal
+          onClose={() => setShowImportModal(false)}
+          onSuccess={() => {
+            setRefreshKey(prev => prev + 1);
+          }}
+        />
+      )}
+
+      {showExportModal && (
+        <ExportEmailModal
+          onClose={() => setShowExportModal(false)}
+          filterParams={{ search: debouncedSearch, kind: selectedKind, status: selectedStatus, communeId: selectedCommuneId, postOfficeId: selectedPostOfficeId }}
+          hasFilters={hasFilters}
         />
       )}
     </div>
