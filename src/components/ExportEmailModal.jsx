@@ -83,24 +83,25 @@ export default function ExportEmailModal({ onClose, filterParams, hasFilters }) 
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/50 flex items-center justify-center p-4">
-      <div className="bg-surface border-2 border-info w-full max-w-lg overflow-hidden flex flex-col">
-        <div className="p-5 border-b-2 border-surface-alt flex items-center justify-between shrink-0">
-          <h3 className="font-extrabold text-[18px] text-ink">
-            Export Email Ra Excel
+    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+      <div className="glass-panel w-full max-w-lg rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
+        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
+          <h3 className="font-bold text-base text-white flex items-center gap-2">
+            <Download className="w-5 h-5 text-cyan-400" />
+            <span>Export Email Ra Excel</span>
           </h3>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center bg-surface-alt hover:bg-sky text-ink transition-colors">
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        <div className="p-6 space-y-5">
+        <div className="p-6 space-y-5 text-xs">
           <div className="space-y-3">
             <label
-              className={`flex items-start gap-3 p-3 border-2 cursor-pointer transition-colors ${
+              className={`flex items-start gap-3 p-3 rounded-xl border cursor-pointer transition-all ${
                 exportMode === 'all'
-                  ? 'border-primary bg-sky/20'
-                  : 'border-surface-alt hover:bg-sidebar'
+                  ? 'border-cyan-500/50 bg-cyan-500/10'
+                  : 'border-slate-700/50 hover:bg-slate-800/40'
               }`}
             >
               <input
@@ -112,21 +113,21 @@ export default function ExportEmailModal({ onClose, filterParams, hasFilters }) 
                 className="mt-0.5"
               />
               <div>
-                <div className={`font-bold text-[14px] ${exportMode === 'all' ? 'text-primary' : 'text-ink'}`}>
+                <div className={`font-bold ${exportMode === 'all' ? 'text-cyan-300' : 'text-slate-200'}`}>
                   Toàn bộ danh sách email
                 </div>
-                <div className="text-[12px] text-muted mt-0.5">
+                <div className="text-[11px] text-slate-400 mt-0.5">
                   Xuất tất cả email trong hệ thống (bỏ qua mọi bộ lọc hiện tại).
                 </div>
               </div>
             </label>
 
             <label
-              className={`flex items-start gap-3 p-3 border-2 transition-colors ${
-                !hasFilters ? 'opacity-50 cursor-not-allowed border-surface-alt' : 
+              className={`flex items-start gap-3 p-3 rounded-xl border transition-all ${
+                !hasFilters ? 'opacity-50 cursor-not-allowed border-slate-800' : 
                 exportMode === 'filtered'
-                  ? 'border-primary bg-sky/20 cursor-pointer'
-                  : 'border-surface-alt hover:bg-sidebar cursor-pointer'
+                  ? 'border-cyan-500/50 bg-cyan-500/10 cursor-pointer'
+                  : 'border-slate-700/50 hover:bg-slate-800/40 cursor-pointer'
               }`}
             >
               <input
@@ -139,11 +140,11 @@ export default function ExportEmailModal({ onClose, filterParams, hasFilters }) 
                 className="mt-0.5"
               />
               <div>
-                <div className={`font-bold text-[14px] flex items-center gap-1.5 ${exportMode === 'filtered' ? 'text-primary' : 'text-ink'}`}>
-                  <Filter className="w-4 h-4" />
+                <div className={`font-bold flex items-center gap-1.5 ${exportMode === 'filtered' ? 'text-cyan-300' : 'text-slate-200'}`}>
+                  <Filter className="w-3.5 h-3.5" />
                   Theo bộ lọc hiện tại
                 </div>
-                <div className="text-[12px] text-muted mt-0.5">
+                <div className="text-[11px] text-slate-400 mt-0.5">
                   {!hasFilters ? (
                     'Bạn chưa bật bộ lọc nào.'
                   ) : (
@@ -154,35 +155,21 @@ export default function ExportEmailModal({ onClose, filterParams, hasFilters }) 
             </label>
           </div>
 
-          <div className="p-3 bg-sky text-ink flex items-start gap-2">
-            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-            <div className="text-[13px] font-bold">Lưu ý: Quá trình export có thể mất vài giây tuỳ thuộc vào lượng dữ liệu.</div>
-          </div>
-
           {error && (
-            <div className="p-3 bg-danger text-white flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
-              <span className="text-[13px] font-bold">{error}</span>
+              <span>{error}</span>
             </div>
           )}
 
-          <div className="pt-2 flex justify-end gap-3 border-t-2 border-surface-alt mt-6 pt-4">
-            <button
-              onClick={onClose}
-              disabled={exporting}
-              className="bg-surface-alt text-ink font-bold h-10 px-4 hover:bg-sky transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Hủy
-            </button>
-            <button
-              onClick={handleExport}
-              disabled={exporting}
-              className="bg-accent text-ink font-bold h-10 px-4 hover:bg-accent-hover transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {exporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-              <span>{exporting ? 'Đang xuất file...' : 'Xuất File Excel'}</span>
-            </button>
-          </div>
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+          >
+            {exporting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+            <span>{exporting ? 'Đang xuất file...' : 'Xuất File Excel'}</span>
+          </button>
         </div>
       </div>
     </div>
