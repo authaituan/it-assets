@@ -51,25 +51,25 @@ export default function ChangePasswordModal({ onClose }) {
   };
 
   // Render qua Portal thẳng vào document.body: nút mở modal này nằm trong
-  // <header> (có backdrop-blur-xl -> CSS backdrop-filter tạo containing
+  // <header> (có backdrop-filter tạo containing
   // block mới cho position:fixed), nếu không dùng Portal thì modal sẽ bị
   // "fixed" tương đối với <header> (cao 64px) thay vì toàn viewport.
   return createPortal(
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-md rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Lock className="w-5 h-5 text-cyan-400" />
+    <div className="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-md rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white">
+          <h3 className="font-bold text-base text-[--color-title] flex items-center gap-2">
+            <Lock className="w-5 h-5 text-orange-400" />
             <span>Đổi Mật Khẩu Của Tôi</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[--color-body] hover:text-[--color-title]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -83,7 +83,7 @@ export default function ChangePasswordModal({ onClose }) {
           )}
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Mật Khẩu Hiện Tại
             </label>
             <input
@@ -91,7 +91,7 @@ export default function ChangePasswordModal({ onClose }) {
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
               placeholder="Nhập mật khẩu đang dùng"
-              className="w-full glass-input p-3 rounded-xl text-xs"
+              className="w-full input-soft p-3 rounded-xl text-xs"
               autoFocus
               autoComplete="current-password"
               required
@@ -100,7 +100,7 @@ export default function ChangePasswordModal({ onClose }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Mật Khẩu Mới
             </label>
             <input
@@ -108,7 +108,7 @@ export default function ChangePasswordModal({ onClose }) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
-              className="w-full glass-input p-3 rounded-xl text-xs"
+              className="w-full input-soft p-3 rounded-xl text-xs"
               autoComplete="new-password"
               required
               disabled={success}
@@ -116,7 +116,7 @@ export default function ChangePasswordModal({ onClose }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Xác Nhận Mật Khẩu Mới
             </label>
             <input
@@ -124,7 +124,7 @@ export default function ChangePasswordModal({ onClose }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
-              className="w-full glass-input p-3 rounded-xl text-xs"
+              className="w-full input-soft p-3 rounded-xl text-xs"
               autoComplete="new-password"
               required
               disabled={success}
@@ -135,7 +135,7 @@ export default function ChangePasswordModal({ onClose }) {
             <button
               type="submit"
               disabled={loading || success}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold text-xs shadow-lg shadow-cyan-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3 rounded-xl bg-orange-500 hover: text-white font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <Lock className="w-4 h-4" />
               <span>{loading ? 'Đang Đổi...' : success ? 'Đã Xong' : 'ĐỔI MẬT KHẨU'}</span>

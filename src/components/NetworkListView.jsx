@@ -1106,7 +1106,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setIsExportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-title)] input-soft hover:border-orange-300 hover:text-sky-600 transition-all"
+              className="btn btn-outline-primary border-gray-300 text-gray-600 hover:bg-gray-100 hover:border-gray-400 hover:text-gray-800 flex items-center gap-2"
             >
               <Download className="w-4 h-4" />
               <span>Export Excel</span>
@@ -1123,7 +1123,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
                 setEditingPostOffice(null);
                 setIsFormOpen(true);
               }}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold btn btn-dark transition-all shadow-sm"
+              className="btn btn-dark flex items-center gap-1.5"
             >
               <Plus className="w-4 h-4" />
               <span>Thêm Bưu Cục</span>

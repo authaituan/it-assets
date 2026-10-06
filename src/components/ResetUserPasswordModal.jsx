@@ -44,26 +44,26 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-md rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
+    <div className="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-md rounded-2xl border border-gray-200 shadow-soft overflow-hidden">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white">
+          <h3 className="font-bold text-base text-[--color-title] flex items-center gap-2">
             <KeyRound className="w-5 h-5 text-amber-400" />
             <span>Reset Mật Khẩu</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[--color-body] hover:text-[--color-title]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs">
-          <div className="p-3 rounded-xl bg-slate-900/80 border border-slate-800 text-slate-300">
-            Đặt lại mật khẩu cho: <span className="font-bold text-white">{user.full_name}</span>{' '}
-            <span className="font-mono text-cyan-400">({user.hrm_code})</span>. Không cần biết mật khẩu cũ.
+          <div className="p-3 rounded-xl bg-gray-50 border border-gray-200 text-[--color-title]">
+            Đặt lại mật khẩu cho: <span className="font-bold text-[--color-title]">{user.full_name}</span>{' '}
+            <span className="font-mono text-orange-400">({user.hrm_code})</span>. Không cần biết mật khẩu cũ.
           </div>
 
           {error && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -77,7 +77,7 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
           )}
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Mật Khẩu Mới
             </label>
             <input
@@ -85,7 +85,7 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
               placeholder="Tối thiểu 6 ký tự"
-              className="w-full glass-input p-3 rounded-xl text-xs"
+              className="w-full input-soft p-3 rounded-xl text-xs"
               autoFocus
               autoComplete="new-password"
               required
@@ -94,7 +94,7 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
           </div>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Xác Nhận Mật Khẩu Mới
             </label>
             <input
@@ -102,7 +102,7 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               placeholder="Nhập lại mật khẩu mới"
-              className="w-full glass-input p-3 rounded-xl text-xs"
+              className="w-full input-soft p-3 rounded-xl text-xs"
               autoComplete="new-password"
               required
               disabled={success}
@@ -113,7 +113,7 @@ export default function ResetUserPasswordModal({ user, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={loading || success}
-              className="w-full py-3 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-white font-bold text-xs shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3 rounded-xl hover: text-[--color-title] font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-60"
             >
               <KeyRound className="w-4 h-4" />
               <span>{loading ? 'Đang Đặt Lại...' : success ? 'Đã Xong' : 'ĐẶT LẠI MẬT KHẨU'}</span>

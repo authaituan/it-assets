@@ -73,65 +73,65 @@ export default function CategoryAdminView() {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="glass-panel p-5 rounded-2xl">
-        <h2 className="text-xl font-bold text-white flex items-center gap-2">
-          <Layers className="w-5 h-5 text-cyan-400" />
+      <div className="card-soft p-5 rounded-2xl">
+        <h2 className="text-xl font-bold text-[--color-title] flex items-center gap-2">
+          <Layers className="w-5 h-5 text-orange-400" />
           <span>Quản Lý Danh Mục CCDC</span>
         </h2>
-        <p className="text-xs text-slate-400 mt-1">
-          Cấu hình <span className="text-cyan-400 font-semibold">tiền tố mã CCDC</span> cho từng loại thiết bị.
-          Mã được sinh tự động dạng <span className="font-mono text-cyan-400">TIỀN_TỐ-YY-001</span> (vd LAP-24-001) khi tạo thiết bị mới.
+        <p className="text-xs text-[--color-body] mt-1">
+          Cấu hình <span className="text-orange-400 font-semibold">tiền tố mã CCDC</span> cho từng loại thiết bị.
+          Mã được sinh tự động dạng <span className="font-mono text-orange-400">TIỀN_TỐ-YY-001</span> (vd LAP-24-001) khi tạo thiết bị mới.
         </p>
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="card-soft rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-400">Đang nạp danh mục thiết bị...</p>
+            <div className="w-8 h-8 border-3 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            <p className="text-xs text-[--color-body]">Đang nạp danh mục thiết bị...</p>
           </div>
         ) : types.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <Layers className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <p className="font-semibold text-sm text-slate-300">Chưa có danh mục thiết bị nào</p>
+          <div className="p-12 text-center text-[--color-body]">
+            <Layers className="w-12 h-12 mx-auto text-[--color-body] mb-3" />
+            <p className="font-semibold text-sm text-[--color-title]">Chưa có danh mục thiết bị nào</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                <tr className="bg-gray-50 text-[--color-body] font-semibold border-b border-gray-200 uppercase tracking-wider text-[11px]">
                   <th className="py-3.5 px-4">Tên Danh Mục</th>
                   <th className="py-3.5 px-4">Mã (code)</th>
                   <th className="py-3.5 px-4">Tiền Tố Mã CCDC</th>
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-gray-100">
                 {types.map((dt) => {
                   const isEditing = editingId === dt.id;
                   const hasPrefix = !!(dt.asset_prefix && dt.asset_prefix.trim());
                   return (
-                    <tr key={dt.id} className="hover:bg-slate-800/40 transition-colors">
+                    <tr key={dt.id} className="hover:bg-gray-50 transition-colors">
                       <td className="py-3.5 px-4">
                         {isEditing ? (
                           <input
                             type="text"
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
-                            className="glass-input px-2 py-1.5 rounded-lg text-xs w-full min-w-[160px]"
+                            className="input-soft px-2 py-1.5 rounded-lg text-xs w-full min-w-[160px]"
                           />
                         ) : (
-                          <span className="font-semibold text-slate-200">{dt.name}</span>
+                          <span className="font-semibold text-[--color-title]">{dt.name}</span>
                         )}
                       </td>
-                      <td className="py-3.5 px-4 font-mono text-[11px] text-slate-400">{dt.code}</td>
+                      <td className="py-3.5 px-4 font-mono text-[11px] text-[--color-body]">{dt.code}</td>
                       <td className="py-3.5 px-4">
                         {isEditing ? (
                           <div>
@@ -141,23 +141,23 @@ export default function CategoryAdminView() {
                               onChange={(e) => setEditPrefix(e.target.value.toUpperCase())}
                               maxLength={5}
                               placeholder="VD: LAP"
-                              className="glass-input px-2 py-1.5 rounded-lg text-xs font-mono tracking-wider w-28"
+                              className="input-soft px-2 py-1.5 rounded-lg text-xs font-mono tracking-wider w-28"
                               autoFocus
                             />
                             {saveError && (
-                              <div className="text-[11px] text-rose-400 mt-1.5 flex items-center gap-1">
+                              <div className="text-[11px] text-red-600 mt-1.5 flex items-center gap-1">
                                 <ShieldAlert className="w-3 h-3 shrink-0" />
                                 <span>{saveError}</span>
                               </div>
                             )}
                           </div>
                         ) : hasPrefix ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-cyan-500/10 text-cyan-300 border-cyan-500/30 font-mono inline-flex items-center gap-1">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-orange-500/10 text-orange-600 border-orange-200 font-mono inline-flex items-center gap-1">
                             <Tag className="w-3 h-3" />
                             {dt.asset_prefix}
                           </span>
                         ) : (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-500/10 text-amber-300 border-amber-500/30">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-amber-500/10 text-yellow-600 border-amber-500/30">
                             Chưa cấu hình
                           </span>
                         )}
@@ -171,7 +171,7 @@ export default function CategoryAdminView() {
                                 onClick={() => saveEdit(dt.id)}
                                 disabled={saving}
                                 title="Lưu"
-                                className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center disabled:opacity-50"
+                                className="w-7 h-7 rounded-lg bg-green-50 text-green-600 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center disabled:opacity-50"
                               >
                                 <Check className="w-3.5 h-3.5" />
                               </button>
@@ -179,7 +179,7 @@ export default function CategoryAdminView() {
                                 type="button"
                                 onClick={cancelEdit}
                                 title="Hủy"
-                                className="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center justify-center"
+                                className="w-7 h-7 rounded-lg bg-white text-[--color-title] border border-gray-200 hover:bg-gray-100 flex items-center justify-center"
                               >
                                 <X className="w-3.5 h-3.5" />
                               </button>
@@ -188,7 +188,7 @@ export default function CategoryAdminView() {
                             <button
                               type="button"
                               onClick={() => startEdit(dt)}
-                              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-cyan-500/20 hover:text-cyan-300 text-slate-300 transition-all text-xs font-semibold flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-orange-50 hover:text-orange-600 text-[--color-title] transition-all text-xs font-semibold flex items-center gap-1"
                             >
                               <Pencil className="w-3.5 h-3.5" />
                               <span>Sửa Tiền Tố</span>
@@ -204,8 +204,8 @@ export default function CategoryAdminView() {
           </div>
         )}
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 text-xs text-slate-400">
-          Tổng cộng <span className="font-bold text-white">{types.length}</span> danh mục thiết bị.
+        <div className="p-4 border-t border-gray-200 bg-gray-50 text-xs text-[--color-body]">
+          Tổng cộng <span className="font-bold text-[--color-title]">{types.length}</span> danh mục thiết bị.
         </div>
       </div>
     </div>

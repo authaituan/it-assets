@@ -152,7 +152,7 @@ export default function NetworkMapView({ onSelectUnitFilter }) {
                       <div style={{ fontSize: '12px', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
                         <span style={{
                           display: 'inline-block', width: '8px', height: '8px', borderRadius: '50%',
-                          background: isActive ? '#34d399' : '#94a3b8'
+                          background: isActive ? '#22C55E' : '#A1A1AA'
                         }}></span>
                         <span>{isActive ? 'Đang hoạt động' : 'Ngừng hoạt động'}</span>
                       </div>

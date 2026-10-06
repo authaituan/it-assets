@@ -100,45 +100,45 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
   const invalidRowCount = parsedRows.filter((r) => !r.hrmCode || !r.fullName).length;
 
   return (
-    <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel w-full max-w-3xl rounded-2xl border border-slate-700/60 shadow-2xl overflow-hidden max-h-[90vh] flex flex-col">
-        <div className="p-5 border-b border-slate-800 flex items-center justify-between bg-slate-900/60 shrink-0">
-          <h3 className="font-bold text-base text-white flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+    <div className="fixed inset-0 z-50 bg-gray-50 flex items-center justify-center p-4">
+      <div className="card-soft w-full max-w-3xl rounded-2xl border border-gray-200 shadow-soft overflow-hidden max-h-[90vh] flex flex-col">
+        <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
+          <h3 className="font-bold text-base text-[--color-title] flex items-center gap-2">
+            <Upload className="w-5 h-5 text-orange-400" />
             <span>Import Nhân Sự Từ Excel</span>
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-white">
+          <button onClick={onClose} className="text-[--color-body] hover:text-[--color-title]">
             <X className="w-5 h-5" />
           </button>
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
-          <p className="text-slate-400">
-            File <code className="text-purple-300">.xlsx</code> đúng 4 cột theo thứ tự: <b>A</b> Mã HRM, <b>B</b> Tên Nhân Viên,{' '}
+          <p className="text-[--color-body]">
+            File <code className="text-orange-600">.xlsx</code> đúng 4 cột theo thứ tự: <b>A</b> Mã HRM, <b>B</b> Tên Nhân Viên,{' '}
             <b>C</b> Mã BC, <b>D</b> Mã BĐX. Dòng 1 là tiêu đề (sẽ bị bỏ qua).
           </p>
 
           <div>
-            <label className="block text-[11px] font-semibold text-slate-300 uppercase mb-1">
+            <label className="block text-[11px] font-semibold text-[--color-title] uppercase mb-1">
               Chọn File Excel (.xlsx)
             </label>
             <input
               type="file"
               accept=".xlsx"
               onChange={handleFileChange}
-              className="w-full glass-input p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+              className="w-full input-soft p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-orange-600 file:text-xs file:font-semibold"
             />
           </div>
 
           {parsing && (
-            <div className="flex items-center gap-2 text-slate-400">
+            <div className="flex items-center gap-2 text-[--color-body]">
               <RefreshCw className="w-4 h-4 animate-spin" />
               <span>Đang đọc file Excel...</span>
             </div>
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -147,20 +147,20 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
           {parsedRows.length > 0 && !importResult && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <h4 className="font-semibold text-slate-200 flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                <h4 className="font-semibold text-[--color-title] flex items-center gap-2">
+                  <FileSpreadsheet className="w-4 h-4 text-orange-400" />
                   <span>Xem Trước ({parsedRows.length} dòng từ "{fileName}")</span>
                 </h4>
                 {invalidRowCount > 0 && (
-                  <span className="text-rose-400 text-[11px] font-semibold">
+                  <span className="text-red-600 text-[11px] font-semibold">
                     {invalidRowCount} dòng thiếu Mã HRM/Tên — sẽ bị chặn khi Import
                   </span>
                 )}
               </div>
 
-              <div className="border border-slate-800 rounded-xl overflow-hidden max-h-[280px] overflow-y-auto">
+              <div className="border border-gray-200 rounded-xl overflow-hidden max-h-[280px] overflow-y-auto">
                 <table className="w-full text-left text-[11px]">
-                  <thead className="bg-slate-900 text-slate-400 font-semibold border-b border-slate-800 sticky top-0">
+                  <thead className="bg-white text-[--color-body] font-semibold border-b border-gray-200 sticky top-0">
                     <tr>
                       <th className="py-2 px-3">Mã HRM</th>
                       <th className="py-2 px-3">Tên Nhân Viên</th>
@@ -168,15 +168,15 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
                       <th className="py-2 px-3">Mã BĐX</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-mono">
+                  <tbody className="divide-y divide-gray-100 font-mono">
                     {parsedRows.map((r, idx) => {
                       const invalid = !r.hrmCode || !r.fullName;
                       return (
-                        <tr key={idx} className={invalid ? 'bg-rose-500/5' : 'hover:bg-slate-800/40'}>
-                          <td className="py-1.5 px-3 text-cyan-400">{r.hrmCode || <span className="text-rose-400">(thiếu)</span>}</td>
-                          <td className="py-1.5 px-3 text-slate-200">{r.fullName || <span className="text-rose-400">(thiếu)</span>}</td>
-                          <td className="py-1.5 px-3 text-slate-400">{r.postOfficeCode || '—'}</td>
-                          <td className="py-1.5 px-3 text-slate-400">{r.communeCode || '—'}</td>
+                        <tr key={idx} className={invalid ?'bg-red-50' : 'hover:bg-gray-50'}>
+                          <td className="py-1.5 px-3 text-orange-400">{r.hrmCode || <span className="text-red-600">(thiếu)</span>}</td>
+                          <td className="py-1.5 px-3 text-[--color-title]">{r.fullName || <span className="text-red-600">(thiếu)</span>}</td>
+                          <td className="py-1.5 px-3 text-[--color-body]">{r.postOfficeCode || '—'}</td>
+                          <td className="py-1.5 px-3 text-[--color-body]">{r.communeCode || '—'}</td>
                         </tr>
                       );
                     })}
@@ -185,7 +185,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+                <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
                   <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{importError}</span>
                 </div>
@@ -194,7 +194,7 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
               <button
                 onClick={handleImport}
                 disabled={importing || invalidRowCount > 0}
-                className="w-full py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full py-3 rounded-xl bg-orange-500 hover: text-white font-bold text-xs shadow-soft transition-all flex items-center justify-center gap-2 disabled:opacity-50"
                 title={invalidRowCount > 0 ? 'Sửa các dòng thiếu Mã HRM/Tên trong file rồi tải lại' : ''}
               >
                 {importing ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
@@ -204,24 +204,24 @@ export default function ImportPersonnelModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 space-y-2">
+            <div className="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-green-600 space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="p-2.5 rounded-lg bg-slate-900/60 text-center">
-                  <div className="text-[11px] text-slate-400">Tạo Mới</div>
+                <div className="p-2.5 rounded-lg bg-white text-center">
+                  <div className="text-[11px] text-[--color-body]">Tạo Mới</div>
                   <div className="text-lg font-bold text-emerald-400">{importResult.created}</div>
                 </div>
-                <div className="p-2.5 rounded-lg bg-slate-900/60 text-center">
-                  <div className="text-[11px] text-slate-400">Cập Nhật</div>
-                  <div className="text-lg font-bold text-cyan-400">{importResult.updated}</div>
+                <div className="p-2.5 rounded-lg bg-white text-center">
+                  <div className="text-[11px] text-[--color-body]">Cập Nhật</div>
+                  <div className="text-lg font-bold text-orange-400">{importResult.updated}</div>
                 </div>
               </div>
               <button
                 onClick={onClose}
-                className="w-full mt-2 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs transition-all"
+                className="w-full mt-2 py-2.5 rounded-xl bg-white hover:bg-gray-100 text-[--color-title] font-semibold text-xs transition-all"
               >
                 Đóng
               </button>

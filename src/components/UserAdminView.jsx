@@ -111,20 +111,20 @@ export default function UserAdminView({ authUser }) {
 
   return (
     <div className="p-6 space-y-6">
-      <div className="glass-panel p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="card-soft p-5 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <UserCog className="w-5 h-5 text-cyan-400" />
+          <h2 className="text-xl font-bold text-[--color-title] flex items-center gap-2">
+            <UserCog className="w-5 h-5 text-orange-400" />
             <span>Quản Lý Người Dùng</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-xs text-[--color-body] mt-1">
             Tạo tài khoản, sửa thông tin/phân quyền, reset mật khẩu, vô hiệu hoá/kích hoạt lại tài khoản.
           </p>
         </div>
 
         <button
           onClick={() => setIsAddModalOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-md shadow-cyan-500/20"
+          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-white bg-orange-500 transition-all shadow-soft"
         >
           <Plus className="w-4 h-4" />
           <span>Thêm User</span>
@@ -132,36 +132,36 @@ export default function UserAdminView({ authUser }) {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{error}</span>
         </div>
       )}
 
       {actionError && (
-        <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 text-rose-400 text-xs flex items-start gap-2">
+        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           <span>{actionError}</span>
         </div>
       )}
 
-      <div className="glass-panel rounded-2xl overflow-hidden">
+      <div className="card-soft rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
-            <p className="text-xs text-slate-400">Đang nạp danh sách người dùng...</p>
+            <div className="w-8 h-8 border-3 border-orange-200 border-t-orange-500 rounded-full animate-spin"></div>
+            <p className="text-xs text-[--color-body]">Đang nạp danh sách người dùng...</p>
           </div>
         ) : users.length === 0 ? (
-          <div className="p-12 text-center text-slate-400">
-            <UserCog className="w-12 h-12 mx-auto text-slate-600 mb-3" />
-            <p className="font-semibold text-sm text-slate-300">Chưa có tài khoản người dùng nào</p>
-            <p className="text-xs text-slate-500 mt-1">Bấm "Thêm User" để tạo tài khoản đầu tiên</p>
+          <div className="p-12 text-center text-[--color-body]">
+            <UserCog className="w-12 h-12 mx-auto text-[--color-body] mb-3" />
+            <p className="font-semibold text-sm text-[--color-title]">Chưa có tài khoản người dùng nào</p>
+            <p className="text-xs text-[--color-subtext] mt-1">Bấm "Thêm User" để tạo tài khoản đầu tiên</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900/90 text-slate-400 font-semibold border-b border-slate-800 uppercase tracking-wider text-[11px]">
+                <tr className="bg-gray-50 text-[--color-body] font-semibold border-b border-gray-200 uppercase tracking-wider text-[11px]">
                   <th className="py-3.5 px-4">Mã HRM</th>
                   <th className="py-3.5 px-4">Họ Và Tên</th>
                   <th className="py-3.5 px-4">Vai Trò (Role)</th>
@@ -170,15 +170,15 @@ export default function UserAdminView({ authUser }) {
                   <th className="py-3.5 px-4 text-right">Thao Tác</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60">
+              <tbody className="divide-y divide-gray-100">
                 {users.map((u) => {
                   const isSelf = authUser && u.id === authUser.id;
                   const isEditing = editingId === u.id;
                   const isDeactivated = !!u.deactivated_at;
                   const isActionLoading = actionLoadingId === u.id;
                   return (
-                    <tr key={u.id} className={`hover:bg-slate-800/40 transition-colors ${isDeactivated ? 'opacity-60' : ''}`}>
-                      <td className="py-3.5 px-4 font-mono text-cyan-400 font-medium">{u.hrm_code}</td>
+                    <tr key={u.id} className={`hover:bg-gray-50 transition-colors ${isDeactivated ?'opacity-60' : ''}`}>
+                      <td className="py-3.5 px-4 font-mono text-orange-400 font-medium">{u.hrm_code}</td>
 
                       {/* Họ Và Tên — sửa inline cùng với Role */}
                       <td className="py-3.5 px-4">
@@ -187,14 +187,14 @@ export default function UserAdminView({ authUser }) {
                             type="text"
                             value={editingFullName}
                             onChange={(e) => setEditingFullName(e.target.value)}
-                            className="glass-input px-2 py-1.5 rounded-lg text-xs w-full min-w-[140px]"
+                            className="input-soft px-2 py-1.5 rounded-lg text-xs w-full min-w-[140px]"
                             autoFocus
                           />
                         ) : (
                           <>
-                            <div className="font-semibold text-slate-200">{u.full_name}</div>
+                            <div className="font-semibold text-[--color-title]">{u.full_name}</div>
                             {isSelf && (
-                              <div className="text-[10px] text-purple-300 font-medium mt-0.5">(Tài khoản của bạn)</div>
+                              <div className="text-[10px] text-orange-600 font-medium mt-0.5">(Tài khoản của bạn)</div>
                             )}
                           </>
                         )}
@@ -209,27 +209,26 @@ export default function UserAdminView({ authUser }) {
                               onChange={(e) => setEditingRole(e.target.value)}
                               disabled={isSelf}
                               title={isSelf ? 'Không thể tự đổi quyền của chính mình' : ''}
-                              className="glass-input px-2 py-1.5 rounded-lg text-xs disabled:opacity-50"
+                              className="input-soft px-2 py-1.5 rounded-lg text-xs disabled:opacity-50"
                             >
                               {ROLE_OPTIONS.map((r) => (
                                 <option key={r} value={r}>{r}</option>
                               ))}
                             </select>
                             {isSelf && (
-                              <div className="text-[10px] text-slate-500 mt-1">Không thể tự đổi quyền của chính mình</div>
+                              <div className="text-[10px] text-[--color-subtext] mt-1">Không thể tự đổi quyền của chính mình</div>
                             )}
                           </>
                         ) : (
-                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${
-                            u.role === 'STAFF'
-                              ? 'bg-slate-800 text-slate-300 border-slate-700'
-                              : 'bg-cyan-500/10 text-cyan-300 border-cyan-500/30'
+                          <span className={`px-2.5 py-1 rounded-full text-[11px] font-semibold border ${ u.role ==='STAFF'
+                              ? 'bg-gray-100 text-gray-700 border-gray-200'
+                              : 'bg-orange-50 text-orange-600 border-orange-200'
                           }`}>
                             {u.role}
                           </span>
                         )}
                         {isEditing && editSaveError && (
-                          <div className="text-[11px] text-rose-400 mt-1.5 flex items-center gap-1">
+                          <div className="text-[11px] text-red-600 mt-1.5 flex items-center gap-1">
                             <ShieldAlert className="w-3 h-3 shrink-0" />
                             <span>{editSaveError}</span>
                           </div>
@@ -239,7 +238,7 @@ export default function UserAdminView({ authUser }) {
                       {/* Trạng Thái */}
                       <td className="py-3.5 px-4">
                         {isDeactivated ? (
-                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-rose-500/10 text-rose-400 border-rose-500/30 flex items-center gap-1 w-fit">
+                          <span className="px-2.5 py-1 rounded-full text-[11px] font-semibold border bg-red-50 text-red-600 border-rose-500/30 flex items-center gap-1 w-fit">
                             <Lock className="w-3 h-3" />
                             <span>Đã khoá</span>
                           </span>
@@ -250,7 +249,7 @@ export default function UserAdminView({ authUser }) {
                         )}
                       </td>
 
-                      <td className="py-3.5 px-4 text-[11px] text-slate-400">{u.created_at}</td>
+                      <td className="py-3.5 px-4 text-[11px] text-[--color-body]">{u.created_at}</td>
 
                       {/* Thao Tác */}
                       <td className="py-3.5 px-4">
@@ -261,7 +260,7 @@ export default function UserAdminView({ authUser }) {
                               onClick={() => saveEdit(u.id)}
                               disabled={editSaving}
                               title="Lưu"
-                              className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center disabled:opacity-50"
+                              className="w-7 h-7 rounded-lg bg-green-50 text-green-600 border border-emerald-500/40 hover:bg-emerald-500/30 flex items-center justify-center disabled:opacity-50"
                             >
                               <Check className="w-3.5 h-3.5" />
                             </button>
@@ -269,7 +268,7 @@ export default function UserAdminView({ authUser }) {
                               type="button"
                               onClick={cancelEdit}
                               title="Hủy"
-                              className="w-7 h-7 rounded-lg bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700 flex items-center justify-center"
+                              className="w-7 h-7 rounded-lg bg-white text-[--color-title] border border-gray-200 hover:bg-gray-100 flex items-center justify-center"
                             >
                               <X className="w-3.5 h-3.5" />
                             </button>
@@ -279,7 +278,7 @@ export default function UserAdminView({ authUser }) {
                             <button
                               type="button"
                               onClick={() => startEdit(u)}
-                              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-cyan-500/20 hover:text-cyan-300 text-slate-300 transition-all text-xs font-semibold flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-orange-50 hover:text-orange-600 text-[--color-title] transition-all text-xs font-semibold flex items-center gap-1"
                             >
                               <Pencil className="w-3.5 h-3.5" />
                               <span>Sửa</span>
@@ -287,7 +286,7 @@ export default function UserAdminView({ authUser }) {
                             <button
                               type="button"
                               onClick={() => setResetPasswordTarget(u)}
-                              className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-amber-500/20 hover:text-amber-300 text-slate-300 transition-all text-xs font-semibold flex items-center gap-1"
+                              className="px-3 py-1.5 rounded-lg bg-white hover:bg-yellow-50 hover:text-yellow-600 text-[--color-title] transition-all text-xs font-semibold flex items-center gap-1"
                             >
                               <KeyRound className="w-3.5 h-3.5" />
                               <span>Reset Mật Khẩu</span>
@@ -297,7 +296,7 @@ export default function UserAdminView({ authUser }) {
                                 type="button"
                                 onClick={() => handleReactivate(u)}
                                 disabled={isActionLoading}
-                                className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 transition-all text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+                                className="px-3 py-1.5 rounded-lg bg-emerald-500/10 hover:bg-green-50 text-green-600 border border-emerald-500/30 transition-all text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
                               >
                                 <UserCheck2 className="w-3.5 h-3.5" />
                                 <span>{isActionLoading ? 'Đang Xử Lý...' : 'Kích Hoạt Lại'}</span>
@@ -308,7 +307,7 @@ export default function UserAdminView({ authUser }) {
                                 onClick={() => handleDeactivate(u)}
                                 disabled={isSelf || isActionLoading}
                                 title={isSelf ? 'Không thể tự vô hiệu hoá chính tài khoản đang đăng nhập' : ''}
-                                className="px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 text-rose-300 border border-rose-500/30 transition-all text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-rose-500/10"
+                                className="px-3 py-1.5 rounded-lg bg-red-50 hover:bg-red-50 text-rose-300 border border-rose-500/30 transition-all text-xs font-semibold flex items-center gap-1 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-red-50"
                               >
                                 <UserX className="w-3.5 h-3.5" />
                                 <span>{isActionLoading ? 'Đang Xử Lý...' : 'Vô Hiệu Hoá'}</span>
@@ -325,8 +324,8 @@ export default function UserAdminView({ authUser }) {
           </div>
         )}
 
-        <div className="p-4 border-t border-slate-800 bg-slate-950/40 text-xs text-slate-400">
-          Tổng cộng <span className="font-bold text-white">{users.length}</span> tài khoản người dùng.
+        <div className="p-4 border-t border-gray-200 bg-gray-50 text-xs text-[--color-body]">
+          Tổng cộng <span className="font-bold text-[--color-title]">{users.length}</span> tài khoản người dùng.
         </div>
       </div>
 
