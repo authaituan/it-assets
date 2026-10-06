@@ -182,8 +182,8 @@ export default function NetworkMapView({ onSelectUnitFilter }) {
                               textAlign: 'center',
                               boxShadow: '0 2px 4px rgba(14, 165, 233, 0.2)'
                             }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#0ea5e9'}
+                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#EA580C'}
+                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--color-primary)'}
                           >
                             Xem thiết bị tại đây
                           </button>

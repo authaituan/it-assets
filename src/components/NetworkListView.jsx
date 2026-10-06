@@ -203,7 +203,7 @@ function ExportNetworkModal({ onClose, search, communeId }) {
           </p>
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
@@ -346,7 +346,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
       <div className="card-soft w-full max-w-5xl rounded-2xl border border-[var(--color-border)]/60 shadow-2xl overflow-hidden max-h-[92vh] flex flex-col">
         <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-white shrink-0">
           <h3 className="font-bold text-base text-[var(--color-title)] flex items-center gap-2">
-            <Upload className="w-5 h-5 text-purple-400" />
+            <Upload className="w-5 h-5 text-[var(--color-primary)]" />
             <span>Import Mạng Lưới Từ Excel</span>
           </h3>
           <button onClick={onClose} className="text-[var(--color-body)] hover:text-[var(--color-title)]">
@@ -357,13 +357,13 @@ function ImportNetworkModal({ onClose, onSuccess }) {
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <p className="text-[var(--color-body)]">
-              File <code className="text-purple-300">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột.
+              File <code className="text-[var(--color-primary)]">.xlsx</code> sheet "Dữ Liệu", dòng 1 là tiêu đề cột.
               Mỗi dòng phải có <b>Mã MBC</b>. Mã đã có → cập nhật; mã chưa có → tạo mới (kèm Tỉnh/BĐX nếu cần).
             </p>
             <button
               onClick={handleDownloadTemplate}
               disabled={generatingTemplate}
-              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-purple-300 input-soft hover:border-purple-500/40 transition-all disabled:opacity-50"
+              className="shrink-0 flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold text-[var(--color-primary)] input-soft hover:border-orange-300 transition-all disabled:opacity-50"
             >
               {generatingTemplate ? <RefreshCw className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
               <span>Tải Template Mẫu</span>
@@ -378,7 +378,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
               type="file"
               accept=".xlsx"
               onChange={handleFileChange}
-              className="w-full input-soft p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-purple-500/20 file:text-purple-300 file:text-xs file:font-semibold"
+              className="w-full input-soft p-3 rounded-xl text-xs file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-[var(--color-primary)] file:text-xs file:font-semibold"
             />
           </div>
 
@@ -390,7 +390,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
           )}
 
           {parseError && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{parseError}</span>
             </div>
@@ -400,7 +400,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <h4 className="font-semibold text-[var(--color-title)] flex items-center gap-2">
-                  <FileSpreadsheet className="w-4 h-4 text-purple-400" />
+                  <FileSpreadsheet className="w-4 h-4 text-[var(--color-primary)]" />
                   <span>
                     Xem Trước ({parsedRows.length} dòng từ "{fileName}"
                     {parsedRows.length > 20 ? ` — hiện 20 dòng đầu` : ''})
@@ -426,7 +426,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
                     {previewRows.map((r, idx) => {
                       const invalid = !r.maMbc;
                       return (
-                        <tr key={idx} className={invalid ? 'bg-rose-500/5' : 'hover:bg-gray-50'}>
+                        <tr key={idx} className={invalid ? 'bg-red-50' : 'hover:bg-gray-50'}>
                           {headerFields.map((f) => (
                             <td key={f.key} className="py-1.5 px-3 text-[var(--color-body)] whitespace-nowrap">
                               {r[f.key] || <span className="text-gray-500">—</span>}
@@ -440,7 +440,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
               </div>
 
               {importError && (
-                <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs space-y-2">
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs space-y-2">
                   <div className="flex items-start gap-2">
                     <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                     <span>{importError}</span>
@@ -468,7 +468,7 @@ function ImportNetworkModal({ onClose, onSuccess }) {
           )}
 
           {importResult && (
-            <div className="p-4 rounded-xl bg-green-50 border border-emerald-500/30 text-emerald-300 space-y-2">
+            <div className="p-4 rounded-xl bg-green-50 border border-green-200 text-green-700 space-y-2">
               <div className="flex items-center gap-2 font-semibold">
                 <CheckCircle2 className="w-4 h-4" />
                 <span>Import thành công!</span>
@@ -741,14 +741,14 @@ function PostOfficeFormModal({ editing, communes, onClose, onSuccess }) {
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4 text-xs overflow-y-auto">
           {error && (
-            <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs flex items-start gap-2">
+            <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
               <span>{error}</span>
             </div>
           )}
 
           {!isEdit && (
-            <div className="p-3 rounded-xl bg-cyan-500/5 border border-cyan-500/20 space-y-3">
+            <div className="p-3 rounded-xl bg-orange-50 border border-orange-200 space-y-3">
               <div className="text-[11px] font-semibold text-sky-600 uppercase">Tổ chức (chỉ cần nếu Mã BĐX/Tỉnh chưa có sẵn)</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -1106,14 +1106,14 @@ export default function NetworkListView({ onSelectUnitFilter }) {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setIsExportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-title)] input-soft hover:border-cyan-500/40 hover:text-sky-600 transition-all"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-title)] input-soft hover:border-orange-300 hover:text-sky-600 transition-all"
             >
               <Download className="w-4 h-4" />
               <span>Export Excel</span>
             </button>
             <button
               onClick={() => setIsImportOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold text-[var(--color-title)] input-soft hover:border-purple-500/40 hover:text-purple-300 transition-all"
+              className="btn btn-outline-primary flex items-center gap-2"
             >
               <Upload className="w-4 h-4" />
               <span>Import Excel</span>
@@ -1199,7 +1199,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
       </div>
 
       {error && (
-        <div className="p-3 rounded-xl bg-red-50 border border-rose-500/30 text-red-600 text-xs">
+        <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-xs">
           {error}
         </div>
       )}
@@ -1208,7 +1208,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
       <div className="card-soft rounded-2xl overflow-hidden">
         {loading ? (
           <div className="p-12 flex flex-col items-center justify-center gap-3">
-            <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+            <div className="w-8 h-8 border-3 border-orange-200 border-t-[var(--color-primary)] rounded-full animate-spin"></div>
             <p className="text-xs text-[var(--color-body)]">Đang nạp danh sách mạng lưới...</p>
           </div>
         ) : pageItems.length === 0 ? (
@@ -1334,7 +1334,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
             <button
               disabled={currentPage <= 1}
               onClick={() => setPage((prev) => prev - 1)}
-              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-orange-300 transition-all flex items-center gap-1"
             >
               <ChevronLeft className="w-4 h-4" />
               <span>Trang trước</span>
@@ -1345,7 +1345,7 @@ export default function NetworkListView({ onSelectUnitFilter }) {
             <button
               disabled={currentPage >= totalPages}
               onClick={() => setPage((prev) => prev + 1)}
-              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-cyan-500/40 transition-all flex items-center gap-1"
+              className="px-3 py-1.5 rounded-lg input-soft text-xs font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:border-orange-300 transition-all flex items-center gap-1"
             >
               <span>Trang sau</span>
               <ChevronRight className="w-4 h-4" />

@@ -54,7 +54,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
   if (loading) {
     return (
       <div className="p-8 flex flex-col items-center justify-center min-h-[500px] gap-3">
-        <div className="w-8 h-8 border-3 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin"></div>
+        <div className="w-8 h-8 border-3 border-orange-200 border-t-[var(--color-primary)] rounded-full animate-spin"></div>
         <p className="text-xs text-[var(--color-body)]">Đang nạp sơ đồ cây đơn vị Bưu điện Xã...</p>
       </div>
     );
@@ -94,15 +94,15 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
       {/* Tree Explorer Container */}
       <div className="card-soft p-6 rounded-2xl space-y-3">
         {/* Root Node: BĐTP Huế */}
-        <div className="p-4 rounded-xl bg-gradient-to-r from-slate-900 to-cyan-950/40 border border-cyan-500/30 flex items-center justify-between shadow-lg">
+        <div className="p-4 rounded-xl bg-orange-50 border border-orange-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-cyan-500/30">
+            <div className="w-10 h-10 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center border border-orange-200">
               <Building2 className="w-5 h-5" />
             </div>
             <div>
               <div className="font-extrabold text-base text-[var(--color-title)] flex items-center gap-2">
                 <span>{treeData.name}</span>
-                <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-600 text-[11px] font-mono border border-cyan-500/30">
+                <span className="px-2 py-0.5 rounded bg-sky-50 text-sky-600 text-[11px] font-mono border border-orange-200">
                   Mã {treeData.code}
                 </span>
               </div>
@@ -130,7 +130,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
                     </button>
 
-                    <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-400 flex items-center justify-center border border-blue-500/20">
+                    <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center border border-sky-100">
                       <MapPin className="w-4 h-4" />
                     </div>
 
@@ -149,7 +149,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
 
                   {/* Asset Counter Badge */}
                   <div className="flex items-center gap-2">
-                    <span className="px-2.5 py-1 rounded-full bg-sky-50 border border-cyan-500/30 text-sky-600 text-xs font-semibold flex items-center gap-1.5">
+                    <span className="px-2.5 py-1 rounded-full bg-sky-50 border border-orange-200 text-sky-600 text-xs font-semibold flex items-center gap-1.5">
                       <Monitor className="w-3.5 h-3.5 text-[var(--color-primary)]" />
                       <span>{commune.total_assets} máy</span>
                     </span>
@@ -158,7 +158,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
 
                 {/* Level 3 Nodes: Bưu cục MBC under Commune */}
                 {isExpanded && (
-                  <div className="pl-8 space-y-2 border-l-2 border-cyan-900/40 ml-4 py-1">
+                  <div className="pl-8 space-y-2 border-l-2 border-[var(--color-border)] ml-4 py-1">
                     {commune.units.map((unit) => (
                       <div
                         key={unit.id}
@@ -183,7 +183,7 @@ export default function NetworkTreeView({ onSelectUnitFilter }) {
 
                         <div className="flex items-center gap-3">
                           {unit.has_computer === 0 ? (
-                            <span className="px-2 py-0.5 rounded bg-red-50 text-red-600 text-[10px] font-semibold border border-rose-500/20 flex items-center gap-1">
+                            <span className="px-2 py-0.5 rounded bg-red-50 text-red-600 text-[10px] font-semibold border border-red-200 flex items-center gap-1">
                               <AlertCircle className="w-3 h-3" />
                               <span>Điểm chưa có máy</span>
                             </span>
