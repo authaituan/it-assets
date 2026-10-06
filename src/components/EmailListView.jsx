@@ -830,9 +830,8 @@ export default function EmailListView({ authUser, search, setSearch }) {
       {showImportModal && (
         <ImportEmailModal
           onClose={() => setShowImportModal(false)}
-          onSuccess={(resData) => {
-            setShowImportModal(false);
-            handleMutationSuccess(resData);
+          onSuccess={() => {
+            setRefreshKey(prev => prev + 1);
           }}
         />
       )}

@@ -10,6 +10,7 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 - `src/components/ImportEmailModal.jsx`: Thêm Modal Import Email từ file Excel mẫu, xử lý file, báo lỗi theo dòng trực quan trên UI.
 - `src/components/ExportEmailModal.jsx`: Thêm Modal Export Email ra Excel với tuỳ chọn toàn bộ hoặc theo bộ lọc hiện tại.
 - `src/components/EmailListView.jsx`: Bổ sung 2 nút Import Excel và Export Excel trên thanh công cụ; tích hợp 2 Modal tương ứng.
+- Audit CTO Task 3: Sửa lỗi Export ghi sai định dạng field do không đọc đúng key được trả về từ API. Cập nhật ImportEmailModal giữ modal mở để hiện kết quả tạo mới/cập nhật và warnings trực quan sau khi import thành công.
 
 ---
 

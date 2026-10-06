@@ -142,6 +142,8 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
         </div>
 
         <div className="p-6 space-y-4 text-xs overflow-y-auto">
+          {!importResult && (
+            <>
           {hasExampleWarnings && (
             <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 flex items-start gap-2">
               <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -251,6 +253,8 @@ export default function ImportEmailModal({ onClose, onSuccess }) {
                 <span>{importing ? 'Đang Import...' : `Import ${parsedRows.length} Email`}</span>
               </button>
             </div>
+          )}
+          </>
           )}
 
           {importResult && (
