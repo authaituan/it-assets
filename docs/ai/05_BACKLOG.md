@@ -16,7 +16,6 @@ bắt buộc `JWT_SECRET`/`.env` · giới hạn body đăng nhập.
 | # | Việc | Ai làm | Ghi chú |
 |---|---|---|---|
 | 1 | Bổ sung toạ độ cho bưu cục thiếu (mới 15/206 có vĩ/kinh độ) | PO + dev nhỏ | PO gửi Excel có Vĩ độ/Kinh độ; đưa vào bằng Import mạng lưới (đã có cột), không cần code mới |
-| 2 | Tách `server/index.js` thành route files — **giai đoạn A, B xong** (A: auth, dashboard, users + `lib/helpers.js`; B: equipments + `lib/orgImport.js`; index.js còn ~800 dòng). Còn C (network, organization, device-types, personnel) | Claude Code Opus | CI đã có (GitHub Actions); không đổi hành vi, test phải giữ pass |
 
 ## 🟡 Có thể để sau
 

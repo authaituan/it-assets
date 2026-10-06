@@ -14,7 +14,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
 
 ## Tổng quan
 - **Loại**: Fullstack quản lý Công cụ Dụng cụ (CCDC) CNTT cho Bưu điện Tỉnh TT-Huế (Mã 53).
-- **Backend**: Node.js + Express (`server/index.js`, ~1900 dòng), SQLite qua
+- **Backend**: Node.js + Express (`server/index.js` chỉ bootstrap ~77 dòng; route ở `server/routes/*`, hàm dùng chung ở `server/lib/*`), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
 - **Test**: `node:test` built-in, **133 test case** trong `tests/*.test.js`, chạy
@@ -38,7 +38,7 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
   FK cứng), `asset_transfer_logs` (lịch sử, KHÔNG có soft-delete — xoá cứng equipment
   phải xoá log trước để tránh lỗi FK).
 
-## API hiện có (`server/index.js`) — theo module
+## API hiện có (`server/routes/*`, mount ở `server/index.js`) — theo module
 
 **Lớp bảo mật** (`server/security.js`, gắn đầu `server/index.js` — `feat/ip-allowlist-security`)
 - Lọc IP toàn hệ thống theo `CMS_ALLOWED_IPS` (IP/CIDR IPv4, phẩy; trống = chỉ máy chủ
