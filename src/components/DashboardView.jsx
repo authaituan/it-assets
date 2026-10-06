@@ -46,7 +46,7 @@ const getActivityLabel = (action) => {
   }
 };
 
-export default function DashboardView({ onSelectCommune }) {
+export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
@@ -132,11 +132,11 @@ export default function DashboardView({ onSelectCommune }) {
   };
 
   const navigateToEmails = () => {
-    document.getElementById('nav-emails')?.click();
+    if (onNavigateToEmails) onNavigateToEmails();
   };
 
   return (
-    <div className="p-6 space-y-6 max-w-[1600px] mx-auto font-sans" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="p-6 space-y-6 font-sans" style={{ fontFamily: 'Inter, sans-serif' }}>
       {loading && (
         <div className="fixed top-24 right-6 bg-white shadow-lg rounded-full p-2 z-50 animate-pulse">
           <RefreshCw className="w-5 h-5 text-[#F97316] animate-spin" />
@@ -150,11 +150,12 @@ export default function DashboardView({ onSelectCommune }) {
             <div className="w-12 h-12 rounded-[12px] bg-white/20 flex items-center justify-center">
               <Monitor className="w-6 h-6" />
             </div>
+            <span className="text-sm font-semibold opacity-90">100%</span>
           </div>
           <div className="mt-4">
             <h3 className="text-[28px] font-bold">{totalAssets}</h3>
             <p className="text-sm font-medium opacity-90 mb-1">Tổng thiết bị</p>
-            <p className="text-xs opacity-80">Hỏng/bảo trì: {summary.brokenOrMaintenanceCount || 0}</p>
+            <p className="text-[12px] opacity-100 font-medium">Hỏng/bảo trì: {summary.brokenOrMaintenanceCount || 0}</p>
           </div>
         </div>
 
@@ -163,12 +164,12 @@ export default function DashboardView({ onSelectCommune }) {
             <div className="w-12 h-12 rounded-[12px] bg-white/10 flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6" />
             </div>
-            <span className="text-sm font-semibold opacity-60">{activePercent}%</span>
+            <span className="text-sm font-semibold opacity-90">{activePercent}%</span>
           </div>
           <div className="mt-4">
             <h3 className="text-[28px] font-bold">{summary.activeAssets || 0}</h3>
             <p className="text-sm font-medium opacity-90 mb-1">Đang hoạt động</p>
-            <p className="text-xs opacity-60">Trong kho: {summary.inStockCount || 0}</p>
+            <p className="text-[12px] opacity-100 font-medium">Trong kho: {summary.inStockCount || 0}</p>
           </div>
         </div>
 
@@ -177,13 +178,14 @@ export default function DashboardView({ onSelectCommune }) {
             <div className="w-12 h-12 rounded-[12px] bg-white/10 flex items-center justify-center">
               <MapPin className="w-6 h-6" />
             </div>
+            <span className="text-sm font-semibold opacity-90">{summary.totalPostOffices || 0} MBC</span>
           </div>
           <div className="mt-4">
             <h3 className="text-[28px] font-bold">
-              {summary.totalCommunes || 0} <span className="text-lg opacity-80 font-medium">/ {summary.totalPostOffices || 0}</span>
+              {summary.totalCommunes || 0}
             </h3>
             <p className="text-sm font-medium opacity-90 mb-1">BĐX / bưu cục</p>
-            <p className="text-xs opacity-60">Chưa có máy: {summary.emptyPostOffices || 0}</p>
+            <p className="text-[12px] opacity-100 font-medium">Chưa có máy: {summary.emptyPostOffices || 0}</p>
           </div>
         </div>
 
@@ -192,11 +194,12 @@ export default function DashboardView({ onSelectCommune }) {
             <div className="w-12 h-12 rounded-[12px] bg-white/10 flex items-center justify-center">
               <AlertTriangle className="w-6 h-6 text-[#F97316]" />
             </div>
+            <span className="text-sm font-semibold text-[#F97316]">+ Rủi ro</span>
           </div>
           <div className="mt-4">
             <h3 className="text-[28px] font-bold">{summary.lowSpecCount || 0}</h3>
             <p className="text-sm font-medium opacity-90 mb-1 text-[#F97316]">Cảnh báo cấu hình</p>
-            <p className="text-xs opacity-60">MAC {warnings.missingMac || 0} &middot; IP {warnings.missingIp || 0} &middot; Win7 {warnings.win7Count || 0}</p>
+            <p className="text-[12px] opacity-100 font-medium">MAC {warnings.missingMac || 0} &middot; IP {warnings.missingIp || 0} &middot; Win7 {warnings.win7Count || 0}</p>
           </div>
         </div>
       </div>
@@ -345,7 +348,7 @@ export default function DashboardView({ onSelectCommune }) {
           <div className="space-y-3">
             {(charts.assetsByBrand || []).slice(0, 6).map((b, idx) => (
               <div key={idx} className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-50 transition-colors">
-                <span className="text-sm font-medium text-gray-700 truncate mr-2">{b.brand || 'Khác'}</span>
+                <span className="text-sm font-medium text-gray-700 truncate mr-2">{b.brandName || 'Chưa xác định'}</span>
                 <span className="text-sm font-bold bg-gray-100 text-gray-700 px-2 py-0.5 rounded">{b.count}</span>
               </div>
             ))}
