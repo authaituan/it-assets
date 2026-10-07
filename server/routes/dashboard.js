@@ -23,6 +23,7 @@ router.get('/dashboard/stats', (req, res) => {
     let hddOnlyCount = 0;
     let missingPurchaseYear = 0;
     let win7Count = 0;
+    const maxPurchaseYear = new Date().getFullYear() + 1;
     const byAge = { BEFORE_2015: 0, Y2015_2018: 0, Y2019_2021: 0, Y2022_PLUS: 0 };
     allEquipments.forEach(eq => {
       const specs = parseSpecs(eq.specs);
@@ -36,8 +37,9 @@ router.get('/dashboard/stats', (req, res) => {
       if (lowRam || hddOnly) lowSpecCount++;
       if (os.includes('win') && os.includes('7')) win7Count++;
 
+      // Năm mua chỉ hợp lệ khi là số nguyên trong 1990..năm hiện tại+1; ngoài khoảng (0, âm, NaN...) = thiếu.
       const y = eq.purchase_year;
-      if (y === null || y === undefined) missingPurchaseYear++;
+      if (!Number.isInteger(y) || y < 1990 || y > maxPurchaseYear) missingPurchaseYear++;
       else if (y < 2015) byAge.BEFORE_2015++;
       else if (y <= 2018) byAge.Y2015_2018++;
       else if (y <= 2021) byAge.Y2019_2021++;

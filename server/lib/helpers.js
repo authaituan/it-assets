@@ -22,7 +22,8 @@ function parseFloatOrNull(v) {
 // (POST /api/hrm/upload-and-map, đã xoá — xem docs/ai/04_DECISIONS.md) trước
 // khi xoá route đó, giữ lại đúng hành vi chuẩn hoá.
 // ==========================================
-const normalizeStr = (s) => (s || '').toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
+// Chữ đ/Đ không tách dấu được bằng NFD nên đổi riêng sang 'd' ("Đông Hà" -> "dong ha").
+const normalizeStr = (s) => (s || '').toLowerCase().replace(/đ/g, 'd').normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
 
 // Tiền tố mã CCDC hợp lệ: 2-5 ký tự IN HOA / số (A-Z, 0-9).
 const ASSET_PREFIX_REGEX = /^[A-Z0-9]{2,5}$/;

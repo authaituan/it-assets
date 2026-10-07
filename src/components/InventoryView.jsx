@@ -33,8 +33,11 @@ export default function InventoryView({
   onOpenAddModal,
   initialDeviceTypeId,
   initialCommuneId,
-  initialPostOfficeId
+  initialPostOfficeId,
+  authUser
 }) {
+  // STAFF chỉ đọc (cùng quy ước EmailListView): ẩn Export/Import/Thêm — backend đã chặn ghi bằng requireManager.
+  const canEdit = authUser?.role !== 'STAFF';
   const [items, setItems] = useState([]);
   const [communes, setCommunes] = useState([]);
   const [postOffices, setPostOffices] = useState([]);
@@ -245,6 +248,7 @@ export default function InventoryView({
             <p className="text-xs text-[var(--color-body)] mt-1">Tìm kiếm & lọc CCDC theo Bưu điện Xã (BĐX), Bưu cục, Loại thiết bị, Trạng thái</p>
           </div>
 
+          {canEdit && (
           <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={() => setShowExportModal(true)}
@@ -268,6 +272,7 @@ export default function InventoryView({
               <span>Thêm Thiết Bị CCDC</span>
             </button>
           </div>
+          )}
         </div>
 
         {/* Cascading Filter Controls */}
@@ -543,7 +548,7 @@ export default function InventoryView({
         </div>
       </div>
 
-      {showExportModal && (
+      {canEdit && showExportModal && (
         <ExportEquipmentModal
           onClose={() => setShowExportModal(false)}
           filters={currentFilters}
@@ -551,7 +556,7 @@ export default function InventoryView({
         />
       )}
 
-      {showImportModal && (
+      {canEdit && showImportModal && (
         <ImportEquipmentModal
           onClose={() => setShowImportModal(false)}
           onSuccess={handleImportSuccess}

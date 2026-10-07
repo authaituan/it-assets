@@ -126,6 +126,22 @@ test('upgrade.byAge: 4 nhóm theo purchase_year; thiết bị không năm chỉ 
   assert.equal(inBuckets + s.upgrade.missingPurchaseYear, s.summary.totalAssets);
 });
 
+test('byAge: purchase_year = 0 / âm / quá xa trong tương lai tính là thiếu năm mua, không vào "Trước 2015"', async () => {
+  ctx.db.prepare('DELETE FROM equipments').run();
+  addEquip({ year: 0 });
+  addEquip({ year: -5 });
+  addEquip({ year: 1900 });
+  addEquip({ year: new Date().getFullYear() + 5 });
+  addEquip({ year: null });
+  addEquip({ year: 2014 });
+  addEquip({ year: 2015 });
+
+  const s = await (await getStats()).json();
+  const age = Object.fromEntries(s.upgrade.byAge.map((x) => [x.bucket, x.count]));
+  assert.equal(s.upgrade.missingPurchaseYear, 5);
+  assert.deepEqual(age, { BEFORE_2015: 1, Y2015_2018: 1, Y2019_2021: 0, Y2022_PLUS: 0 });
+});
+
 test('lowRam / hddOnly / lowSpecCount nhất quán với quy tắc cũ', async () => {
   ctx.db.prepare('DELETE FROM equipments').run();
   addEquip({ specs: { ram: '4GB', storage: 'SSD 256GB' } });          // lowRam

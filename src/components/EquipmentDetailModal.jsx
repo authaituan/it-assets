@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, apiFetchJson } from '../utils/api';
 
-export default function EquipmentDetailModal({ equipment, onClose, onUpdated, onDeleted }) {
+export default function EquipmentDetailModal({ equipment, onClose, onUpdated, onDeleted, canEdit = true }) {
   const [detail, setDetail] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -280,6 +280,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               </span>
             )}
 
+            {canEdit && (
             <button
               type="button"
               onClick={() => setIsEditing(!isEditing)}
@@ -292,7 +293,9 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               {isEditing ? <Eye className="w-3.5 h-3.5" /> : <Edit3 className="w-3.5 h-3.5 text-[var(--color-primary)]" />}
               <span>{isEditing ? 'Xem Chi Tiết' : 'Chỉnh Sửa'}</span>
             </button>
+            )}
 
+            {canEdit && (
             <button
               type="button"
               onClick={handleDelete}
@@ -302,6 +305,7 @@ export default function EquipmentDetailModal({ equipment, onClose, onUpdated, on
               {deleteLoading ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
               <span>{deleteLoading ? 'Đang Xoá...' : 'Xoá Thiết Bị'}</span>
             </button>
+            )}
 
             <button
               onClick={onClose}
