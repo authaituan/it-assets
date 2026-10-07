@@ -100,6 +100,7 @@ export default function App() {
               }
             }} 
             authUser={authUser} 
+            onLogout={handleLogout}
             activeInventoryDeviceTypeId={inventoryDeviceTypeId}
             onSelectInventoryCategory={(id) => {
               setActiveTab('inventory');
@@ -135,7 +136,6 @@ export default function App() {
               onOpenCategoryModal={() => setIsCategoryModalOpen(true)}
               onOpenHrmModal={() => setActiveTab('personnel')}
               authUser={authUser}
-              onLogout={handleLogout}
               activeTab={activeTab}
             />
 

@@ -18,9 +18,11 @@ import {
   FolderTree,
   Map,
   Mail,
-  Hexagon
+  Lock,
+  LogOut
 } from 'lucide-react';
 import { apiFetch } from '../utils/api';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const NETWORK_SUBVIEWS = [
   { id: 'list', label: 'Danh Sách', icon: List },
@@ -32,11 +34,12 @@ const EMAIL_SUBVIEWS = [
   { id: 'list', label: 'Danh sách', icon: List }
 ];
 
-export default function Sidebar({ activeTab, setActiveTab, authUser, activeInventoryDeviceTypeId, onSelectInventoryCategory, networkSubView, onSelectNetworkSubView, emailSubView, onSelectEmailSubView }) {
+export default function Sidebar({ activeTab, setActiveTab, authUser, onLogout, activeInventoryDeviceTypeId, onSelectInventoryCategory, networkSubView, onSelectNetworkSubView, emailSubView, onSelectEmailSubView }) {
   const [deviceTypes, setDeviceTypes] = useState([]);
   const [isInventoryExpanded, setIsInventoryExpanded] = useState(false);
   const [isNetworkExpanded, setIsNetworkExpanded] = useState(false);
   const [isEmailExpanded, setIsEmailExpanded] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   useEffect(() => {
     apiFetch('/api/device-types')
@@ -71,19 +74,19 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
   }
 
   return (
-    <aside className="w-[250px] bg-transparent flex flex-col justify-between h-screen sticky top-0 z-20 my-4 ml-4">
-      <div>
-        {/* Brand Header */}
-        <div className="h-16 px-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-[var(--color-dark)] flex items-center justify-center text-white">
-            <Hexagon className="w-5 h-5 fill-white" />
-          </div>
-          <span className="font-bold text-sm text-[var(--color-title)] tracking-wide">CCDC Huế</span>
+    <aside className="w-[250px] bg-transparent flex flex-col h-[calc(100vh-2rem)] sticky top-0 z-20 my-4 ml-4">
+      {/* Brand Header */}
+      <div className="shrink-0 h-16 px-6 flex items-center gap-3">
+        <div className="w-[42px] h-[32px] rounded-[8px] bg-[#27272A] flex items-center justify-center shrink-0">
+          <img src="/logo-vnpost.png" alt="Vietnam Post" className="w-[27px] object-contain" />
         </div>
+        <span className="login-montserrat font-[800] text-[15px] tracking-[0.06em] text-[var(--color-title)] leading-none uppercase">IT-DRMS</span>
+      </div>
         
-        <hr className="h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/10 to-transparent border-none" />
+      <hr className="shrink-0 h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/10 to-transparent border-none" />
 
-        {/* Navigation Items */}
+      {/* Navigation Items */}
+      <div className="flex-1 overflow-y-auto min-h-0">
         <nav className="p-3 space-y-1.5 mt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -168,17 +171,50 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
         </nav>
       </div>
 
-      {/* Help Card replacement */}
-      <div className="p-4">
-        <div className="card-soft p-4 relative overflow-hidden">
-          <div className="w-8 h-8 bg-[var(--color-page)] rounded-lg flex items-center justify-center mb-3">
-            <Hexagon className="w-4 h-4 text-[var(--color-dark)]" />
+      {/* User Card */}
+      <div className="shrink-0 p-4">
+        <div className="card-soft p-4">
+          {/* Row 1 */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-9 h-9 shrink-0 rounded-full bg-[#CC4A0A] flex items-center justify-center font-bold text-white text-[14px]">
+              {authUser?.full_name?.charAt(0) || authUser?.hrm_code?.charAt(0) || 'U'}
+            </div>
+            <div className="min-w-0">
+              <div className="text-[13px] font-bold text-[var(--color-title)] truncate">
+                {authUser?.full_name || authUser?.hrm_code || 'Người dùng'}
+              </div>
+              <div className="text-[11px] text-[var(--color-subtext)] font-medium mt-0.5 truncate">
+                {authUser?.role === 'STAFF' ? 'Nhân viên (chỉ xem)' : 'Quản lý'}
+              </div>
+            </div>
           </div>
-          <h6 className="text-[14px] font-bold text-[var(--color-title)] mb-1 line-clamp-2">Quản lý Danh mục và Tài nguyên CNTT</h6>
-          <p className="text-[12px] text-[var(--color-body)] mb-4">Database SQLite / Prisma 3NF</p>
-          <a href="#" className="btn btn-dark w-full">TÀI LIỆU HƯỚNG DẪN</a>
+          {/* Row 2 */}
+          <div className="flex items-center gap-2">
+            <button 
+              type="button"
+              onClick={() => setIsChangePasswordOpen(true)}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-[var(--color-body)] transition-colors hover:bg-orange-50 hover:text-[#CC4A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CC4A0A]/50"
+              title="Đổi mật khẩu"
+            >
+              <Lock className="w-3.5 h-3.5" />
+              <span className="truncate">Đổi mật khẩu</span>
+            </button>
+            <button 
+              type="button"
+              onClick={onLogout}
+              className="flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg border border-gray-200 text-[12px] font-medium text-[var(--color-body)] transition-colors hover:bg-orange-50 hover:text-[#CC4A0A] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#CC4A0A]/50"
+              title="Đăng xuất"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span className="truncate">Đăng xuất</span>
+            </button>
+          </div>
         </div>
       </div>
+
+      {isChangePasswordOpen && (
+        <ChangePasswordModal onClose={() => setIsChangePasswordOpen(false)} />
+      )}
     </aside>
   );
 }
