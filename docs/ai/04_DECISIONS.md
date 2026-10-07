@@ -427,6 +427,11 @@ DB và áp dụng cho MỌI người dùng (không phải tuỳ chỉnh cá nhâ
 **Quyết định**: `POST /api/dashboard/widgets-preview` nhận cấu hình ô CHART chưa lưu, dùng đúng `validateChartConfig` + `computeWidgetData` như khi lưu (cùng whitelist, cùng lỗi 400) rồi trả `{ data }`; KHÔNG ghi DB. Chỉ ADMIN (giao diện chỉnh sửa
 của ADMIN). `widgets-data?include_hidden=1` cũng chỉ có hiệu lực với ADMIN để chế độ chỉnh sửa thấy dữ liệu ô ẩn; role khác truyền tham số này bị bỏ qua.
 
+### 25. Dashboard động — giao diện: lớp "Khác", nút Lên/Xuống, điều khiển chỉ ADMIN
+**Quyết định**: (1) Phần gộp "Khác" (`other` từ API) chỉ hiện ở `DONUT`/`LIST`/`TABLE`; `BAR`/`BAR_H`/`LINE` bỏ vì cột "Khác" gộp nhiều nhóm làm sai lệch so sánh và phá thứ tự tự nhiên của `LINE`.
+(2) Sắp xếp ô bằng nút Lên/Xuống (gọi `PUT /widgets-order`), không dùng kéo-thả — đơn giản, dùng được bằng bàn phím và trên màn hình cảm ứng.
+(3) Chỉ ADMIN thấy điều khiển chỉnh sửa (`isAdmin` ở `App.jsx`), nhưng đây chỉ là tiện lợi giao diện; quyền thật được backend ép bằng `requireAdmin` (xem #22).
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

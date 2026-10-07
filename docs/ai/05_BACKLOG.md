@@ -30,6 +30,10 @@ Dashboard động — backend (bảng `dashboard_widgets`, API ADMIN-only). **C�
 | HTTPS cho LAN | Token/mật khẩu đang đi dạng chữ rõ trong mạng nội bộ |
 | Xoay vòng `data/security.log` | Chưa tự giới hạn dung lượng |
 | Sửa `normalizeStr` dùng chung (`server/lib/helpers.js`) cho chữ `đ`/`Đ` | Hiện chỉ trang Email xử lý riêng; tìm "dong ha" ở Người sử dụng/CCDC/mạng lưới chưa ra "Đông Hà" |
+| Menu trái chưa thu gọn được trên điện thoại (< 640px) | Cần nút ẩn/hiện (hamburger) cho Sidebar |
+| Trang 404 (`server/pages/404.html`) chưa theo giao diện cam của Soft UI | Chỉ đổi style, giữ CSP băm style (xem `06_DEPLOYMENT.md` mục 5) |
+| Mở rộng Dashboard động | Chỉ số ngoài COUNT (SUM/AVG...), thêm nguồn dữ liệu (xem `04_DECISIONS.md` #20–#21) |
+| Cấu hình Dashboard theo từng người dùng | Hiện cấu hình DÙNG CHUNG cho mọi người (`04_DECISIONS.md` #22); cần bảng/cột theo user nếu muốn riêng |
 | Chunk JS chính ~1.9MB (`npm run build` cảnh báo > 500kB) | Cần code-splitting (dynamic `import()` theo màn hình) |
 | `npm audit` còn lỗ hổng ở phụ thuộc gián tiếp | Xử lý trong ticket FIX riêng |
 | Tiêu đề trang màu xám nhạt | Xem lại độ tương phản/độ đậm tiêu đề |
