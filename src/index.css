@@ -243,5 +243,21 @@
     outline: 2px solid #CC4A0A;
     outline-offset: 2px;
   }
+
+  /* Custom Scrollbar for Sidebar Nav */
+  .nav-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-gutter: stable;
+  }
+  .nav-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+  .nav-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .nav-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 6px;
+  }
 }
 
