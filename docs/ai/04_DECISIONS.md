@@ -432,6 +432,12 @@ của ADMIN). `widgets-data?include_hidden=1` cũng chỉ có hiệu lực với
 (2) Sắp xếp ô bằng nút Lên/Xuống (gọi `PUT /widgets-order`), không dùng kéo-thả — đơn giản, dùng được bằng bàn phím và trên màn hình cảm ứng.
 (3) Chỉ ADMIN thấy điều khiển chỉnh sửa (`isAdmin` ở `App.jsx`), nhưng đây chỉ là tiện lợi giao diện; quyền thật được backend ép bằng `requireAdmin` (xem #22).
 
+### 26. Triển khai Docker/Synology: chạy root trong container, 1 cổng, DB là bind-mount
+**Quyết định**: (1) Container chạy bằng **root** — bind-mount `./data` trên Synology thuộc user của NAS, chạy user thường hay gây lỗi quyền ghi SQLite
+(`-wal`/`-shm`); mạng nội bộ, không public nên chấp nhận. (2) **1 cổng 5000**: server phục vụ cả API và `dist/`, không dùng Vite preview/cổng 3000.
+(3) **DB nằm ngoài image** (bind-mount `./data:/app/data`) — cập nhật = build lại image, dữ liệu giữ nguyên; backup = copy thư mục `data`.
+(4) `npm ci --ignore-scripts` trong Dockerfile (better-sqlite3 kèm prebuilt, cùng quyết định #19); `JWT_SECRET`/`CMS_ALLOWED_IPS` bắt buộc trong compose.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

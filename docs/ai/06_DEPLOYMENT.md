@@ -140,3 +140,36 @@ reverse proxy phía trước), đóng rule firewall cổng 3000.
 1. Từ máy có trong danh sách: đăng nhập, mở Tổng quan / Quản lý CCDC — dữ liệu hiện đủ.
 2. Từ máy KHÔNG có trong danh sách: mở `http://<IP máy chủ>:5000` → trang 404.
 3. Mở `data/security.log` — thấy dòng `"event":"ip_denied"` kèm IP máy ở bước 2.
+
+## 6. Triển khai Synology (Docker)
+
+**Kiến trúc**: 1 container `it-drms` (Node 22, Express 5 + better-sqlite3) chạy `node server/index.js` ở cổng **5000 trong container**, được publish ra cổng **18090** của NAS (biến `HOST_PORT`, KHÔNG dùng 5000 vì đó là cổng giao diện DSM), phục vụ
+cả API lẫn giao diện (`dist/`, chế độ 1 cổng). Dữ liệu (`ccdc.db`, `security.log`) nằm ở thư mục `./data` của máy chủ, gắn vào
+container tại `/app/data` — **ngoài image**, nên cập nhật image không mất dữ liệu. Đích: Synology DS920+ (x86_64, DSM 7.2, Container Manager).
+
+**4 file ở thư mục gốc**: `Dockerfile` (2 tầng cùng base `node:22-bookworm-slim`: build giao diện + `npm ci --ignore-scripts` rồi
+`npm prune --omit=dev`; tầng chạy chỉ chứa `node_modules` đã prune, `server/`, `dist/`), `.dockerignore` (loại `data`, `.env*` trừ
+`.env.example`, `tests`, `docs`, `*.xlsx`...), `docker-compose.yml`, `.env.example`.
+
+**Biến môi trường** (đặt trong file `.env` cạnh `docker-compose.yml`, copy từ `.env.example`; thiếu là compose báo lỗi):
+- `JWT_SECRET` — bắt buộc (xem mục 1; tạo bằng `node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
+- `HOST_PORT` — tuỳ chọn, cổng truy cập trên NAS (mặc định `18090`); đổi nếu trùng container khác.
+- `CMS_ALLOWED_IPS` — bắt buộc, ví dụ `127.0.0.1,10.47.0.0/16`. **Phải có `127.0.0.1`** vì healthcheck gọi `http://127.0.0.1:5000/`
+  (thiếu thì trả 404 → container báo "unhealthy"). `*` = mọi IP, chỉ để thử.
+
+**Cài lần đầu**: chép mã nguồn (hoặc `git clone`) vào thư mục dự án trên NAS (vd `/volume1/docker/it-drms`), tạo `.env`, rồi trong
+Container Manager → Project → Create (trỏ tới thư mục đó) hoặc SSH `docker compose up -d --build`. Muốn dùng DB hiện có thì chép
+`ccdc.db` vào `./data` TRƯỚC khi chạy. Lần chạy đầu server tự tạo bảng còn thiếu (xem ghi chú Dashboard động ở mục 3).
+
+**Cập nhật**: **backup `./data` trước** (tắt container rồi copy cả `ccdc.db`, `-wal`, `-shm`) → lấy mã mới → `docker compose up -d --build`.
+**Rollback**: `docker compose down`, trả lại mã nguồn/bản build cũ, khôi phục thư mục `data` đã backup, `docker compose up -d --build`.
+
+**Chạy bằng root trong container** (cố ý, `04_DECISIONS.md` #26): tránh lỗi quyền ghi của bind-mount trên Synology.
+
+**Lưu ý nguồn IP**: lọc IP dựa vào IP kết nối đến container. Nếu `data/security.log` ghi toàn IP dạng `172.x` của Docker thay vì IP máy
+trạm (NAT của mạng bridge), người dùng sẽ bị chặn/nhận nhầm. Khi đó đổi sang `network_mode: host` trong `docker-compose.yml` và
+**bỏ mục `ports`** và đặt thêm `PORT: 18090` trong `environment` (khi dùng mạng host, container chiếm thẳng cổng của NAS nên PHẢI đổi khỏi 5000 của DSM; healthcheck cũng phải đổi sang cổng này).
+
+**Trạng thái kiểm thử**: các file Docker chưa được chạy bằng Docker thật (máy phát triển không có Docker). Đã kiểm tra tĩnh (YAML hợp lệ,
+đường dẫn COPY khớp repo) và chạy thử riêng từng bước ngoài Docker: build `dist/` chỉ với bộ file mà `Dockerfile` copy, và chạy
+server với đúng bộ file runtime (+ `node_modules` đã prune) → `GET /` trả 200 và lệnh healthcheck thoát mã 0.
