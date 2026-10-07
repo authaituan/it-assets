@@ -86,7 +86,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, onLogout, a
       <hr className="shrink-0 h-px mt-0 bg-transparent bg-gradient-to-r from-transparent via-black/10 to-transparent border-none" />
 
       {/* Navigation Items */}
-      <div className="flex-1 overflow-y-auto min-h-0">
+      <div className="flex-1 overflow-y-auto min-h-0 nav-scrollbar pr-1">
         <nav className="p-3 space-y-1.5 mt-2">
           {navItems.map((item) => {
             const Icon = item.icon;
@@ -148,11 +148,11 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, onLogout, a
                   }}
                   className={`nav-item w-full flex items-center justify-between ${isActive ? 'active' : ''}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="icon-sm">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="icon-sm shrink-0">
                       <Icon className="w-4 h-4" />
                     </div>
-                    <span className="text-[14px]">{item.label}</span>
+                    <span className="text-[14px] whitespace-nowrap text-left truncate">{item.label}</span>
                   </div>
                   {(item.id === 'inventory' || item.id === 'unittree' || item.id === 'emails') && (
                     <div className="text-[var(--color-text-muted)]">
