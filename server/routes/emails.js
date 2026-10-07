@@ -2,7 +2,7 @@ const express = require('express');
 const db = require('../db');
 const { v4: uuidv4 } = require('uuid');
 const { authRequired, requireManager } = require('../auth');
-const { normalizeStr: baseNormalize } = require('../lib/helpers');
+const { normalizeStr } = require('../lib/helpers');
 
 const router = express.Router();
 
@@ -22,9 +22,6 @@ const EMAIL_REGEX = /^[a-z0-9._%+'-]+@[a-z0-9-]+(\.[a-z0-9-]+)+$/;
 // ------------------------------------------
 // Tiện ích
 // ------------------------------------------
-// normalizeStr dùng chung không đổi được chữ đ/Đ (không tách dấu bằng NFD) -> bổ sung tại đây để
-// "Đơn vị"/"Đang sử dụng"/tìm kiếm "dong ha" khớp đúng.
-const normalizeStr = (v) => baseNormalize(v).replace(/đ/g, 'd');
 const isBlank = (v) => v === undefined || v === null || (typeof v === 'string' && !v.trim());
 const str = (v) => (typeof v === 'string' ? v.trim() : v === undefined || v === null ? '' : String(v).trim());
 

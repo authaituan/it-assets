@@ -62,10 +62,10 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
     { id: 'inventory', label: 'Quản lý CCDC', icon: Monitor },
     { id: 'unittree', label: 'Quản lý mạng lưới', icon: Network },
     { id: 'emails', label: 'Quản lý email', icon: Mail },
-    { id: 'personnel', label: 'Người sử dụng', icon: Users },
   ];
 
   if (authUser?.role !== 'STAFF') {
+    navItems.push({ id: 'personnel', label: 'Người sử dụng', icon: Users });
     navItems.push({ id: 'categoryadmin', label: 'Quản lý danh mục', icon: Layers });
     navItems.push({ id: 'useradmin', label: 'Quản lý người dùng', icon: UserCog });
   }
@@ -128,7 +128,7 @@ export default function Sidebar({ activeTab, setActiveTab, authUser, activeInven
             if (item.id === 'inventory') {
               submenu = renderSubmenu(isInventoryExpanded, setIsInventoryExpanded, deviceTypes.map(dt => ({ id: dt.id, label: dt.name, icon: () => getDeviceIcon(dt.code) })), activeInventoryDeviceTypeId, onSelectInventoryCategory);
             } else if (item.id === 'unittree') {
-              submenu = renderSubmenu(isNetworkExpanded, setIsNetworkExpanded, NETWORK_SUBVIEWS, networkSubView, onSelectNetworkSubView);
+              submenu = renderSubmenu(isNetworkExpanded, setIsNetworkExpanded, authUser?.role === 'STAFF' ? NETWORK_SUBVIEWS.filter((v) => v.id === 'tree') : NETWORK_SUBVIEWS, networkSubView, onSelectNetworkSubView);
             } else if (item.id === 'emails') {
               submenu = renderSubmenu(isEmailExpanded, setIsEmailExpanded, EMAIL_SUBVIEWS, emailSubView, onSelectEmailSubView);
             }

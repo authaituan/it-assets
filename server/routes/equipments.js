@@ -655,6 +655,13 @@ router.delete('/equipments/:id', authRequired, requireManager, (req, res) => {
 // postOfficesCreated GIỮ NGUYÊN trong response (để không phá frontend) nhưng
 // LUÔN = 0.
 // ==========================================
+// Import: namMua rỗng / 0 / "0" coi như không có (NULL ở dòng cập nhật, năm hiện tại ở dòng tạo mới).
+function hasPurchaseYearValue(v) {
+  if (v === undefined || v === null) return false;
+  const t = String(v).trim();
+  return t !== '' && t !== '0';
+}
+
 router.post('/equipments/import', authRequired, requireManager, (req, res) => {
   try {
     const { rows } = req.body || {};
@@ -784,7 +791,8 @@ router.post('/equipments/import', authRequired, requireManager, (req, res) => {
           }
 
           let finalPurchaseYear = equipment.purchase_year;
-          if (r.namMua !== undefined && r.namMua !== null && String(r.namMua).trim() !== '') {
+          // namMua rỗng hoặc 0 (Excel hay xuất 0 cho ô trống) = không có giá trị: giữ nguyên năm cũ.
+          if (hasPurchaseYearValue(r.namMua)) {
             const py = parseInt(r.namMua, 10);
             if (Number.isNaN(py) || py < 1990 || py > 2100) throw new Error(`Dòng ${rowNum}: namMua "${r.namMua}" không hợp lệ`);
             finalPurchaseYear = py;
@@ -832,7 +840,7 @@ router.post('/equipments/import', authRequired, requireManager, (req, res) => {
           }
 
           let finalPurchaseYear = new Date().getFullYear();
-          if (r.namMua !== undefined && r.namMua !== null && String(r.namMua).trim() !== '') {
+          if (hasPurchaseYearValue(r.namMua)) {
             finalPurchaseYear = parseInt(r.namMua, 10);
             if (Number.isNaN(finalPurchaseYear) || finalPurchaseYear < 1990 || finalPurchaseYear > 2100) {
               throw new Error(`Dòng ${rowNum}: namMua "${r.namMua}" không hợp lệ`);

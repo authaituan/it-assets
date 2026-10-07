@@ -292,6 +292,22 @@ test('GET /api/personnel/search khớp tên có dấu, không phân biệt hoa t
   assert.ok(body.length <= 10);
 });
 
+test('normalizeStr: chữ đ/Đ được bỏ dấu như các chữ khác ("Đông Hà" -> "dong ha")', () => {
+  const { normalizeStr } = require('../server/lib/helpers');
+  assert.equal(normalizeStr('Đông Hà'), 'dong ha');
+  assert.equal(normalizeStr('  ĐẶNG Văn Đức '), 'dang van duc');
+  assert.equal(normalizeStr('Nguyễn Văn A'), 'nguyen van a');
+  assert.equal(normalizeStr(null), '');
+});
+
+test('GET /api/personnel/search và GET /api/personnel: "dong ha" tìm ra "Đông Hà"', async () => {
+  await call('POST', '/api/personnel', { token: mgrToken, body: { hrm_code: 'DONGHA_01', full_name: 'Trần Đông Hà' } });
+  const s = await call('GET', '/api/personnel/search?q=dong ha', { token: mgrToken });
+  assert.ok(s.body.some((p) => p.hrm_code === 'DONGHA_01'));
+  const l = await call('GET', '/api/personnel?search=DONG%20HA', { token: mgrToken });
+  assert.ok(l.body.items.some((p) => p.hrm_code === 'DONGHA_01'));
+});
+
 test('GET /api/personnel/search q rỗng -> trả mảng rỗng', async () => {
   const { status, body } = await call('GET', '/api/personnel/search?q=', { token: mgrToken });
   assert.equal(status, 200);

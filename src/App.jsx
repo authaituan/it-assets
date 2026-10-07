@@ -43,6 +43,10 @@ export default function App() {
   // 'list' | 'tree' | 'map', mặc định 'list' nếu chưa chọn gì.
   const [networkSubView, setNetworkSubView] = useState('list');
   const [emailSubView, setEmailSubView] = useState('list');
+  // STAFF chỉ đọc: backend chặn GET /api/network* và /api/personnel* (requireManager) nên STAFF
+  // chỉ vào được "Cây Thư Mục" của mạng lưới (dùng /api/organization/tree, đọc công khai).
+  const isStaff = authUser?.role === 'STAFF';
+  const effectiveNetworkSubView = isStaff ? 'tree' : networkSubView;
 
   // Bất kỳ request ghi nào (qua src/utils/api.js) nhận 401 từ backend sẽ tự
   // xoá token + phát event này -> quay về LoginView, không để lộ lỗi JSON thô.
@@ -103,7 +107,7 @@ export default function App() {
               setInventoryCommuneId('');
               setInventoryPostOfficeId('');
             }}
-            networkSubView={networkSubView}
+            networkSubView={effectiveNetworkSubView}
             onSelectNetworkSubView={(subView) => {
               setActiveTab('unittree');
               setNetworkSubView(subView);
@@ -154,24 +158,25 @@ export default function App() {
                   initialDeviceTypeId={inventoryDeviceTypeId}
                   initialCommuneId={inventoryCommuneId}
                   initialPostOfficeId={inventoryPostOfficeId}
+                  authUser={authUser}
                 />
               )}
 
-              {activeTab === 'unittree' && networkSubView === 'list' && (
+              {activeTab === 'unittree' && effectiveNetworkSubView === 'list' && (
                 <NetworkListView
                   key={`net-list-${refreshKey}`}
                   onSelectUnitFilter={handleSelectUnitFromTree}
                 />
               )}
 
-              {activeTab === 'unittree' && networkSubView === 'tree' && (
+              {activeTab === 'unittree' && effectiveNetworkSubView === 'tree' && (
                 <NetworkTreeView
                   key={`net-tree-${refreshKey}`}
                   onSelectUnitFilter={handleSelectUnitFromTree}
                 />
               )}
 
-              {activeTab === 'unittree' && networkSubView === 'map' && (
+              {activeTab === 'unittree' && effectiveNetworkSubView === 'map' && (
                 <NetworkMapView 
                   key={`net-map-${refreshKey}`} 
                   onSelectUnitFilter={handleSelectUnitFromTree}
@@ -187,7 +192,7 @@ export default function App() {
                 />
               )}
 
-              {activeTab === 'personnel' && (
+              {activeTab === 'personnel' && !isStaff && (
                 <PersonnelView />
               )}
 
@@ -208,6 +213,7 @@ export default function App() {
               onClose={() => setSelectedEquipment(null)}
               onUpdated={triggerRefresh}
               onDeleted={triggerRefresh}
+              canEdit={!isStaff}
             />
           )}
 

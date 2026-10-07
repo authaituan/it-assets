@@ -57,7 +57,7 @@ export default function Header({
 
         {/* Buttons */}
         <div className="flex items-center gap-4">
-          {activeTab === 'inventory' && (
+          {activeTab === 'inventory' && authUser?.role !== 'STAFF' && (
             <button
               onClick={onOpenCategoryModal}
               className="btn btn-outline-primary flex items-center gap-1.5 px-3 xl:px-6"
@@ -76,6 +76,7 @@ export default function Header({
             <span className="hidden xl:inline">Đổi mật khẩu</span>
           </button>
 
+          {authUser?.role !== 'STAFF' && (
           <button
             onClick={onOpenHrmModal}
             className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
@@ -84,6 +85,7 @@ export default function Header({
             <UserCheck className="w-4 h-4" />
             <span className="hidden xl:inline">Upload File HRM</span>
           </button>
+          )}
 
           <button
             onClick={onLogout}

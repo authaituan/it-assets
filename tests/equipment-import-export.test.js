@@ -295,6 +295,45 @@ test('POST /api/equipments/import cập nhật qua maCcdc CHỈ ghi đè field c
   assert.equal(specs.ram, '16GB', 'specs sub-field không gửi phải giữ nguyên');
 });
 
+test('POST /api/equipments/import namMua = 0 hoặc "0" coi như rỗng: dòng cập nhật giữ năm cũ, dòng tạo mới dùng năm hiện tại (không lỗi)', async () => {
+  const createRes = await fetch(`${ctx.baseUrl}/api/equipments`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${mgrToken}` },
+    body: JSON.stringify({ device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, hostname: 'PC-NAMMUA0', purchase_year: 2021 })
+  });
+  const created = await createRes.json();
+
+  const upd = await call('POST', '/api/equipments/import', {
+    token: mgrToken,
+    body: { rows: [{ maMbc: fixtures.postOfficeCode, maCcdc: created.asset_tag, ghiChu: 'x', namMua: 0 }] }
+  });
+  assert.equal(upd.status, 200, JSON.stringify(upd.body));
+  assert.equal(ctx.db.prepare('SELECT purchase_year FROM equipments WHERE id = ?').get(created.id).purchase_year, 2021);
+
+  const neu = await call('POST', '/api/equipments/import', {
+    token: mgrToken,
+    body: { rows: [{ maMbc: fixtures.postOfficeCode, tenMay: 'PC-NAMMUA0-NEW', danhMucCcdc: 'Máy Test', namMua: '0' }] }
+  });
+  assert.equal(neu.status, 200, JSON.stringify(neu.body));
+  const row = ctx.db.prepare("SELECT purchase_year FROM equipments WHERE hostname = 'PC-NAMMUA0-NEW'").get();
+  assert.equal(row.purchase_year, new Date().getFullYear());
+});
+
+test('POST/PUT /api/equipments chặn purchase_year = 0 (400)', async () => {
+  const post = await call('POST', '/api/equipments', {
+    token: mgrToken,
+    body: { device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, hostname: 'PC-Y0', purchase_year: 0 }
+  });
+  assert.equal(post.status, 400);
+  assert.match(post.body.error, /Năm mua/);
+  const ok = await call('POST', '/api/equipments', {
+    token: mgrToken,
+    body: { device_type_id: fixtures.deviceTypeId, post_office_id: fixtures.postOfficeId, hostname: 'PC-Y0-OK', purchase_year: 2020 }
+  });
+  const put = await call('PUT', `/api/equipments/${ok.body.id}`, { token: mgrToken, body: { purchase_year: 0 } });
+  assert.equal(put.status, 400);
+});
+
 test('POST /api/equipments/import maCcdc không tồn tại -> 400 rõ ràng', async () => {
   const before_ = equipmentCount();
   const { status, body } = await call('POST', '/api/equipments/import', {
