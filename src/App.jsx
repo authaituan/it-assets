@@ -145,6 +145,7 @@ export default function App() {
                   key={`dash-${refreshKey}`}
                   onSelectCommune={() => setActiveTab('inventory')}
                   onNavigateToEmails={() => setActiveTab('emails')}
+                  isAdmin={authUser?.role === 'ADMIN'}
                 />
               )}
 

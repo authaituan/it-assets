@@ -1,8 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { RefreshCw, AlertCircle } from 'lucide-react';
+import { RefreshCw, AlertCircle, X } from 'lucide-react';
 import { apiFetch } from '../utils/api';
 import { KpiSummary, ItWarnings, UpgradeRequired, RecentActivity, EmailStats } from './dashboard/SystemWidgets';
 import { ChartWidget } from './dashboard/ChartWidget';
+import { DashboardEditorToolbar } from './dashboard/editor/DashboardEditorToolbar';
+import { WidgetToolbar } from './dashboard/editor/WidgetToolbar';
+import ChartWidgetModal from './dashboard/editor/ChartWidgetModal';
+import SystemWidgetModal from './dashboard/editor/SystemWidgetModal';
+import ConfirmModal from './dashboard/editor/ConfirmModal';
 
 const SIZE_CLASSES = {
   S: 'col-span-12 sm:col-span-6 lg:col-span-3',
@@ -22,16 +27,30 @@ function getWidgetMinHeight(widget) {
   return 'min-h-[300px]';
 }
 
-export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
+export default function DashboardView({ onSelectCommune, onNavigateToEmails, isAdmin }) {
   const [stats, setStats] = useState(null);
   const [widgets, setWidgets] = useState([]);
   const [widgetsData, setWidgetsData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
 
-  const fetchDashboard = () => {
+  // Editor states
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [meta, setMeta] = useState(null);
+  const [editChartWidget, setEditChartWidget] = useState(null);
+  const [editSystemWidget, setEditSystemWidget] = useState(null);
+  const [deleteWidget, setDeleteWidget] = useState(null);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [actionError, setActionError] = useState(null);
+  
+  // Create mode (add new chart)
+  const [isAddingChart, setIsAddingChart] = useState(false);
+
+  const fetchDashboard = (editMode = false) => {
     setLoading(true);
     setError(false);
+    
+    const dataQuery = editMode ? '?include_hidden=1' : '';
     
     Promise.all([
       apiFetch('/api/dashboard/stats').then(r => {
@@ -42,15 +61,17 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
         if (!r.ok) throw new Error("Widgets API Error");
         return r.json();
       }),
-      apiFetch('/api/dashboard/widgets-data').then(r => {
+      apiFetch(`/api/dashboard/widgets-data${dataQuery}`).then(r => {
         if (!r.ok) throw new Error("Widgets Data API Error");
         return r.json();
       })
     ])
     .then(([statsData, widgetsRes, widgetsDataRes]) => {
       setStats(statsData);
-      // Filter out hidden widgets
-      const visibleWidgets = (widgetsRes.items || []).filter(w => w.visible === true);
+      
+      const allWidgets = widgetsRes.items || [];
+      const visibleWidgets = editMode ? allWidgets : allWidgets.filter(w => w.visible === true);
+      
       setWidgets(visibleWidgets);
       setWidgetsData(widgetsDataRes);
       setLoading(false);
@@ -62,9 +83,119 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
     });
   };
 
+  const fetchMeta = async () => {
+    if (meta) return;
+    try {
+      const res = await apiFetch('/api/dashboard/widgets-meta');
+      if (res.ok) {
+        const data = await res.json();
+        setMeta(data);
+      }
+    } catch (e) {
+      console.error("Error fetching meta", e);
+    }
+  };
+
   useEffect(() => {
-    fetchDashboard();
-  }, []);
+    fetchDashboard(isEditMode);
+    if (isEditMode) {
+      fetchMeta();
+    }
+  }, [isEditMode]);
+
+  const handleToggleEditMode = () => {
+    setIsEditMode(!isEditMode);
+    setActionError(null);
+  };
+
+  const handleToggleVisible = async (widget) => {
+    setActionError(null);
+    try {
+      const res = await apiFetch(`/api/dashboard/widgets/${widget.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ visible: !widget.visible })
+      });
+      if (res.ok) {
+        fetchDashboard(true);
+      } else {
+        const data = await res.json();
+        setActionError(data.error || 'Ẩn/hiện ô thất bại');
+      }
+    } catch (e) {
+      setActionError(e.message || 'Lỗi mạng khi ẩn/hiện ô');
+    }
+  };
+
+  const handleMove = async (index, direction) => {
+    if (direction === 'up' && index === 0) return;
+    if (direction === 'down' && index === widgets.length - 1) return;
+    setActionError(null);
+    
+    const newWidgets = [...widgets];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    
+    // Swap
+    const temp = newWidgets[index];
+    newWidgets[index] = newWidgets[targetIndex];
+    newWidgets[targetIndex] = temp;
+    
+    // Optimistic update
+    setWidgets(newWidgets);
+    
+    try {
+      const res = await apiFetch('/api/dashboard/widgets-order', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids: newWidgets.map(w => w.id) })
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        setActionError(data.error || 'Di chuyển ô thất bại');
+        fetchDashboard(true); // Revert on error
+      }
+    } catch (e) {
+      setActionError(e.message || 'Lỗi mạng khi di chuyển ô');
+      fetchDashboard(true);
+    }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteWidget) return;
+    setActionError(null);
+    try {
+      const res = await apiFetch(`/api/dashboard/widgets/${deleteWidget.id}`, {
+        method: 'DELETE'
+      });
+      if (res.ok) {
+        setDeleteWidget(null);
+        fetchDashboard(true);
+      } else {
+        const data = await res.json();
+        setActionError(data.error || 'Xoá ô thất bại');
+      }
+    } catch (e) {
+      setActionError(e.message || 'Lỗi mạng khi xoá ô');
+    }
+  };
+
+  const confirmReset = async () => {
+    setActionError(null);
+    try {
+      const res = await apiFetch('/api/dashboard/widgets-reset', {
+        method: 'POST'
+      });
+      if (res.ok) {
+        setShowResetConfirm(false);
+        fetchDashboard(true);
+      } else {
+        const data = await res.json();
+        setActionError(data.error || 'Khôi phục mặc định thất bại');
+      }
+    } catch (e) {
+      setActionError(e.message || 'Lỗi mạng khi khôi phục');
+    }
+  };
 
   if (loading && (!stats || !widgets.length)) {
     return (
@@ -82,7 +213,7 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
           <AlertCircle className="w-8 h-8" />
         </div>
         <p className="text-sm text-gray-600 font-medium">Không thể tải dữ liệu Dashboard.</p>
-        <button onClick={fetchDashboard} className="flex items-center gap-2 px-4 py-2 bg-[#F97316] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity">
+        <button onClick={() => fetchDashboard(isEditMode)} className="flex items-center gap-2 px-4 py-2 bg-[#F97316] text-white rounded-lg font-semibold hover:opacity-90 transition-opacity">
           <RefreshCw className="w-4 h-4" /> Thử lại
         </button>
       </div>
@@ -91,53 +222,60 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
 
   if (!stats) return null;
 
-  const renderWidget = (widget) => {
-    const sizeClass = SIZE_CLASSES[widget.size] || SIZE_CLASSES['M'];
-    const minHeightClass = getWidgetMinHeight(widget);
-    
-    // For KPI_SUMMARY, it's already a grid itself, no need to force a height if it's natural.
-    // However, flex items-stretch on the grid will make items same height, which is good.
-
+  const renderWidgetContent = (widget) => {
     if (widget.kind === 'SYSTEM') {
-      let SystemComponent = null;
       switch (widget.system_key) {
-        case 'KPI_SUMMARY':
-          SystemComponent = <KpiSummary title={widget.title} stats={stats} />;
-          break;
-        case 'IT_WARNINGS':
-          SystemComponent = <ItWarnings title={widget.title} stats={stats} />;
-          break;
-        case 'UPGRADE':
-          SystemComponent = <UpgradeRequired title={widget.title} stats={stats} />;
-          break;
-        case 'RECENT_ACTIVITY':
-          SystemComponent = <RecentActivity title={widget.title} stats={stats} />;
-          break;
-        case 'EMAIL_STATS':
-          SystemComponent = <EmailStats title={widget.title} stats={stats} onNavigateToEmails={onNavigateToEmails} />;
-          break;
-        default:
-          return null; // Skip unknown system widgets
+        case 'KPI_SUMMARY': return <KpiSummary title={widget.title} stats={stats} />;
+        case 'IT_WARNINGS': return <ItWarnings title={widget.title} stats={stats} />;
+        case 'UPGRADE': return <UpgradeRequired title={widget.title} stats={stats} />;
+        case 'RECENT_ACTIVITY': return <RecentActivity title={widget.title} stats={stats} />;
+        case 'EMAIL_STATS': return <EmailStats title={widget.title} stats={stats} onNavigateToEmails={onNavigateToEmails} />;
+        default: return null;
       }
-
-      return (
-        <div key={widget.id} className={`${sizeClass} ${minHeightClass}`}>
-          {SystemComponent}
-        </div>
-      );
     }
-
     if (widget.kind === 'CHART') {
       const wData = widgetsData && widgetsData[widget.id];
+      return <ChartWidget widget={widget} data={wData} />;
+    }
+    return null;
+  };
+
+  const renderWidget = (widget, index) => {
+    const sizeClass = SIZE_CLASSES[widget.size] || SIZE_CLASSES['M'];
+    const minHeightClass = getWidgetMinHeight(widget);
+    const content = renderWidgetContent(widget);
+    
+    if (!content) return null;
+
+    const wrapperClass = `${sizeClass} ${minHeightClass}`;
+
+    if (isEditMode) {
       return (
-        <div key={widget.id} className={`${sizeClass} ${minHeightClass}`}>
-          <ChartWidget widget={widget} data={wData} />
+        <div key={widget.id} className={wrapperClass}>
+          <WidgetToolbar
+            widget={widget}
+            isFirst={index === 0}
+            isLast={index === widgets.length - 1}
+            onEdit={() => widget.kind === 'SYSTEM' ? setEditSystemWidget(widget) : setEditChartWidget(widget)}
+            onToggleVisible={() => handleToggleVisible(widget)}
+            onMoveUp={() => handleMove(index, 'up')}
+            onMoveDown={() => handleMove(index, 'down')}
+            onDelete={() => setDeleteWidget(widget)}
+          >
+            {content}
+          </WidgetToolbar>
         </div>
       );
     }
 
-    return null;
+    return (
+      <div key={widget.id} className={wrapperClass}>
+        {content}
+      </div>
+    );
   };
+
+  const canAddMore = meta ? widgets.length < meta.maxWidgets : false;
 
   return (
     <div className="p-6 font-sans" style={{ fontFamily: 'Inter, sans-serif' }}>
@@ -147,14 +285,83 @@ export default function DashboardView({ onSelectCommune, onNavigateToEmails }) {
         </div>
       )}
       
+      {isAdmin && (
+        <DashboardEditorToolbar
+          isEditMode={isEditMode}
+          onToggleEditMode={handleToggleEditMode}
+          canAddMore={canAddMore}
+          onAddWidget={() => setIsAddingChart(true)}
+          onResetDefault={() => setShowResetConfirm(true)}
+        />
+      )}
+
+      {actionError && (
+        <div className="bg-red-50 text-red-600 p-4 rounded-[12px] mb-6 flex items-center justify-between shadow-sm border border-red-100">
+          <div className="flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span className="font-medium text-sm">{actionError}</span>
+          </div>
+          <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-600" aria-label="Đóng thông báo">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+      )}
+
       {widgets.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[400px] text-gray-400 bg-white rounded-[12px] shadow-[0_20px_27px_rgba(0,0,0,.05)]">
           <div className="text-lg font-medium">Dashboard chưa có ô nào hiển thị</div>
         </div>
       ) : (
         <div className="grid grid-cols-12 gap-6 items-stretch">
-          {widgets.map(renderWidget)}
+          {widgets.map((widget, index) => renderWidget(widget, index))}
         </div>
+      )}
+
+      {/* Editor Modals */}
+      {(isAddingChart || editChartWidget) && meta && (
+        <ChartWidgetModal
+          widget={editChartWidget}
+          meta={meta}
+          onClose={() => { setIsAddingChart(false); setEditChartWidget(null); }}
+          onSuccess={(newId) => {
+            setIsAddingChart(false);
+            setEditChartWidget(null);
+            fetchDashboard(true);
+          }}
+        />
+      )}
+
+      {editSystemWidget && (
+        <SystemWidgetModal
+          widget={editSystemWidget}
+          onClose={() => setEditSystemWidget(null)}
+          onSuccess={() => {
+            setEditSystemWidget(null);
+            fetchDashboard(true);
+          }}
+        />
+      )}
+
+      {deleteWidget && (
+        <ConfirmModal
+          title="Xác nhận xoá"
+          message={`Xoá ô '${deleteWidget.title}'? Không hoàn tác được.`}
+          isDestructive={true}
+          confirmText="Xoá"
+          onCancel={() => setDeleteWidget(null)}
+          onConfirm={confirmDelete}
+        />
+      )}
+
+      {showResetConfirm && (
+        <ConfirmModal
+          title="Khôi phục mặc định"
+          message="Toàn bộ ô tuỳ chỉnh sẽ bị xoá và Dashboard trở về 9 ô mặc định. Áp dụng cho TẤT CẢ người dùng."
+          isDestructive={true}
+          confirmText="Khôi phục"
+          onCancel={() => setShowResetConfirm(false)}
+          onConfirm={confirmReset}
+        />
       )}
     </div>
   );
