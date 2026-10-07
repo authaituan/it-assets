@@ -405,6 +405,28 @@ trong ứng dụng đồng nhất. Không dùng Montserrat ở màn hình khác 
 `README.md` và `06_DEPLOYMENT.md` mục 2b.
 **Trạng thái**: ✅ Đã ghi tài liệu.
 
+### 20. Dashboard động: chỉ dùng DANH SÁCH TRẮNG, không nối SQL từ input (`feat/dashboard-widgets-be`)
+**Quyết định**: người dùng chỉ được gửi KHÓA (`source`, `group_by`, `chart_type`, khóa bộ lọc) nằm trong bảng ánh xạ
+`server/lib/dashboardSources.js` (khóa → biểu thức SQL viết sẵn). Giá trị lọc luôn qua tham số `?`; khóa lạ → 400 tiếng
+Việt. Trường trong `specs` đọc bằng `json_extract` (SQLite 3.53 có sẵn; bọc `json_valid` để JSON hỏng không làm lỗi truy vấn).
+**Lý do**: giao diện cho ADMIN tự chọn dữ liệu thống kê, nhưng không được mở đường chèn SQL. Đã có test với `'; DROP TABLE equipments; --`.
+
+### 21. Dashboard động v1: chỉ số liệu COUNT
+**Quyết định**: mỗi ô chỉ đếm (COUNT) theo nhóm hoặc tổng. Chưa có SUM/AVG hay metric tuỳ chọn; thêm khi có nhu cầu thật.
+
+### 22. Cấu hình Dashboard chỉ ADMIN được ghi (kể cả MANAGER cũng không)
+**Quyết định**: `requireAdmin` (`role === 'ADMIN'`) cho mọi route ghi + `widgets-meta`; mọi người đã đăng nhập được đọc. Cấu hình lưu
+DB và áp dụng cho MỌI người dùng (không phải tuỳ chỉnh cá nhân). STAFF/MANAGER chỉ thấy ô `visible`.
+
+### 23. Ô SYSTEM chỉ ẩn / đổi tiêu đề / đổi cỡ
+**Quyết định**: 5 ô SYSTEM (nội dung do code tính từ `GET /api/dashboard/stats`) không xoá được (DELETE → 400), chỉ đổi `title`,
+`size`, `visible`. PUT gửi thêm key khác thì BỎ QUA im lặng (không 400) để giao diện gửi nguyên đối tượng ô không bị lỗi.
+`POST /widgets-reset` khôi phục 9 ô mặc định.
+
+### 24. Dashboard động: `widgets-preview` không ghi DB, chỉ ADMIN
+**Quyết định**: `POST /api/dashboard/widgets-preview` nhận cấu hình ô CHART chưa lưu, dùng đúng `validateChartConfig` + `computeWidgetData` như khi lưu (cùng whitelist, cùng lỗi 400) rồi trả `{ data }`; KHÔNG ghi DB. Chỉ ADMIN (giao diện chỉnh sửa
+của ADMIN). `widgets-data?include_hidden=1` cũng chỉ có hiệu lực với ADMIN để chế độ chỉnh sửa thấy dữ liệu ô ẩn; role khác truyền tham số này bị bỏ qua.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

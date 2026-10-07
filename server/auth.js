@@ -92,6 +92,20 @@ function requireManager(req, res, next) {
   next();
 }
 
+// ------------------------------------------
+// Middleware: chỉ role ADMIN (chạy SAU authRequired). Dùng cho cấu hình dashboard.
+// So khớp đúng giá trị role đang lưu ('ADMIN').
+// ------------------------------------------
+function requireAdmin(req, res, next) {
+  if (!req.user) {
+    return res.status(401).json({ error: 'Chưa xác thực' });
+  }
+  if (req.user.role !== 'ADMIN') {
+    return res.status(403).json({ error: 'Không đủ quyền: chỉ quản trị viên (ADMIN) mới được cấu hình Dashboard' });
+  }
+  next();
+}
+
 module.exports = {
   hashPassword,
   verifyPassword,
@@ -99,6 +113,7 @@ module.exports = {
   isManager,
   authRequired,
   requireManager,
+  requireAdmin,
   JWT_SECRET,
   TOKEN_EXPIRY
 };
