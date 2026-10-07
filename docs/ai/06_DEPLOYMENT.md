@@ -56,6 +56,11 @@ npm ci --ignore-scripts
 - [ ] Đã backup `data/ccdc.db` trước khi deploy bản mới (SQLite là 1 file, dễ backup:
   copy nguyên file `data/ccdc.db` sang nơi lưu trữ khác).
 
+> ⚠️ **Lần chạy đầu sau khi triển khai bản có Dashboard động** (PR #49–#51): server tự tạo bảng
+> `dashboard_widgets` và seed 9 ô mặc định trong `data/ccdc.db`. **BACKUP `data/ccdc.db` TRƯỚC** (copy cả
+> `-wal`/`-shm` nếu có, khi server đã tắt). Rollback = khôi phục file DB đã backup + bản build/mã nguồn cũ
+> (bản cũ bỏ qua bảng thừa nên khôi phục DB là đủ; cấu hình Dashboard tuỳ chỉnh sẽ mất theo bản backup).
+
 ## 4. Đang chạy trên mạng LAN nội bộ (từ 2026-08-12)
 
 **Trạng thái hiện tại**: hệ thống đang chạy trên máy PO làm server, phục vụ trong mạng

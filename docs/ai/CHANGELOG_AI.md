@@ -4,6 +4,16 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-07] - Giao diện chỉnh sửa Dashboard cho ADMIN (PR #51 feat/dashboard-widgets-editor)
+
+- `src/components/dashboard/editor/*` (ChartWidgetModal có xem trước qua `widgets-preview`, SystemWidgetModal, WidgetToolbar, DashboardEditorToolbar, ConfirmModal) + chế độ "Tuỳ chỉnh" trong `DashboardView.jsx` (chỉ ADMIN; thêm/sửa/ẩn/xoá/Lên-Xuống/khôi phục mặc định). Chỉ giao diện, không đổi backend.
+
+## [2026-10-07] - Dashboard vẽ theo cấu hình động (PR #50 feat/dashboard-widgets-render)
+
+- `DashboardView.jsx` viết lại: 3 API song song, lưới 12 cột theo `size`; `src/components/dashboard/ChartWidget.jsx` (7 loại biểu đồ) và `SystemWidgets.jsx` (5 ô hệ thống). Chỉ giao diện.
+
+---
+
 ## [2026-10-07] - Backend Dashboard động (feat/dashboard-widgets-be)
 
 - `server/db.js`: bảng `dashboard_widgets` (migration idempotent + seed 9 ô mặc định khi rỗng). `server/auth.js`: `requireAdmin`. `server/lib/dashboardSources.js` (whitelist nguồn EQUIPMENT/EMAIL/POST_OFFICE, trường nhóm, bộ lọc, validate, tính COUNT), `server/lib/dashboardDefaults.js` (ô mặc định + seed/reset), `server/routes/dashboardWidgets.js` (`/api/dashboard/widgets`, `-data` (+ `?include_hidden=1` cho ADMIN), `-meta`, `-preview`, `-order`, `-reset`), mount ở `server/index.js`. Ghi chỉ ADMIN; `GET /dashboard/stats` giữ nguyên. Không sửa frontend.

@@ -198,6 +198,18 @@ cũ (trước Soft UI) cho đến khi PO ra lệnh triển khai.**
   phục nguyên bản từ trước khi có bảng CRUD), `NetworkMapView.jsx` (bản đồ Leaflet thật,
   `CircleMarker` màu theo tình trạng + bán kính theo số thiết bị).
 - **Quản Lý Email**: `EmailListView.jsx` (bảng quản lý email công vụ đơn vị/cá nhân, bộ lọc động 4 dropdown, Thêm/Sửa/Thu hồi/Kích hoạt lại + Import/Export Excel).
+- **Dashboard động** (`DashboardView.jsx` + `src/components/dashboard/`): gọi SONG SONG 3 API
+  (`/api/dashboard/stats`, `/widgets`, `/widgets-data`), vẽ lưới 12 cột theo cấu hình `dashboard_widgets`; khi
+  xem thường chỉ hiện ô `visible`. Ô `SYSTEM` vẽ bằng `SystemWidgets.jsx` (KpiSummary, ItWarnings,
+  UpgradeRequired, RecentActivity, EmailStats — dữ liệu từ `/stats`); ô `CHART` vẽ bằng `ChartWidget.jsx`
+  (recharts) — 7 loại: `BAR`, `BAR_H`, `DONUT`, `LINE`, `LIST`, `TABLE`, `NUMBER`. Quy tắc: `BAR`/`BAR_H`/`LINE`
+  bỏ phần "Khác" (`other`), chỉ `DONUT`/`LIST`/`TABLE` hiện. Cỡ ô → cột (lg): S=3, M=4, L=6, XL=8, FULL=12; dưới `lg`
+  FULL/XL full hàng, S/M/L nửa hàng ở `sm`, full hàng dưới `sm`.
+  **Chế độ "Tuỳ chỉnh" chỉ ADMIN thấy** (`isAdmin` truyền từ `App.jsx`; quyền thật vẫn ở backend): gọi lại với
+  `widgets-data?include_hidden=1`, tải `widgets-meta` (whitelist), toolbar trên từng ô (`editor/WidgetToolbar`:
+  sửa / ẩn-hiện / Lên-Xuống / xoá), thanh công cụ (`editor/DashboardEditorToolbar`: bật-tắt tuỳ chỉnh, thêm ô,
+  khôi phục mặc định), `editor/ChartWidgetModal` (thêm/sửa ô CHART, xem trước qua `POST /widgets-preview` có
+  debounce 400ms), `editor/SystemWidgetModal` (chỉ tiêu đề + cỡ), `editor/ConfirmModal` (xoá / khôi phục).
 
 ## Chưa có / rủi ro (còn lại — không khẩn cấp)
 - ⚠️ **Máy chủ thật phải có `JWT_SECRET`** (biến môi trường hoặc `.env`, xem
