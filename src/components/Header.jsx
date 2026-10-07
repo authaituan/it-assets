@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Search, UserCheck, FolderPlus, LogOut, Lock } from 'lucide-react';
-import ChangePasswordModal from './ChangePasswordModal';
+import { Search, UserCheck, FolderPlus } from 'lucide-react';
 
 export default function Header({
   search,
@@ -8,10 +7,8 @@ export default function Header({
   onOpenCategoryModal,
   onOpenHrmModal,
   authUser,
-  onLogout,
   activeTab
 }) {
-  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Helper function to get screen name
   const getScreenName = () => {
@@ -67,15 +64,6 @@ export default function Header({
             </button>
           )}
 
-          <button
-            onClick={() => setIsChangePasswordOpen(true)}
-            className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
-            title="Đổi mật khẩu"
-          >
-            <Lock className="w-4 h-4" />
-            <span className="hidden xl:inline">Đổi mật khẩu</span>
-          </button>
-
           {authUser?.role !== 'STAFF' && (
           <button
             onClick={onOpenHrmModal}
@@ -86,32 +74,8 @@ export default function Header({
             <span className="hidden xl:inline">Upload File HRM</span>
           </button>
           )}
-
-          <button
-            onClick={onLogout}
-            className="text-[14px] font-semibold text-[var(--color-body)] hover:text-[var(--color-title)] transition-colors flex items-center gap-1 whitespace-nowrap"
-            title="Đăng xuất"
-          >
-            <LogOut className="w-4 h-4" />
-            <span className="hidden xl:inline">Đăng xuất</span>
-          </button>
-        </div>
-
-        {/* User Block */}
-        <div className="flex items-center gap-2 pl-2 border-l border-gray-200">
-          <div className="w-8 h-8 rounded-full bg-[var(--color-dark)] flex items-center justify-center font-bold text-xs text-white">
-            {authUser?.full_name?.charAt(0) || 'U'}
-          </div>
-          <div className="hidden md:block text-left">
-            <div className="text-xs font-semibold text-[var(--color-title)] leading-tight">{authUser?.full_name || authUser?.hrm_code || 'Người dùng'}</div>
-            <div className="text-[10px] text-[var(--color-subtext)] font-medium">{authUser?.role === 'STAFF' ? 'Nhân viên (chỉ xem)' : 'Quản lý'}</div>
-          </div>
         </div>
       </div>
-
-      {isChangePasswordOpen && (
-        <ChangePasswordModal onClose={() => setIsChangePasswordOpen(false)} />
-      )}
     </header>
   );
 }
