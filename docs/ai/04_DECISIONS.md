@@ -385,6 +385,26 @@ cập nhật SNAPSHOT" như hướng dẫn, nhưng hướng dẫn cũ không đ�
 phải nén/sửa đè, không phải cộng dồn. PO nên định kỳ (vài tuần/lần, hoặc khi thấy
 `00_SNAPSHOT.md` vượt ~250 dòng) nhắc CTO AI kiểm tra lại kích thước và nén nếu cần.
 
+### 17. Màu nút chính Soft UI dùng `#CC4A0A`, không dùng `#F97316` (`demo/soft-ui-v2`)
+**Vấn đề**: `#F97316` (cam của token `--color-primary`) chỉ đạt tương phản 2.8:1 với chữ trắng,
+dưới ngưỡng WCAG AA (4.5:1) cho chữ thường.
+**Quyết định**: nút chính/viền nhấn/focus ring dùng `#CC4A0A` (đạt AA với chữ trắng); `#F97316`
+chỉ còn làm màu trang trí/nền nhạt, không dùng làm nền nút chứa chữ trắng.
+**Trạng thái**: ✅ Đã áp dụng ở `src/index.css` và `LoginView.jsx`.
+
+### 18. Font Montserrat chỉ dùng cho trang đăng nhập
+**Quyết định**: toàn ứng dụng dùng Inter (`--font-sans`); Montserrat (600/700/800) chỉ áp qua lớp
+`.login-montserrat` ở `LoginView.jsx` cho tiêu đề trang đăng nhập — giữ bundle gọn và giao diện
+trong ứng dụng đồng nhất. Không dùng Montserrat ở màn hình khác nếu chưa có quyết định mới.
+**Trạng thái**: ✅ Đã áp dụng.
+
+### 19. Cài dependencies trên Windows bằng `npm ci --ignore-scripts`
+**Vấn đề**: máy Windows không có Visual Studio chạy `npm ci` thường bị `node-gyp` (biên dịch
+`better-sqlite3`) làm lỗi giữa chừng, kéo theo cài thiếu gói (ví dụ `jsonwebtoken`) → server không chạy.
+**Quyết định**: dùng `npm ci --ignore-scripts` vì `better-sqlite3` đã có bản prebuilt. Ghi ở
+`README.md` và `06_DEPLOYMENT.md` mục 2b.
+**Trạng thái**: ✅ Đã ghi tài liệu.
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

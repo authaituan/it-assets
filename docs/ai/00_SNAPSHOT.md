@@ -10,14 +10,19 @@
 **Baseline dữ liệu thật (cập nhật 2026-08-18)**: 332 thiết bị / 185 bưu cục / 44 BĐX /
 3 tài khoản đăng nhập gốc (`admin`, `ADMIN01`, `00100397`). Hệ thống chạy thật trên LAN
 nội bộ tại `http://10.47.33.33:3000` (xem `06_DEPLOYMENT.md` mục 4 — server cần restart
-thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
+thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy). **Production (LAN) vẫn chạy bản
+cũ (trước Soft UI) cho đến khi PO ra lệnh triển khai.**
 
 ## Tổng quan
 - **Loại**: Fullstack quản lý Công cụ Dụng cụ (CCDC) CNTT cho Bưu điện Tỉnh TT-Huế (Mã 53).
 - **Backend**: Node.js + Express (`server/index.js` chỉ bootstrap ~77 dòng; route ở `server/routes/*`, hàm dùng chung ở `server/lib/*`), SQLite qua
   `better-sqlite3` (`server/db.js`). Auth: JWT (`jsonwebtoken`) + `crypto.scrypt` built-in.
 - **Frontend**: React 19 + Vite + TailwindCSS v4 (`src/`). Bản đồ: `leaflet`+`react-leaflet`.
-- **Test**: `node:test` built-in, **158 test case** trong `tests/*.test.js`, chạy
+  Giao diện **Soft UI**: token màu/font ở `src/index.css` (`@theme`: `--color-primary` v.v.,
+  font Inter; nút chính dùng `#CC4A0A`, xem `04_DECISIONS.md` #17). Tên hệ thống: "Hệ thống
+  Quản lý Danh mục và Tài nguyên CNTT" (`<title>` ở `index.html`, Sidebar, trang đăng nhập).
+  Bundle JS chính ~1.9MB (chưa code-splitting, xem `05_BACKLOG.md`).
+- **Test**: `node:test` built-in, **166 test case** (main = `ae25ff4`, `npm run build` OK) trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -154,9 +159,11 @@ thủ công sau mỗi lần merge vào `main`, chưa có auto-deploy).
    commit vì thói quen này, xem `04_DECISIONS.md` mục 9.
 
 ## Frontend hiện có (`src/components/`)
-- **Auth**: `LoginView.jsx`, `Header.jsx` (đăng xuất, đổi mật khẩu, đổi theme),
+- **Auth**: `LoginView.jsx` (trang đăng nhập mới: 2 thẻ chồng — ảnh cà phê
+  `public/login-hero.jpg` + form; logo `public/logo-vnpost.png`; font Montserrat CHỈ dùng ở
+  trang này, lớp `.login-montserrat`), `Header.jsx` (ô tìm kiếm, đăng xuất, đổi mật khẩu),
   `utils/api.js` (`apiFetchJson` tự gắn token, tự xử lý 401/403).
-- **Sidebar**: submenu động (theo `device_types` thật) cho "Quản Lý CCDC"; submenu tĩnh
+- **Sidebar**: `Sidebar.jsx` (hiện tên hệ thống mới, menu Sentence case); submenu động (theo `device_types` thật) cho "Quản Lý CCDC"; submenu tĩnh
   3 mục cho "Quản Lý Mạng Lưới".
 - **Quản Lý CCDC**: `InventoryView.jsx` (bảng, lọc BĐX/Bưu cục/Loại/Phân Loại Chi
   Tiết/Trạng thái, nút Export/Import Excel), `AddEquipmentModal.jsx`/
