@@ -4,6 +4,15 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-07] - Soft UI toàn bộ màn hình + trang đăng nhập mới (PR #42 demo/soft-ui-v2, #43 feat/login-redesign)
+
+- `src/index.css`: token Soft UI ở `@theme` (màu, font Inter), nút chính `#CC4A0A`, lớp `.login-montserrat`; `src/main.jsx`, `index.html` (`<title>` tên hệ thống mới "Hệ thống Quản lý Danh mục và Tài nguyên CNTT").
+- Restyle toàn bộ màn hình/modal trong `src/components/` (Dashboard, Inventory, Network list/tree/map, Personnel, Emails, Categories, Users, Sidebar, Header...) theo 3 đợt; sửa class cũ, hover nút, tương phản thông báo.
+- `src/components/LoginView.jsx`: trang đăng nhập mới — 2 thẻ chồng, ảnh cà phê `public/login-hero.jpg`, logo `public/logo-vnpost.png`, thẻ form co giãn khi báo lỗi; Montserrat chỉ dùng ở trang này (`@fontsource/montserrat`, `@fontsource/inter`).
+- Chỉ đổi giao diện, không đổi backend/API. **Tested**: `npm test` 166/166 pass; `npm run build` OK (chunk chính ~1.9MB, cảnh báo > 500kB — đã đưa vào backlog). Production LAN vẫn chạy bản cũ cho tới khi PO ra lệnh triển khai.
+
+---
+
 ## [2026-10-06] - Import/Export Email Excel (feat/email-import-export)
 
 - `src/utils/emailExcel.js`: Xây dựng module xuất/nhập Excel cho quản lý email, đảm bảo ngày tháng múi giờ UTC, map columns chuẩn JSON và UI.

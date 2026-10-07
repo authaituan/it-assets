@@ -40,6 +40,15 @@ người bị đăng xuất). Nên đổi vào giờ ít người dùng.
 Đã cài từ Vòng 2: tối đa 5 lần sai trong 15 phút cho mỗi cặp (IP + mã HRM), lần thứ 6
 trả về `429 Too Many Requests` kèm header `Retry-After`. Xem `04_DECISIONS.md`.
 
+## 2b. Cài dependencies trên Windows: dùng `npm ci --ignore-scripts`
+`better-sqlite3` đã có bản prebuilt nên không cần biên dịch. Máy không có Visual Studio
+(C++ build tools) mà chạy `npm ci` thường thì bước `node-gyp` thất bại giữa chừng, kéo theo
+cài thiếu gói (ví dụ `jsonwebtoken`) và server không chạy được. `--ignore-scripts` bỏ qua
+các script cài đặt đó.
+```
+npm ci --ignore-scripts
+```
+
 ## 3. Checklist trước khi deploy production
 - [ ] Đã set `JWT_SECRET` thật (mục 1 ở trên).
 - [ ] Đã đổi mật khẩu tài khoản admin đầu tiên (nếu tạo bằng script tay lúc setup).

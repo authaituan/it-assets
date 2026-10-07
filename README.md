@@ -41,8 +41,11 @@ Hệ thống **Quản Lý Công Cụ Dụng Cụ CNTT Bưu Điện** được th
 
 ### 1. Cài Đặt Dependencies:
 ```bash
-npm install
+npm ci --ignore-scripts
 ```
+> Trên Windows dùng `--ignore-scripts`: `better-sqlite3` đã có bản prebuilt; nếu máy không có
+> Visual Studio thì `npm ci` thường bị `node-gyp` làm lỗi giữa chừng, kéo theo thiếu gói
+> (vd `jsonwebtoken`). Xem `docs/ai/06_DEPLOYMENT.md` mục 2b.
 
 ### 2. Khởi Tạo Dữ Liệu Từ `dulieu.xlsx`:
 ```bash
