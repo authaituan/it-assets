@@ -11,7 +11,8 @@ Quản lý mạng lưới (Danh sách/Cây/Bản đồ, Người phụ trách, d
 Governance V2 · Sidebar Sentence case · Lọc IP truy cập + header bảo mật + trang 404 ·
 bắt buộc `JWT_SECRET`/`.env` · giới hạn body đăng nhập · tách `server/index.js` thành routes/lib ·
 CI GitHub Actions · Quản lý email (backend + danh sách + thêm/sửa/thu hồi/kích hoạt lại + Import/Export Excel) ·
-Soft UI toàn bộ màn hình + trang đăng nhập mới (PR #42, #43).
+Soft UI toàn bộ màn hình + trang đăng nhập mới (PR #42, #43) ·
+Dashboard động — backend (bảng `dashboard_widgets`, API ADMIN-only). **Còn lại: giao diện Dashboard động + trình chỉnh sửa ô cho ADMIN (frontend).**
 
 ## 🔴 Nên làm tiếp (theo thứ tự)
 

@@ -321,4 +321,34 @@ try {
   console.error('[db] Lỗi tạo bảng emails:', err.message);
 }
 
+// ==========================================
+// Bảng dashboard_widgets (Dashboard động). Idempotent; seed bộ ô mặc định khi bảng RỖNG.
+// kind SYSTEM = ô cố định do code tính (chỉ đổi title/size/visible, không xoá);
+// kind CHART = biểu đồ tuỳ chỉnh theo cấu hình (nguồn/nhóm theo/bộ lọc đều qua whitelist,
+// xem server/lib/dashboardSources.js). Cấu hình áp dụng cho mọi người dùng.
+// ==========================================
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dashboard_widgets (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL CHECK (kind IN ('SYSTEM', 'CHART')),
+      system_key TEXT UNIQUE,
+      title TEXT NOT NULL,
+      source TEXT,
+      group_by TEXT,
+      chart_type TEXT,
+      top_n INTEGER DEFAULT 10,
+      filters TEXT,
+      size TEXT NOT NULL DEFAULT 'M' CHECK (size IN ('S', 'M', 'L', 'XL', 'FULL')),
+      position INTEGER NOT NULL,
+      visible INTEGER NOT NULL DEFAULT 1,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+  require('./lib/dashboardDefaults').seedDefaultWidgets(db);
+} catch (err) {
+  console.error('[db] Lỗi tạo bảng dashboard_widgets:', err.message);
+}
+
 module.exports = db;

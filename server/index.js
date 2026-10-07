@@ -9,6 +9,7 @@ const { authRequired } = require('./auth');
 const { createSecurity } = require('./security');
 const authRoutes = require('./routes/auth');
 const dashboardRoutes = require('./routes/dashboard');
+const dashboardWidgetsRoutes = require('./routes/dashboardWidgets');
 const equipmentsRoutes = require('./routes/equipments');
 const networkRoutes = require('./routes/network');
 const organizationRoutes = require('./routes/organization');
@@ -46,6 +47,7 @@ app.use(express.json({ limit: '50mb' }));
 // Router tách module (server/routes/*), mount đúng vị trí cũ để giữ thứ tự route.
 app.use('/api', authRoutes);
 app.use('/api', dashboardRoutes);
+app.use('/api', dashboardWidgetsRoutes);
 app.use('/api', equipmentsRoutes);
 app.use('/api', networkRoutes);
 app.use('/api', organizationRoutes);

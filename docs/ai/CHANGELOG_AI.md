@@ -4,6 +4,13 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-07] - Backend Dashboard động (feat/dashboard-widgets-be)
+
+- `server/db.js`: bảng `dashboard_widgets` (migration idempotent + seed 9 ô mặc định khi rỗng). `server/auth.js`: `requireAdmin`. `server/lib/dashboardSources.js` (whitelist nguồn EQUIPMENT/EMAIL/POST_OFFICE, trường nhóm, bộ lọc, validate, tính COUNT), `server/lib/dashboardDefaults.js` (ô mặc định + seed/reset), `server/routes/dashboardWidgets.js` (`/api/dashboard/widgets`, `-data` (+ `?include_hidden=1` cho ADMIN), `-meta`, `-preview`, `-order`, `-reset`), mount ở `server/index.js`. Ghi chỉ ADMIN; `GET /dashboard/stats` giữ nguyên. Không sửa frontend.
+- `tests/dashboard-widgets.test.js` (31 test, port 5910; gồm preview + include_hidden): seed, phân quyền, số liệu từng nguồn, bộ lọc, top_n/other, LINE/NUMBER, validate, chống chèn SQL. `npm test` 202/202, `npm run build` OK. Lưu ý: lần đầu khởi động server trên `data/ccdc.db` thật, bảng được tạo + seed tự động (nên backup trước khi triển khai).
+
+---
+
 ## [2026-10-07] - Soft UI toàn bộ màn hình + trang đăng nhập mới (PR #42 demo/soft-ui-v2, #43 feat/login-redesign)
 
 - `src/index.css`: token Soft UI ở `@theme` (màu, font Inter), nút chính `#CC4A0A`, lớp `.login-montserrat`; `src/main.jsx`, `index.html` (`<title>` tên hệ thống mới "Hệ thống Quản lý Danh mục và Tài nguyên CNTT").

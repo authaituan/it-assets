@@ -22,7 +22,7 @@ cũ (trước Soft UI) cho đến khi PO ra lệnh triển khai.**
   font Inter; nút chính dùng `#CC4A0A`, xem `04_DECISIONS.md` #17). Tên hệ thống: "Hệ thống
   Quản lý Danh mục và Tài nguyên CNTT" (`<title>` ở `index.html`, Sidebar, trang đăng nhập).
   Bundle JS chính ~1.9MB (chưa code-splitting, xem `05_BACKLOG.md`).
-- **Test**: `node:test` built-in, **166 test case** (main = `ae25ff4`, `npm run build` OK) trong `tests/*.test.js`, chạy
+- **Test**: `node:test` built-in, **202 test case** (`npm run build` OK) trong `tests/*.test.js`, chạy
   `npm test`. DB test dùng bản tạm cô lập (`os.tmpdir()` hoặc monkey-patch), không đụng
   `data/ccdc.db` thật.
 - **Data ingestion gốc**: Python seeder `scripts/seed.py` từ `dulieu.xlsx` (chạy 1 lần
@@ -42,6 +42,11 @@ cũ (trước Soft UI) cho đến khi PO ra lệnh triển khai.**
   `deleted_at` soft-delete, `purchase_year`, `assigned_user_id` liên kết `users` không
   FK cứng), `asset_transfer_logs` (lịch sử, KHÔNG có soft-delete — xoá cứng equipment
   phải xoá log trước để tránh lỗi FK).
+- `dashboard_widgets` (Dashboard động, cấu hình áp dụng cho MỌI người dùng): `kind` SYSTEM|CHART,
+  `system_key` UNIQUE (KPI_SUMMARY, IT_WARNINGS, UPGRADE, RECENT_ACTIVITY, EMAIL_STATS; NULL với CHART),
+  `title`, `source`/`group_by`/`chart_type`/`top_n`/`filters` (JSON) cho CHART, `size` S|M|L|XL|FULL
+  (lưới 12 cột: 3/4/6/8/12), `position`, `visible`. Migration idempotent ở `db.js`; seed 9 ô mặc định
+  (tái hiện Dashboard cũ) khi bảng RỖNG.
 - `emails` (module Quản lý email): `email` UNIQUE NOCASE, `kind` UNIT|PERSONAL, `hrm_code`
   (liên kết LỎNG tới `users`, không FK), `full_name`, `phone`, `commune_id`/`post_office_id`
   (FK, NULL được), `job_title`, `created_date`, `revoked_date` (ISO). KHÔNG có cột status:
@@ -134,6 +139,18 @@ cũ (trước Soft UI) cho đến khi PO ra lệnh triển khai.**
 
 **Dashboard & Organization**
 - `GET /api/dashboard/stats` — cần token. Toàn bộ 9 chỗ đếm/lọc đều có `deleted_at IS NULL`.
+- **Dashboard động** (`server/routes/dashboardWidgets.js`, whitelist ở `server/lib/dashboardSources.js`,
+  mặc định ở `server/lib/dashboardDefaults.js`): `GET /api/dashboard/widgets` (mọi người; ADMIN thấy cả ô
+  ẩn, người khác chỉ `visible`), `GET /api/dashboard/widgets-data` (mọi người; dữ liệu mọi ô CHART đang
+  hiện, lỗi 1 ô → `{error}` riêng; `?include_hidden=1` chỉ ADMIN mới tính thêm ô ẩn), `GET .../widgets-meta` (ADMIN; whitelist cho giao diện chỉnh sửa),
+  `POST .../widgets-preview` (ADMIN; xem trước cấu hình CHƯA lưu, không ghi DB, trả
+  `{data:{total,items,other?}}`), `POST .../widgets` (tối đa 30 ô), `PUT .../widgets/:id`, `DELETE .../widgets/:id`,
+  `PUT .../widgets-order {ids}`, `POST .../widgets-reset` — **ghi = chỉ ADMIN** (`requireAdmin` ở `auth.js`,
+  role khác kể cả MANAGER → 403). Nguồn: EQUIPMENT / EMAIL / POST_OFFICE; số liệu v1 chỉ COUNT; mọi
+  `source`/`group_by`/`chart_type`/khóa lọc phải thuộc whitelist (khóa lạ → 400), giá trị lọc qua tham số
+  `?`; NULL/rỗng → "Chưa xác định". Ô SYSTEM chỉ đổi `title`/`size`/`visible` (không xoá, key khác bị
+  bỏ qua). `LINE` chỉ cho trường có thứ tự; `NUMBER` bắt buộc `group_by` null; `top_n` 3..30, phần dư
+  gộp vào `other`. Chi tiết quyết định: `04_DECISIONS.md` #20–#24.
 - `GET /api/organization/*` — cần token (dùng cho dropdown BĐX/Bưu cục cascading).
 
 ## Business Rules quan trọng (áp dụng xuyên suốt, PHẢI biết trước khi sửa)
