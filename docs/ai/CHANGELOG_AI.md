@@ -4,6 +4,10 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-07] - Đóng gói Docker cho Synology (feat/docker-deploy)
+
+- Thêm `Dockerfile` (2 tầng `node:22-bookworm-slim`, chạy root, `VOLUME /app/data`), `.dockerignore`, `docker-compose.yml` (service `it-drms`, cổng 5000, bind-mount `./data`, healthcheck bằng node, log 10m×3, `JWT_SECRET`/`CMS_ALLOWED_IPS` bắt buộc), `.env.example`; `06_DEPLOYMENT.md` mục 6; `04_DECISIONS.md` #26. Không đổi code. Chưa chạy thử Docker thật (máy không có Docker); đã kiểm tra tĩnh + chạy thử các bước build/runtime ngoài Docker.
+
 ## [2026-10-07] - Giao diện chỉnh sửa Dashboard cho ADMIN (PR #51 feat/dashboard-widgets-editor)
 
 - `src/components/dashboard/editor/*` (ChartWidgetModal có xem trước qua `widgets-preview`, SystemWidgetModal, WidgetToolbar, DashboardEditorToolbar, ConfirmModal) + chế độ "Tuỳ chỉnh" trong `DashboardView.jsx` (chỉ ADMIN; thêm/sửa/ẩn/xoá/Lên-Xuống/khôi phục mặc định). Chỉ giao diện, không đổi backend.

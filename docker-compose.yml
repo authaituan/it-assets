@@ -1,0 +1,30 @@
+# IT-DRMS trên Synology Container Manager (Project) hoặc `docker compose up -d --build`.
+# Đặt file `.env` (copy từ `.env.example`) CẠNH file này trước khi chạy.
+services:
+  it-drms:
+    build: .
+    container_name: it-drms
+    restart: unless-stopped
+    ports:
+      # Cổng NGOÀI (trên NAS) mặc định 18090, đổi bằng HOST_PORT trong .env. KHÔNG dùng 5000: đó là cổng giao diện DSM của Synology.
+      # Bên trong container server vẫn chạy cổng 5000 (1 cổng: phục vụ cả API lẫn giao diện dist/).
+      - "${HOST_PORT:-18090}:5000"
+    volumes:
+      - ./data:/app/data       # DB ccdc.db + security.log — NẰM NGOÀI container, backup thư mục này
+    environment:
+      JWT_SECRET: ${JWT_SECRET:?Thiếu JWT_SECRET trong file .env}
+      # Danh sách IP/CIDR được vào hệ thống. PHẢI có 127.0.0.1 để healthcheck bên dưới chạy được.
+      CMS_ALLOWED_IPS: ${CMS_ALLOWED_IPS:?Thiếu CMS_ALLOWED_IPS trong file .env}
+      TZ: Asia/Ho_Chi_Minh
+    healthcheck:
+      # Dùng node (image không có curl): GET / phải trả 200. Nếu CMS_ALLOWED_IPS thiếu 127.0.0.1 -> 404 -> "unhealthy".
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:5000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
