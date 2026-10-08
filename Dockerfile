@@ -7,14 +7,10 @@
 FROM node:22-bookworm-slim AS build
 WORKDIR /app
 
-# Công cụ biên dịch: chỉ DỰ PHÒNG nếu better-sqlite3 phải build từ mã nguồn (bình thường dùng bản prebuilt kèm trong gói).
-RUN apt-get update \
- && apt-get install -y --no-install-recommends python3 make g++ \
- && rm -rf /var/lib/apt/lists/*
-
 COPY package.json package-lock.json ./
 # --ignore-scripts: better-sqlite3 đã kèm sẵn file prebuilt (prebuilds/linux-x64.node) nên không cần node-gyp
-# (cùng lý do với `npm ci --ignore-scripts` ở 06_DEPLOYMENT.md mục 2b). Nếu sau này prebuilt không khớp, bỏ cờ này để biên dịch.
+# (cùng lý do với `npm ci --ignore-scripts` ở 06_DEPLOYMENT.md mục 2b).
+# Nếu sau này prebuilt better-sqlite3 không khớp: thêm lại bước cài python3 make g++ và bỏ --ignore-scripts.
 RUN npm ci --ignore-scripts
 
 COPY index.html vite.config.mjs ./

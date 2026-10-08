@@ -4,6 +4,10 @@ Ghi lại các thay đổi được thực hiện với hỗ trợ của AI/Clau
 
 ---
 
+## [2026-10-08] - Đưa bản vá Synology vào repo + chặn `data/` (chore/synology-host-mode)
+
+- `Dockerfile`: bỏ bước `apt-get` (python3 make g++), thêm chú thích dự phòng. `docker-compose.yml`: `build.network: host`, `network_mode: host`, bỏ `ports`, thêm `PORT: ${HOST_PORT:-18090}`, healthcheck đọc cổng từ env. `.env.example`: chú thích `HOST_PORT`. `.gitignore`: thêm `/data/`, `*.db*`, `security.log`. `06_DEPLOYMENT.md` mục 6 viết lại (host mode, quy trình cập nhật bằng `git archive`, không sửa code trên NAS, đổi `.env` cần Stop+Build); `04_DECISIONS.md` #27, #28. Không đổi code app; repo khớp bản đang chạy trên NAS.
+
 ## [2026-10-07] - Đóng gói Docker cho Synology (feat/docker-deploy)
 
 - Thêm `Dockerfile` (2 tầng `node:22-bookworm-slim`, chạy root, `VOLUME /app/data`), `.dockerignore`, `docker-compose.yml` (service `it-drms`, cổng 5000, bind-mount `./data`, healthcheck bằng node, log 10m×3, `JWT_SECRET`/`CMS_ALLOWED_IPS` bắt buộc), `.env.example`; `06_DEPLOYMENT.md` mục 6; `04_DECISIONS.md` #26. Không đổi code. Chưa chạy thử Docker thật (máy không có Docker); đã kiểm tra tĩnh + chạy thử các bước build/runtime ngoài Docker.
