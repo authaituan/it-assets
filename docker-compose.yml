@@ -2,13 +2,15 @@
 # Đặt file `.env` (copy từ `.env.example`) CẠNH file này trước khi chạy.
 services:
   it-drms:
-    build: .
+    build:
+      context: .
+      network: host            # build dùng DNS của NAS (mạng bridge lúc build hay không phân giải được tên miền)
     container_name: it-drms
     restart: unless-stopped
-    ports:
-      # Cổng NGOÀI (trên NAS) mặc định 18090, đổi bằng HOST_PORT trong .env. KHÔNG dùng 5000: đó là cổng giao diện DSM của Synology.
-      # Bên trong container server vẫn chạy cổng 5000 (1 cổng: phục vụ cả API lẫn giao diện dist/).
-      - "${HOST_PORT:-18090}:5000"
+    # Chế độ mạng HOST: mạng bridge làm app thấy IP máy khách là 172.18.0.1 nên danh sách CMS_ALLOWED_IPS chặn hết (404).
+    # Dùng host thì app thấy IP thật. Cổng app = PORT bên dưới (mặc định 18090), KHÔNG dùng 5000 vì DSM đã chiếm.
+    # Nhớ cho phép cổng này trong Tường lửa DSM. Không dùng mục `ports` ở chế độ này.
+    network_mode: host
     volumes:
       - ./data:/app/data       # DB ccdc.db + security.log — NẰM NGOÀI container, backup thư mục này
     environment:
@@ -16,9 +18,10 @@ services:
       # Danh sách IP/CIDR được vào hệ thống. PHẢI có 127.0.0.1 để healthcheck bên dưới chạy được.
       CMS_ALLOWED_IPS: ${CMS_ALLOWED_IPS:?Thiếu CMS_ALLOWED_IPS trong file .env}
       TZ: Asia/Ho_Chi_Minh
+      PORT: ${HOST_PORT:-18090}  # cổng app lắng nghe trực tiếp trên NAS
     healthcheck:
       # Dùng node (image không có curl): GET / phải trả 200. Nếu CMS_ALLOWED_IPS thiếu 127.0.0.1 -> 404 -> "unhealthy".
-      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:5000/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:'+(process.env.PORT||5000)+'/',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
       interval: 30s
       timeout: 5s
       retries: 3

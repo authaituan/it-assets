@@ -438,6 +438,17 @@ của ADMIN). `widgets-data?include_hidden=1` cũng chỉ có hiệu lực với
 (3) **DB nằm ngoài image** (bind-mount `./data:/app/data`) — cập nhật = build lại image, dữ liệu giữ nguyên; backup = copy thư mục `data`.
 (4) `npm ci --ignore-scripts` trong Dockerfile (better-sqlite3 kèm prebuilt, cùng quyết định #19); `JWT_SECRET`/`CMS_ALLOWED_IPS` bắt buộc trong compose.
 
+### 27. Chế độ `network_mode: host` trên Synology
+**Vấn đề**: ở mạng bridge của Docker, app thấy IP máy khách là `172.18.0.1` (IP cổng của bridge) nên allowlist `CMS_ALLOWED_IPS` chặn mọi người (trả 404).
+**Quyết định**: compose dùng `network_mode: host` (app thấy IP thật của máy trạm) và `build.network: host` (build dùng DNS của NAS).
+**Hệ quả**: không dùng mục `ports`; cổng app = `HOST_PORT` (mặc định 18090, truyền vào app qua `PORT`), KHÔNG dùng 5000 (DSM chiếm); Tường lửa DSM phải cho phép cổng đó; khoá `JWT_SECRET`/`CMS_ALLOWED_IPS` vẫn bắt buộc. Chế độ host không chạy trên Docker Desktop Windows/Mac — chấp nhận vì chỉ triển khai trên NAS (Linux).
+Thay một phần #26 (ý "1 cổng 5000"): cổng thực tế nay do `PORT`/`HOST_PORT` quyết định.
+
+### 28. Bỏ bước `apt-get` ở Dockerfile
+**Vấn đề**: build trên NAS lỗi DNS ở `apt-get update` (`deb.debian.org`); bước này vốn chỉ là dự phòng.
+**Quyết định**: xoá bước cài `python3 make g++`. `better-sqlite3` kèm prebuilt `linux-x64` và Dockerfile dùng `npm ci --ignore-scripts` nên không cần biên dịch.
+Nếu sau này prebuilt không khớp: thêm lại bước cài công cụ và bỏ `--ignore-scripts` (đã ghi chú trong Dockerfile).
+
 ## Ghi chú
 - Cả 2 drift đầu tiên đều được phát hiện từ quá trình review và kiểm tra thực tế package.json + cấu trúc thư mục scripts.
 - Mục đích: Đảm bảo tính nhất quán giữa tài liệu (README, package.json) và thực tế mã nguồn.

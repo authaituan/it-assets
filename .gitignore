@@ -6,10 +6,15 @@ node_modules/
 dist/
 build/
 
-# Database files
+# Database files + dữ liệu chạy thật (KHÔNG BAO GIỜ commit)
+/data/
 data/ccdc.db
 data/ccdc.db-wal
 data/ccdc.db-shm
+*.db
+*.db-wal
+*.db-shm
+security.log
 
 # Environment & Logs
 .env
